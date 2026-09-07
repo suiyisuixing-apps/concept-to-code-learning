@@ -20,7 +20,8 @@ Phase 0 被定位为企业新员工入职、单一私有仓库讲解、强制练
 - 基线 Commit：8c487316ccf598b0a549803d3cff3814302633c3。
 - 保留标签：pre-rules-v0.1.0；tag object ddbe1b7a6b0f7edb10093c66ab95eed7b5e87cdc。
 - 代码分支：rescope/concept-to-code-learning；所有代码通过 PR 进入 main。
-- 本轮修改 Commit/PR 的实际链接由最终执行报告与 PR 元数据记录；合并前状态为 BLOCKED_BY_REQUIRED_REVIEW。
+- 本轮实现 Commit：[fee31de34e0ea2f156171df88fc113f049e6518b](https://github.com/suiyisuixing/concept-to-code-learning/commit/fee31de34e0ea2f156171df88fc113f049e6518b)，日期 2026-09-07。
+- 正式 PR：[#56 — [Rescope] Convert project into Concept-to-Code Learning](https://github.com/suiyisuixing/concept-to-code-learning/pull/56)。后续补充文档 Commit 保留在此 PR 历史中；本文件不是自动刷新的合并状态源。未获得真实队员批准并正常合并前状态为 BLOCKED_BY_REQUIRED_REVIEW。
 - 只有另一名真实成员批准、必需 CI 成功并正常合并后才可创建 pre-rules-v0.2.0。没有 GitHub Release。
 
 ## 当前交付边界

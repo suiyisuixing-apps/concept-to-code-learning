@@ -1,0 +1,568 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-07T14:47:52.493Z",
+  "title": "Design System: Concept-to-Code Learning",
+  "extensions": {
+    "colorMeta": {
+      "ink": {
+        "role": "neutral",
+        "displayName": "Reading Ink",
+        "tonalRamp": [
+          "oklch(15% 0.03404 168.74)",
+          "oklch(25% 0.03404 168.74)",
+          "oklch(35% 0.03404 168.74)",
+          "oklch(45% 0.03404 168.74)",
+          "oklch(55% 0.03404 168.74)",
+          "oklch(70% 0.03404 168.74)",
+          "oklch(85% 0.03404 168.74)",
+          "oklch(95% 0.03404 168.74)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted Ink",
+        "tonalRamp": [
+          "oklch(15% 0.02293 159.17)",
+          "oklch(25% 0.02293 159.17)",
+          "oklch(35% 0.02293 159.17)",
+          "oklch(45% 0.02293 159.17)",
+          "oklch(55% 0.02293 159.17)",
+          "oklch(70% 0.02293 159.17)",
+          "oklch(85% 0.02293 159.17)",
+          "oklch(95% 0.02293 159.17)"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Fine Rule",
+        "tonalRamp": [
+          "oklch(15% 0.01372 134.90)",
+          "oklch(25% 0.01372 134.90)",
+          "oklch(35% 0.01372 134.90)",
+          "oklch(45% 0.01372 134.90)",
+          "oklch(55% 0.01372 134.90)",
+          "oklch(70% 0.01372 134.90)",
+          "oklch(85% 0.01372 134.90)",
+          "oklch(95% 0.01372 134.90)"
+        ]
+      },
+      "green": {
+        "role": "primary",
+        "displayName": "Forest Green",
+        "tonalRamp": [
+          "oklch(15% 0.08643 159.51)",
+          "oklch(25% 0.08643 159.51)",
+          "oklch(35% 0.08643 159.51)",
+          "oklch(45% 0.08643 159.51)",
+          "oklch(55% 0.08643 159.51)",
+          "oklch(70% 0.08643 159.51)",
+          "oklch(85% 0.08643 159.51)",
+          "oklch(95% 0.08643 159.51)"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Warm Paper",
+        "tonalRamp": [
+          "oklch(15% 0.00537 95.10)",
+          "oklch(25% 0.00537 95.10)",
+          "oklch(35% 0.00537 95.10)",
+          "oklch(45% 0.00537 95.10)",
+          "oklch(55% 0.00537 95.10)",
+          "oklch(70% 0.00537 95.10)",
+          "oklch(85% 0.00537 95.10)",
+          "oklch(95% 0.00537 95.10)"
+        ]
+      },
+      "soft": {
+        "role": "neutral",
+        "displayName": "Soft Green Paper",
+        "tonalRamp": [
+          "oklch(15% 0.01304 130.78)",
+          "oklch(25% 0.01304 130.78)",
+          "oklch(35% 0.01304 130.78)",
+          "oklch(45% 0.01304 130.78)",
+          "oklch(55% 0.01304 130.78)",
+          "oklch(70% 0.01304 130.78)",
+          "oklch(85% 0.01304 130.78)",
+          "oklch(95% 0.01304 130.78)"
+        ]
+      },
+      "canvas": {
+        "role": "neutral",
+        "displayName": "Canvas",
+        "tonalRamp": [
+          "oklch(15% 0.00538 117.92)",
+          "oklch(25% 0.00538 117.92)",
+          "oklch(35% 0.00538 117.92)",
+          "oklch(45% 0.00538 117.92)",
+          "oklch(55% 0.00538 117.92)",
+          "oklch(70% 0.00538 117.92)",
+          "oklch(85% 0.00538 117.92)",
+          "oklch(95% 0.00538 117.92)"
+        ]
+      },
+      "document-surface": {
+        "role": "neutral",
+        "displayName": "Document Surface",
+        "tonalRamp": [
+          "oklch(15% 0.00820 121.63)",
+          "oklch(25% 0.00820 121.63)",
+          "oklch(35% 0.00820 121.63)",
+          "oklch(45% 0.00820 121.63)",
+          "oklch(55% 0.00820 121.63)",
+          "oklch(70% 0.00820 121.63)",
+          "oklch(85% 0.00820 121.63)",
+          "oklch(95% 0.00820 121.63)"
+        ]
+      },
+      "evidence-surface": {
+        "role": "neutral",
+        "displayName": "Evidence Surface",
+        "tonalRamp": [
+          "oklch(15% 0.00536 117.92)",
+          "oklch(25% 0.00536 117.92)",
+          "oklch(35% 0.00536 117.92)",
+          "oklch(45% 0.00536 117.92)",
+          "oklch(55% 0.00536 117.92)",
+          "oklch(70% 0.00536 117.92)",
+          "oklch(85% 0.00536 117.92)",
+          "oklch(95% 0.00536 117.92)"
+        ]
+      },
+      "action-hover": {
+        "role": "primary",
+        "displayName": "Deep Action Green",
+        "tonalRamp": [
+          "oklch(15% 0.06821 160.94)",
+          "oklch(25% 0.06821 160.94)",
+          "oklch(35% 0.06821 160.94)",
+          "oklch(45% 0.06821 160.94)",
+          "oklch(55% 0.06821 160.94)",
+          "oklch(70% 0.06821 160.94)",
+          "oklch(85% 0.06821 160.94)",
+          "oklch(95% 0.06821 160.94)"
+        ]
+      },
+      "secondary-hover": {
+        "role": "primary",
+        "displayName": "Secondary Hover Paper",
+        "tonalRamp": [
+          "oklch(15% 0.02051 131.46)",
+          "oklch(25% 0.02051 131.46)",
+          "oklch(35% 0.02051 131.46)",
+          "oklch(45% 0.02051 131.46)",
+          "oklch(55% 0.02051 131.46)",
+          "oklch(70% 0.02051 131.46)",
+          "oklch(85% 0.02051 131.46)",
+          "oklch(95% 0.02051 131.46)"
+        ]
+      },
+      "field-fill": {
+        "role": "neutral",
+        "displayName": "Field Fill",
+        "tonalRamp": [
+          "oklch(15% 0.00000 0.00)",
+          "oklch(25% 0.00000 0.00)",
+          "oklch(35% 0.00000 0.00)",
+          "oklch(45% 0.00000 0.00)",
+          "oklch(55% 0.00000 0.00)",
+          "oklch(70% 0.00000 0.00)",
+          "oklch(85% 0.00000 0.00)",
+          "oklch(95% 0.00000 0.00)"
+        ]
+      },
+      "field-border": {
+        "role": "neutral",
+        "displayName": "Field Boundary",
+        "tonalRamp": [
+          "oklch(15% 0.03408 149.52)",
+          "oklch(25% 0.03408 149.52)",
+          "oklch(35% 0.03408 149.52)",
+          "oklch(45% 0.03408 149.52)",
+          "oklch(55% 0.03408 149.52)",
+          "oklch(70% 0.03408 149.52)",
+          "oklch(85% 0.03408 149.52)",
+          "oklch(95% 0.03408 149.52)"
+        ]
+      },
+      "disabled-fill": {
+        "role": "neutral",
+        "displayName": "Disabled Fill",
+        "tonalRamp": [
+          "oklch(15% 0.01024 131.36)",
+          "oklch(25% 0.01024 131.36)",
+          "oklch(35% 0.01024 131.36)",
+          "oklch(45% 0.01024 131.36)",
+          "oklch(55% 0.01024 131.36)",
+          "oklch(70% 0.01024 131.36)",
+          "oklch(85% 0.01024 131.36)",
+          "oklch(95% 0.01024 131.36)"
+        ]
+      },
+      "disabled-ink": {
+        "role": "neutral",
+        "displayName": "Disabled Ink",
+        "tonalRamp": [
+          "oklch(15% 0.01904 156.52)",
+          "oklch(25% 0.01904 156.52)",
+          "oklch(35% 0.01904 156.52)",
+          "oklch(45% 0.01904 156.52)",
+          "oklch(55% 0.01904 156.52)",
+          "oklch(70% 0.01904 156.52)",
+          "oklch(85% 0.01904 156.52)",
+          "oklch(95% 0.01904 156.52)"
+        ]
+      },
+      "selected-fill": {
+        "role": "primary",
+        "displayName": "Selected View Fill",
+        "tonalRamp": [
+          "oklch(15% 0.01976 135.83)",
+          "oklch(25% 0.01976 135.83)",
+          "oklch(35% 0.01976 135.83)",
+          "oklch(45% 0.01976 135.83)",
+          "oklch(55% 0.01976 135.83)",
+          "oklch(70% 0.01976 135.83)",
+          "oklch(85% 0.01976 135.83)",
+          "oklch(95% 0.01976 135.83)"
+        ]
+      },
+      "selected-ink": {
+        "role": "primary",
+        "displayName": "Selected View Ink",
+        "tonalRamp": [
+          "oklch(15% 0.06669 157.37)",
+          "oklch(25% 0.06669 157.37)",
+          "oklch(35% 0.06669 157.37)",
+          "oklch(45% 0.06669 157.37)",
+          "oklch(55% 0.06669 157.37)",
+          "oklch(70% 0.06669 157.37)",
+          "oklch(85% 0.06669 157.37)",
+          "oklch(95% 0.06669 157.37)"
+        ]
+      },
+      "citation-fill": {
+        "role": "neutral",
+        "displayName": "Citation Fill",
+        "tonalRamp": [
+          "oklch(15% 0.00979 125.68)",
+          "oklch(25% 0.00979 125.68)",
+          "oklch(35% 0.00979 125.68)",
+          "oklch(45% 0.00979 125.68)",
+          "oklch(55% 0.00979 125.68)",
+          "oklch(70% 0.00979 125.68)",
+          "oklch(85% 0.00979 125.68)",
+          "oklch(95% 0.00979 125.68)"
+        ]
+      },
+      "citation-ink": {
+        "role": "neutral",
+        "displayName": "Citation Ink",
+        "tonalRamp": [
+          "oklch(15% 0.03992 149.94)",
+          "oklch(25% 0.03992 149.94)",
+          "oklch(35% 0.03992 149.94)",
+          "oklch(45% 0.03992 149.94)",
+          "oklch(55% 0.03992 149.94)",
+          "oklch(70% 0.03992 149.94)",
+          "oklch(85% 0.03992 149.94)",
+          "oklch(95% 0.03992 149.94)"
+        ]
+      },
+      "code-fill": {
+        "role": "neutral",
+        "displayName": "Code Fill",
+        "tonalRamp": [
+          "oklch(15% 0.01713 128.66)",
+          "oklch(25% 0.01713 128.66)",
+          "oklch(35% 0.01713 128.66)",
+          "oklch(45% 0.01713 128.66)",
+          "oklch(55% 0.01713 128.66)",
+          "oklch(70% 0.01713 128.66)",
+          "oklch(85% 0.01713 128.66)",
+          "oklch(95% 0.01713 128.66)"
+        ]
+      },
+      "code-ink": {
+        "role": "neutral",
+        "displayName": "Code Ink",
+        "tonalRamp": [
+          "oklch(15% 0.05687 159.40)",
+          "oklch(25% 0.05687 159.40)",
+          "oklch(35% 0.05687 159.40)",
+          "oklch(45% 0.05687 159.40)",
+          "oklch(55% 0.05687 159.40)",
+          "oklch(70% 0.05687 159.40)",
+          "oklch(85% 0.05687 159.40)",
+          "oklch(95% 0.05687 159.40)"
+        ]
+      },
+      "link": {
+        "role": "primary",
+        "displayName": "Source Link Green",
+        "tonalRamp": [
+          "oklch(15% 0.09156 157.94)",
+          "oklch(25% 0.09156 157.94)",
+          "oklch(35% 0.09156 157.94)",
+          "oklch(45% 0.09156 157.94)",
+          "oklch(55% 0.09156 157.94)",
+          "oklch(70% 0.09156 157.94)",
+          "oklch(85% 0.09156 157.94)",
+          "oklch(95% 0.09156 157.94)"
+        ]
+      },
+      "link-hover": {
+        "role": "primary",
+        "displayName": "Source Link Hover",
+        "tonalRamp": [
+          "oklch(15% 0.06349 158.72)",
+          "oklch(25% 0.06349 158.72)",
+          "oklch(35% 0.06349 158.72)",
+          "oklch(45% 0.06349 158.72)",
+          "oklch(55% 0.06349 158.72)",
+          "oklch(70% 0.06349 158.72)",
+          "oklch(85% 0.06349 158.72)",
+          "oklch(95% 0.06349 158.72)"
+        ]
+      },
+      "notice-fill": {
+        "role": "neutral",
+        "displayName": "Notice Fill",
+        "tonalRamp": [
+          "oklch(15% 0.02425 135.68)",
+          "oklch(25% 0.02425 135.68)",
+          "oklch(35% 0.02425 135.68)",
+          "oklch(45% 0.02425 135.68)",
+          "oklch(55% 0.02425 135.68)",
+          "oklch(70% 0.02425 135.68)",
+          "oklch(85% 0.02425 135.68)",
+          "oklch(95% 0.02425 135.68)"
+        ]
+      },
+      "notice-ink": {
+        "role": "neutral",
+        "displayName": "Notice Ink",
+        "tonalRamp": [
+          "oklch(15% 0.06776 153.60)",
+          "oklch(25% 0.06776 153.60)",
+          "oklch(35% 0.06776 153.60)",
+          "oklch(45% 0.06776 153.60)",
+          "oklch(55% 0.06776 153.60)",
+          "oklch(70% 0.06776 153.60)",
+          "oklch(85% 0.06776 153.60)",
+          "oklch(95% 0.06776 153.60)"
+        ]
+      },
+      "error-fill": {
+        "role": "neutral",
+        "displayName": "Error Fill",
+        "tonalRamp": [
+          "oklch(15% 0.01988 45.26)",
+          "oklch(25% 0.01988 45.26)",
+          "oklch(35% 0.01988 45.26)",
+          "oklch(45% 0.01988 45.26)",
+          "oklch(55% 0.01988 45.26)",
+          "oklch(70% 0.01988 45.26)",
+          "oklch(85% 0.01988 45.26)",
+          "oklch(95% 0.01988 45.26)"
+        ]
+      },
+      "error-ink": {
+        "role": "neutral",
+        "displayName": "Error Ink",
+        "tonalRamp": [
+          "oklch(15% 0.10257 38.04)",
+          "oklch(25% 0.10257 38.04)",
+          "oklch(35% 0.10257 38.04)",
+          "oklch(45% 0.10257 38.04)",
+          "oklch(55% 0.10257 38.04)",
+          "oklch(70% 0.10257 38.04)",
+          "oklch(85% 0.10257 38.04)",
+          "oklch(95% 0.10257 38.04)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "headline",
+        "purpose": "Application name on larger screens; the Learning span has regular weight."
+      },
+      "title": {
+        "displayName": "title",
+        "purpose": "Compact pane titles."
+      },
+      "body": {
+        "displayName": "body",
+        "purpose": "Default interface and general prose."
+      },
+      "document-body": {
+        "displayName": "document body",
+        "purpose": "Generously led document paragraphs."
+      },
+      "answer-body": {
+        "displayName": "answer body",
+        "purpose": "Explanation prose with preserved line breaks and a 72ch maximum."
+      },
+      "label": {
+        "displayName": "label",
+        "purpose": "Compact form labels and document action text."
+      },
+      "primary-action": {
+        "displayName": "primary action",
+        "purpose": "The tutor submit button."
+      },
+      "caption": {
+        "displayName": "caption",
+        "purpose": "Subordinate context and metadata."
+      },
+      "fixture-label": {
+        "displayName": "fixture label",
+        "purpose": "The visible FIXTURE status tag."
+      },
+      "code": {
+        "displayName": "code",
+        "purpose": "Literal source code excerpts."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "button-background",
+        "value": "background-color 0.18s ease-out",
+        "purpose": "Short button background-color transitions; no spatial movement."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "@media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }",
+        "purpose": "The current global reduced-motion override."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "wide (min-width)",
+        "value": "1500px"
+      },
+      {
+        "name": "two-column (max-width)",
+        "value": "1050px"
+      },
+      {
+        "name": "stacked (max-width)",
+        "value": "640px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary ask action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The tutor submit action. The application disables it while asking or when the question is blank.",
+      "html": "<button class=\"ds-primary\" type=\"button\">结合代码讲解</button>",
+      "css": ".ds-primary{font-family:Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif;font-size:14px;line-height:1.65;cursor:pointer;background:var(--green,#236747);color:white;border:1px solid transparent;border-radius:var(--radius,8px);padding:9px 14px;font-weight:600;transition:background-color 0.18s ease-out;font-size:13px;height:42px;white-space:nowrap;}.ds-primary:hover{background:#174b34;}.ds-primary:focus-visible{outline:2px solid var(--green,#236747);outline-offset:4px;}.ds-primary:disabled{cursor:not-allowed;background:#e8ece5;color:#647068;border-color:var(--rule,#d9dfd6);}@media (max-width:640px){.ds-primary{font-size:12px;padding:9px 11px;}}@media (prefers-reduced-motion: reduce){.ds-primary{transition:none !important;scroll-behavior:auto !important;}}"
+    },
+    {
+      "name": "Secondary page explanation",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "The outlined current-page action in the document pane. A blank question disables it in the application.",
+      "html": "<button class=\"ds-secondary\" type=\"button\">解释当前页</button>",
+      "css": ".ds-secondary{font-family:Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif;font-size:14px;line-height:1.65;cursor:pointer;background:var(--green,#236747);color:white;border:1px solid transparent;border-radius:var(--radius,8px);padding:9px 14px;font-weight:600;transition:background-color 0.18s ease-out;font-size:12px;padding:8px;background:transparent;color:var(--green,#236747);border-color:#a7b8a7;}.ds-secondary:disabled{cursor:not-allowed;background:#e8ece5;color:#647068;border-color:var(--rule,#d9dfd6);}.ds-secondary:hover{background:#e2eadc;}.ds-secondary:focus-visible{outline:2px solid var(--green,#236747);outline-offset:4px;}@media (prefers-reduced-motion: reduce){.ds-secondary{transition:none !important;scroll-behavior:auto !important;}}"
+    },
+    {
+      "name": "Document pagination",
+      "kind": "nav",
+      "refersTo": "button-pagination",
+      "description": "Native previous/next controls around a tabular page count; the first-page previous control is disabled.",
+      "html": "<nav class=\"ds-pagination\" aria-label=\"文档翻页\"><button type=\"button\" aria-label=\"上一页\" disabled>上一页</button><span>第 1 / 3 页</span><button type=\"button\" aria-label=\"下一页\">下一页</button></nav>",
+      "css": ".ds-pagination{font-family:Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif;font-size:14px;line-height:1.65;color:var(--ink,#263e35);display:flex;align-items:center;justify-content:space-between;gap:8px;margin:18px 0;font-size:12px;font-variant-numeric:tabular-nums;}.ds-pagination button{font:inherit;cursor:pointer;background:var(--green,#236747);color:white;border:1px solid transparent;border-radius:var(--radius,8px);padding:9px 14px;font-weight:600;transition:background-color 0.18s ease-out;padding:5px 10px;background:transparent;border-color:#aebbb0;color:var(--ink,#263e35);font-size:12px;}.ds-pagination button:disabled{cursor:not-allowed;color:#738076;border-color:var(--rule,#d9dfd6);}.ds-pagination button:not(:disabled):hover{background:#e2eadc;}.ds-pagination button:focus-visible{outline:2px solid var(--green,#236747);outline-offset:4px;}@media (prefers-reduced-motion: reduce){.ds-pagination button{transition:none !important;scroll-behavior:auto !important;}}"
+    },
+    {
+      "name": "Personal note fields",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "Separate title and personal-text inputs under the answer; the placeholder describes retained personal text.",
+      "html": "<div class=\"ds-note-fields\"><label for=\"ds-note-title\">笔记标题</label><input id=\"ds-note-title\" maxlength=\"160\" value=\"依赖注入：我的理解\"><label for=\"ds-note-text\">我的补充</label><textarea id=\"ds-note-text\" rows=\"3\" maxlength=\"20000\" placeholder=\"用自己的话记下这个概念。再次提问不会清除这里的文字。\"></textarea></div>",
+      "css": ".ds-note-fields{font-family:Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif;font-size:14px;line-height:1.65;color:var(--ink,#263e35);}.ds-note-fields label{display:block;font-weight:600;margin:13px 0 7px;font-size:12px;}.ds-note-fields input,.ds-note-fields textarea{font:inherit;width:100%;color:var(--ink,#263e35);background:#fff;border:1px solid #7b8f7e;border-radius:var(--radius,8px);padding:9px 11px;caret-color:var(--green,#236747);}.ds-note-fields textarea{resize:vertical;min-height:72px;}.ds-note-fields input::placeholder,.ds-note-fields textarea::placeholder{color:#657369;}.ds-note-fields input:focus-visible{outline:2px solid var(--green,#236747);outline-offset:4px;}.ds-note-fields textarea:focus-visible{outline:2px solid var(--green,#236747);outline-offset:4px;}"
+    },
+    {
+      "name": "Learning and notes navigation",
+      "kind": "nav",
+      "refersTo": "view-tab",
+      "description": "Compact native buttons with aria-pressed. The application switches the center pane; this static preview shows the learning state.",
+      "html": "<nav class=\"ds-view-tabs\" aria-label=\"学习与笔记\"><button type=\"button\" aria-pressed=\"true\">讲解</button><button type=\"button\" aria-pressed=\"false\">我的笔记 (1)</button></nav>",
+      "css": ".ds-view-tabs{font-family:Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif;font-size:14px;line-height:1.65;display:flex;gap:3px;}.ds-view-tabs button{font:inherit;cursor:pointer;background:var(--green,#236747);color:white;border:1px solid transparent;border-radius:var(--radius,8px);padding:9px 14px;font-weight:600;transition:background-color 0.18s ease-out;font-size:11px;padding:5px 7px;background:transparent;color:var(--muted,#5d6c63);font-weight:500;}.ds-view-tabs button:hover{background:transparent;}.ds-view-tabs button[aria-pressed=\"true\"]{background:#e4ede0;color:#214f36;}.ds-view-tabs button:focus-visible{outline:2px solid var(--green,#236747);outline-offset:4px;}@media (prefers-reduced-motion: reduce){.ds-view-tabs button{transition:none !important;scroll-behavior:auto !important;}}"
+    },
+    {
+      "name": "Fixture status tag",
+      "kind": "chip",
+      "refersTo": "fixture-label",
+      "description": "The static header status. It remains visible in the small layout and does not act as a filter.",
+      "html": "<span class=\"ds-fixture-label\">FIXTURE</span>",
+      "css": ".ds-fixture-label{font-family:Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif;font-size:14px;line-height:1.65;color:var(--ink,#263e35);font-size:11px;letter-spacing:0.07em;font-weight:700;padding:4px 8px;border:1px solid #9dab9d;border-radius:4px;}@media (max-width:640px){.ds-fixture-label{font-size:9px;}}"
+    },
+    {
+      "name": "Document reading sheet",
+      "kind": "card",
+      "refersTo": "document-page",
+      "description": "The focusable synthetic document page. Passage capture is implemented in React; this preview preserves its actual reading styles and content.",
+      "html": "<article class=\"ds-document-page\" tabindex=\"0\" aria-label=\"可选择的当前页正文\"><h3>把需要的东西交给函数</h3><p>依赖注入（Dependency Injection）让函数声明自己需要什么，由外部提供具体依赖，而不是在函数内部创建全部对象。</p><p>在 FastAPI 中，路径函数通过 Depends 声明依赖。框架先调用依赖函数，再把返回结果交给路径函数。</p><p>例如，多个接口都需要查询参数。可以把参数解析放进 common_parameters，再让接口接收解析后的字典。</p></article>",
+      "css": ".ds-document-page{font-family:Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif;font-size:14px;line-height:1.65;color:var(--ink,#263e35);padding:24px 21px;background:var(--paper,#fffefa);border:1px solid var(--rule,#d9dfd6);border-radius:3px;line-height:1.95;min-height:335px;}.ds-document-page h3{font-size:19px;font-weight:600;line-height:1.6;margin:0 0 25px;}.ds-document-page p{font-size:14px;margin:0 0 16px;}.ds-document-page p:last-child{margin-bottom:0;}.ds-document-page ::selection{background:#cde8cd;color:#153b26;}.ds-document-page:focus-visible{outline:2px solid var(--green,#236747);}@media (min-width:1500px){.ds-document-page{padding:30px;}}@media (max-width:640px){.ds-document-page{min-height:0;padding:23px;}.ds-document-page h3{font-size:20px;}}"
+    },
+    {
+      "name": "Document citation",
+      "kind": "card",
+      "refersTo": "document-citation",
+      "description": "A quotation with document name and page context, reused under an answer and in a saved source note.",
+      "html": "<blockquote class=\"ds-citation\"><cite>依赖注入学习讲义 · 合成示例.md · 第 1 页</cite><p>依赖注入（Dependency Injection）让函数声明自己需要什么，由外部提供具体依赖，而不是在函数内部创建全部对象。</p></blockquote>",
+      "css": ".ds-citation{font-family:Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif;font-size:14px;line-height:1.65;margin:0;padding:12px 15px;background:#f0f3ec;border-radius:4px;font-size:12px;color:#415745;}.ds-citation cite{font-style:normal;font-size:11px;font-weight:600;}.ds-citation p{line-height:1.8;margin:9px 0 0;white-space:pre-wrap;}"
+    },
+    {
+      "name": "Frozen GitHub source evidence",
+      "kind": "custom",
+      "refersTo": "code-excerpt",
+      "description": "The implemented frozen reference, metadata, literal excerpt and verification disclosure. Source verification and execution state remain separate.",
+      "html": "<article class=\"ds-evidence\"><div class=\"ds-source-heading\"><a href=\"https://github.com/fastapi/fastapi\" target=\"_blank\" rel=\"noreferrer\">fastapi / fastapi</a><span class=\"ds-small-label\">公开仓库</span></div><p class=\"ds-verification\">固定来源已核验</p><p class=\"ds-machine-status\">GITHUB_SOURCE_VERIFIED</p><dl class=\"ds-source-details\"><dt>仓库</dt><dd><a href=\"https://github.com/fastapi/fastapi\" target=\"_blank\" rel=\"noreferrer\">https://github.com/fastapi/fastapi</a></dd><dt>Commit</dt><dd class=\"ds-commit\">50113da16fec53b66b80d75e80a89296de4fa5a5</dd><dt>文件</dt><dd><a href=\"https://github.com/fastapi/fastapi/blob/50113da16fec53b66b80d75e80a89296de4fa5a5/docs_src/dependencies/tutorial001_an_py310.py#L12-L14\" target=\"_blank\" rel=\"noreferrer\">docs_src/dependencies/tutorial001_an_py310.py</a></dd><dt>符号</dt><dd><code>read_items</code></dd><dt>行号</dt><dd>12–14 · async_function</dd><dt>许可证</dt><dd><a href=\"https://github.com/fastapi/fastapi/blob/50113da16fec53b66b80d75e80a89296de4fa5a5/LICENSE\" target=\"_blank\" rel=\"noreferrer\">MIT</a></dd></dl><div class=\"ds-code-heading\"><span>GitHub 原始代码 · 3 行</span><a href=\"https://github.com/fastapi/fastapi/blob/50113da16fec53b66b80d75e80a89296de4fa5a5/docs_src/dependencies/tutorial001_an_py310.py#L12-L14\" target=\"_blank\" rel=\"noreferrer\">打开源码</a></div><pre aria-label=\"GitHub 原始代码\"><code>@app.get(&quot;/items/&quot;)\nasync def read_items(commons: Annotated[dict, Depends(common_parameters)]):\n    return commons</code></pre><h3>为什么引用它</h3><p>FastAPI 官方示例在 read_items 的参数中用 Depends(common_parameters) 声明依赖，由框架提供解析后的参数。</p><p class=\"ds-muted\">片段未运行 · NOT_RUN<br>核验时间：2026-09-07</p><details><summary>查看核验依据</summary><p>GitHub API resolved repository + immutable commit + file blob; Python AST resolved symbol and exact line interval; LICENSE checked at same commit. Frozen fixture only.</p><p class=\"ds-commit\">片段 SHA-256：dcfd9d2f950c7e4686f6743c190cdc6470e18a115d818148d16d68380073822d</p></details></article>",
+      "css": ".ds-evidence{font-family:Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif;font-size:14px;line-height:1.65;color:var(--ink,#263e35);background:#fafbf7;}.ds-evidence a{color:#1a6340;text-underline-offset:3px;overflow-wrap:anywhere;}.ds-evidence a:hover{color:#103e28;}.ds-evidence a:focus-visible{outline:2px solid var(--green,#236747);outline-offset:4px;}.ds-source-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;}.ds-source-heading>a{font-size:17px;font-weight:650;text-decoration:none;}.ds-small-label{font-size:10px;color:var(--muted,#5d6c63);flex-shrink:0;}.ds-evidence p{margin:0 0 16px;font-size:12px;}.ds-evidence .ds-verification{font-size:12px;color:#20643d;font-weight:600;margin:16px 0 2px;}.ds-evidence .ds-machine-status{font-size:10px;color:#476a50;overflow-wrap:anywhere;margin-bottom:21px;}.ds-source-details{display:grid;grid-template-columns:48px minmax(0,1fr);gap:11px 9px;font-size:11px;margin:0 0 24px;}.ds-source-details dt{color:var(--muted,#5d6c63);}.ds-source-details dd{margin:0;overflow-wrap:anywhere;}.ds-evidence code,.ds-evidence pre,.ds-commit{font-family:ui-monospace, SFMono-Regular, Consolas, monospace;}.ds-commit{font-size:10px;overflow-wrap:anywhere;}.ds-code-heading{display:flex;gap:8px;justify-content:space-between;font-size:10px;color:var(--muted,#5d6c63);}.ds-evidence pre{background:#eaf0e4;color:#214834;padding:15px 12px;border-radius:4px;overflow:auto;font-size:11px;line-height:1.85;tab-size:4;margin:10px 0 25px;max-width:100%;scrollbar-color:#8b9e85 #eaf0e4;}.ds-evidence pre code{white-space:pre;}.ds-evidence>h3{font-size:14px;line-height:1.5;font-weight:700;margin:0 0 8px;}.ds-evidence .ds-muted{color:var(--muted,#5d6c63);font-size:12px;}.ds-evidence details{border-top:1px solid var(--rule,#d9dfd6);padding-top:13px;color:var(--muted,#5d6c63);font-size:11px;overflow-wrap:anywhere;}.ds-evidence details p{font-size:11px;margin-top:10px;}.ds-evidence details .ds-commit{font-size:10px;}.ds-evidence summary{cursor:pointer;}@media (max-width:1050px){.ds-evidence{max-width:800px;padding-bottom:10px;}.ds-source-details{grid-template-columns:65px 1fr;}}@media (max-width:640px){.ds-source-heading>a{font-size:19px;}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Warm paper learning workspace",
+    "overview": "The implemented interface is a quiet reading workspace: warm paper, forest-green actions, thin rules, native controls, and familiar sans-serif typography. Document text, explanations, and source details carry the visual weight. The book-and-code mark is a small inline outline SVG; there is no raster artwork, downloaded font, photographic layer, or approved visual comp.\n\nThis document captures the built Phase 0.5 React Operate surface. Its product authority is [README.md](README.md) and [product-scope.md](docs/product-scope.md); its visual authority is [styles.css](apps/web/src/styles.css), [App.jsx](apps/web/src/App.jsx), and the direction comment in [index.html](apps/web/index.html). The visible `FIXTURE` and `SCAFFOLD_DEMO` labels belong to this implementation. It offers synthetic Markdown pages, fixed explanations, a frozen FastAPI reference, and explicit local note creation. Planned imports, models, live search, generalized verification, and execution are outside this design record.",
+    "keyCharacteristics": [
+      "Warm paper surfaces separated by thin rules.",
+      "Green actions and links with native form controls.",
+      "Document, tutor, and evidence in one ordered reading workspace.",
+      "Visible fixture and source states alongside the content they qualify.",
+      "Personal text kept separate from the explanation, with an explicit save action."
+    ],
+    "rules": [
+      {
+        "name": "The Visible State Rule",
+        "body": "Keep the field boundary, focus outline, disabled treatment, and textual state labels together. A green verification label describes the frozen source; the adjacent `NOT_RUN` label still describes its execution state.",
+        "section": "colors"
+      },
+      {
+        "name": "The Paper Separation Rule",
+        "body": "Preserve the implemented tonal surfaces and thin rules when extending this workspace. Elevation is not part of its current visual vocabulary.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** preserve warm paper surfaces, green actions, thin rules, and the source-declared native font fallback stack.",
+      "**Do** keep document, tutor, and evidence in their current reading order as this workspace collapses.",
+      "**Do** retain visible field boundaries, keyboard outlines, native labels, and text alongside status colors.",
+      "**Do** keep literal code scrollable within its block and wrap long source metadata within its pane.",
+      "**Do** keep fixture scope, fixed-source verification, and execution status legible beside their relevant content.",
+      "**Do** preserve personal text across questions and add a note only through the explicit save action."
+    ],
+    "donts": [
+      "**Don't** present the fixed explanation or frozen source as a live model response, live search, or executed snippet.",
+      "**Don't** replace existing personal-note text or imply that saving happens automatically.",
+      "**Don't** introduce imported fonts, raster illustrations, gradients, shadows, or motion as if they were part of the current system.",
+      "**Don't** replace editable-field borders with the lighter decorative rule color.",
+      "**Don't** promote planned product capabilities or this specific three-pane composition into unsupported global design rules."
+    ]
+  }
+}
