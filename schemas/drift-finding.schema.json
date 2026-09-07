@@ -1,0 +1,269 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "title": "drift-finding",
+  "properties": {
+    "finding_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "concept_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "document_claim": {
+      "type": "string",
+      "minLength": 1
+    },
+    "code_observation": {
+      "type": "string",
+      "minLength": 1
+    },
+    "document_source": {
+      "$ref": "#/$defs/source_location"
+    },
+    "code_source": {
+      "$ref": "#/$defs/code_location"
+    },
+    "status": {
+      "enum": [
+        "NEEDS_CONFIRMATION",
+        "CONFIRMED_DRIFT",
+        "NO_DRIFT",
+        "RESOLVED"
+      ]
+    },
+    "recommended_owner": {
+      "enum": [
+        "role:lead",
+        "role:documents-model",
+        "role:code-intelligence",
+        "role:learning-evaluation"
+      ]
+    },
+    "resolution": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    }
+  },
+  "required": [
+    "finding_id",
+    "concept_id",
+    "document_claim",
+    "code_observation",
+    "document_source",
+    "code_source",
+    "status",
+    "recommended_owner",
+    "resolution"
+  ],
+  "$defs": {
+    "source_location": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "file": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_type": {
+          "enum": [
+            "PPTX",
+            "DOCX",
+            "PDF",
+            "MARKDOWN_FIXTURE"
+          ]
+        },
+        "slide": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "page": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "section": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "paragraph": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "quote_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "file",
+        "source_type",
+        "slide",
+        "page",
+        "section",
+        "paragraph",
+        "quote_hash"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "source_type": {
+                "const": "PPTX"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "slide": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "source_type": {
+                "const": "DOCX"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "section": {
+                "type": "string",
+                "minLength": 1
+              },
+              "paragraph": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "source_type": {
+                "const": "PDF"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "page": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "source_type": {
+                "const": "MARKDOWN_FIXTURE"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "section": {
+                "type": "string",
+                "minLength": 1
+              },
+              "paragraph": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "code_location": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "file": {
+          "type": "string",
+          "minLength": 1
+        },
+        "symbol": {
+          "type": "string",
+          "minLength": 1
+        },
+        "symbol_type": {
+          "enum": [
+            "function",
+            "async_function",
+            "class",
+            "route",
+            "configuration",
+            "test"
+          ]
+        },
+        "line_start": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "line_end": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "exists": {
+          "type": "boolean"
+        },
+        "ast_verified": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "file",
+        "symbol",
+        "symbol_type",
+        "line_start",
+        "line_end",
+        "exists",
+        "ast_verified"
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "RESOLVED"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "resolution": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  ]
+}

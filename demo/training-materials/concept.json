@@ -1,0 +1,20 @@
+{
+  "concept_id": "profile-access",
+  "name": "Active-user profile access",
+  "definition": "Only an active user may view their profile. An inactive user must be denied.",
+  "learning_objective": "Explain and test why inactive users cannot view their profile.",
+  "source_locations": [
+    {
+      "file": "demo/training-materials/onboarding.md",
+      "source_type": "MARKDOWN_FIXTURE",
+      "slide": null,
+      "page": null,
+      "section": "Profile access",
+      "paragraph": 1,
+      "quote_hash": "76825485879c450009e71c83389918d68f21662320c2eb168cf68091494f8d0d"
+    }
+  ],
+  "extraction_status": "FIXTURE_DEFINED",
+  "confidence": 1.0,
+  "unresolved_questions": []
+}

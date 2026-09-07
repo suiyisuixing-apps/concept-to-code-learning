@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "title": "learning-artifact",
+  "properties": {
+    "concept_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "lesson_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "runnable_example_path": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "practice_task_path": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "grader_path": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "status": {
+      "enum": [
+        "SCAFFOLD_DEMO",
+        "DRAFT",
+        "VERIFIED_RUNNABLE",
+        "GRADED_PASS",
+        "GRADED_FAIL",
+        "NEEDS_CONFIRMATION"
+      ]
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    }
+  },
+  "required": [
+    "concept_id",
+    "lesson_path",
+    "runnable_example_path",
+    "practice_task_path",
+    "grader_path",
+    "status",
+    "evidence"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": [
+              "VERIFIED_RUNNABLE",
+              "GRADED_PASS",
+              "GRADED_FAIL"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "runnable_example_path": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": [
+              "GRADED_PASS",
+              "GRADED_FAIL"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "practice_task_path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "grader_path": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  ]
+}

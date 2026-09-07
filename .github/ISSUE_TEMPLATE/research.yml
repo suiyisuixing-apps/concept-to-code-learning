@@ -1,0 +1,67 @@
+name: Research task
+description: Structured research task for the four-role team
+labels: ["type:research"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: 目标
+      description: 要改变或核验的具体行为
+    validations:
+      required: true
+  - type: textarea
+    id: inputs
+    attributes:
+      label: 输入
+      description: 资料、接口或合成复现样例
+    validations:
+      required: true
+  - type: textarea
+    id: outputs
+    attributes:
+      label: 输出
+      description: 预期文件、接口或证据
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: 实现边界
+      description: 范围和非目标
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收标准
+      description: 客观可核验条件
+    validations:
+      required: true
+  - type: textarea
+    id: tests
+    attributes:
+      label: 测试要求
+      description: 命令、预期结果和负例
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: 前置依赖
+      description: Issue 编号或无
+    validations:
+      required: true
+  - type: textarea
+    id: role
+    attributes:
+      label: 负责人角色
+      description: 使用已定义的 role 标签
+    validations:
+      required: true
+  - type: textarea
+    id: milestone
+    attributes:
+      label: 对应 Milestone
+      description: M0–M5
+    validations:
+      required: true

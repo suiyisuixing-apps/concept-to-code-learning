@@ -1,0 +1,216 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "title": "code-mapping",
+  "properties": {
+    "concept_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "repository_commit": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$"
+    },
+    "code_locations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/code_location"
+      }
+    },
+    "related_tests": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/code_location"
+          },
+          {
+            "properties": {
+              "symbol_type": {
+                "const": "test"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "mapping_reason": {
+      "type": "string",
+      "minLength": 1
+    },
+    "verification_status": {
+      "enum": [
+        "VERIFIED",
+        "NEEDS_CONFIRMATION",
+        "REJECTED"
+      ]
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    }
+  },
+  "required": [
+    "concept_id",
+    "repository_commit",
+    "code_locations",
+    "related_tests",
+    "mapping_reason",
+    "verification_status",
+    "evidence"
+  ],
+  "$defs": {
+    "code_location": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "file": {
+          "type": "string",
+          "minLength": 1
+        },
+        "symbol": {
+          "type": "string",
+          "minLength": 1
+        },
+        "symbol_type": {
+          "enum": [
+            "function",
+            "async_function",
+            "class",
+            "route",
+            "configuration",
+            "test"
+          ]
+        },
+        "line_start": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "line_end": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "exists": {
+          "type": "boolean"
+        },
+        "ast_verified": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "file",
+        "symbol",
+        "symbol_type",
+        "line_start",
+        "line_end",
+        "exists",
+        "ast_verified"
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "verification_status": {
+            "const": "VERIFIED"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "code_locations": {
+            "items": {
+              "allOf": [
+                {
+                  "properties": {
+                    "exists": {
+                      "const": true
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "symbol_type": {
+                        "not": {
+                          "const": "configuration"
+                        }
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "ast_verified": {
+                        "const": true
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "related_tests": {
+            "items": {
+              "allOf": [
+                {
+                  "properties": {
+                    "exists": {
+                      "const": true
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "symbol_type": {
+                        "not": {
+                          "const": "configuration"
+                        }
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "ast_verified": {
+                        "const": true
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "repository_commit": {
+            "type": "null"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "evidence": {
+            "contains": {
+              "type": "string",
+              "pattern": "UNCOMMITTED_FIXTURE"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

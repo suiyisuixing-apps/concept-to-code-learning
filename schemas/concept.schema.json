@@ -1,0 +1,200 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "title": "concept",
+  "properties": {
+    "concept_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "definition": {
+      "type": "string",
+      "minLength": 1
+    },
+    "learning_objective": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_locations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/source_location"
+      }
+    },
+    "extraction_status": {
+      "enum": [
+        "FIXTURE_DEFINED",
+        "EXTRACTED",
+        "NEEDS_CONFIRMATION",
+        "UNSUPPORTED_INPUT"
+      ]
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "unresolved_questions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "required": [
+    "concept_id",
+    "name",
+    "definition",
+    "learning_objective",
+    "source_locations",
+    "extraction_status",
+    "confidence",
+    "unresolved_questions"
+  ],
+  "$defs": {
+    "source_location": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "file": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_type": {
+          "enum": [
+            "PPTX",
+            "DOCX",
+            "PDF",
+            "MARKDOWN_FIXTURE"
+          ]
+        },
+        "slide": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "page": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "section": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "paragraph": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "quote_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "file",
+        "source_type",
+        "slide",
+        "page",
+        "section",
+        "paragraph",
+        "quote_hash"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "source_type": {
+                "const": "PPTX"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "slide": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "source_type": {
+                "const": "DOCX"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "section": {
+                "type": "string",
+                "minLength": 1
+              },
+              "paragraph": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "source_type": {
+                "const": "PDF"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "page": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "source_type": {
+                "const": "MARKDOWN_FIXTURE"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "section": {
+                "type": "string",
+                "minLength": 1
+              },
+              "paragraph": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
