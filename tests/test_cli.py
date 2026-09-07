@@ -2,7 +2,7 @@ import json
 import subprocess
 import sys
 
-from concept_to_code.scaffold import ast_location, sha256
+from concept_to_code_learning.scaffold import ast_location, sha256
 
 
 def cli(project, command):
@@ -10,11 +10,11 @@ def cli(project, command):
                           capture_output=True, text=True, timeout=45, check=False)
 
 
-def test_doctor_reports_four_valid_schemas(project):
+def test_doctor_reports_six_active_schemas(project):
     result = cli(project, "doctor")
     assert result.returncode == 0, result.stderr
     report = json.loads(result.stdout)
-    assert report["schema_count"] == 4
+    assert report["schema_count"] == 6
     assert report["errors"] == []
 
 
@@ -51,6 +51,7 @@ def test_failed_execution_removes_previous_success_report(project):
     assert result.returncode == 1
     assert "EXECUTION_FAILED" in result.stderr
     assert not (project / "reports/demo").exists()
+    assert not (project / "reports/learning-demo").exists()
 
 
 def test_changed_document_cannot_reuse_old_quote_hash(project):

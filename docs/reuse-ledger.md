@@ -1,3 +1,5 @@
+> 以下记录保留 Phase 0 历史，不代表当前范围或本轮实时状态。当前决策见 rescope-decision.md。
+
 # 既有资产候选登记
 
 读取时间：2026-09-07。内容检查固定于本地 HEAD，通过 GitHub API 另行读取远程 HEAD。
@@ -18,3 +20,7 @@
 本轮没有导入任何实现代码，也没有运行这些仓库的测试或声称验证其完整运行质量。
 AI Workbench 存在四份已暂存报告；LLM Security Lab 存在 live_evaluation.py 修改和未跟踪的
 live_oracles.py；均保留。许可记录只描述实际读取的文件，不替代后续复用及比赛规则审查。
+
+## Phase 0.5 实际复用
+
+新增公开 fastapi/fastapi 在固定 Commit 50113da16fec53b66b80d75e80a89296de4fa5a5 的 12–14 行最小引用与 MIT 许可通知，见 demo/learning/README.md。未复制完整仓库，未改动原有 ai-workbench/classnote-ai/llm-security-lab 仓库。没有使用 LLM Security Lab 作为唯一演示来源。

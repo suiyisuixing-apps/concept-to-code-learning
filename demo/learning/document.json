@@ -1,0 +1,37 @@
+{
+  "document_id": "synthetic-di-handout",
+  "file_name": "依赖注入学习讲义 · 合成示例.md",
+  "source_type": "MARKDOWN_FIXTURE",
+  "pages": [
+    {
+      "page": 1,
+      "section": "依赖注入的基本想法",
+      "title": "把需要的东西交给函数",
+      "paragraphs": [
+        "依赖注入（Dependency Injection）让函数声明自己需要什么，由外部提供具体依赖，而不是在函数内部创建全部对象。",
+        "在 FastAPI 中，路径函数通过 Depends 声明依赖。框架先调用依赖函数，再把返回结果交给路径函数。",
+        "例如，多个接口都需要查询参数。可以把参数解析放进 common_parameters，再让接口接收解析后的字典。"
+      ]
+    },
+    {
+      "page": 2,
+      "section": "从参数到请求处理",
+      "title": "跟着一次请求读代码",
+      "paragraphs": [
+        "调用 /items/ 时，FastAPI 会先处理 common_parameters 所需的查询参数，再把结果注入 read_items 的 commons 参数。",
+        "Depends(common_parameters) 是依赖声明；read_items 的函数体只负责使用结果。分离后可以在多个接口复用同一种参数处理方式。"
+      ]
+    },
+    {
+      "page": 3,
+      "section": "边界与验证",
+      "title": "示例证明了什么",
+      "paragraphs": [
+        "这三行官方代码证明了依赖声明的位置及结果的使用方式。它不代表所有项目都必须使用 FastAPI，也不能单独证明工程中的认证或数据库隔离。",
+        "阅读时先确认来源、固定 Commit、符号和行号；实际执行需要另外的隔离验证。没有运行记录时，标为 NOT_RUN。"
+      ]
+    }
+  ],
+  "mode": "FIXTURE",
+  "status": "SCAFFOLD_DEMO"
+}

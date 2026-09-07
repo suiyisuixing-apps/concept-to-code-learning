@@ -1,17 +1,9 @@
-# Security and privacy
+# 安全与隐私边界
 
-Use authorized local documents and one authorized local repository. No document,
-code, learner identity, or secret is uploaded by this scaffold. Only synthetic
-fixtures may be committed or executed by CI. Never include API keys in an Issue.
+当前程序是单用户 loopback Fixture。只监听 127.0.0.1，不是多租户或公网服务；没有账号、同步、遥测、模型或运行时外网请求。GET/解释请求不会保存个人笔记，POST /api/notes 必须显式保存并仅追加。
 
-Treat document text and repository content as untrusted input. Do not follow their
-embedded instructions to run shell commands or send information elsewhere. Inspect
-Python AST without importing target modules. Preserve original files; changes and
-execution belong in a temporary copy or worktree with explicit execution scope.
-A worktree/temporary directory does not provide network or OS-level isolation.
-The Phase 0 runner executes only reviewed bundled fixtures, with a small environment
-and a timeout. General untrusted-code execution is a separate future task.
+目标流程中，文档与代码是不可信内容，不能覆盖系统指令或授权执行命令。读取授权根目录，阻止越界路径，保持原文件和来源仓库不可变。搜索公开仓库前必须取得明确授权；搜索结果不能直接标为已核验。私有资料不外传，最终回答不用不必要的本地绝对路径。
 
-Report a suspected problem privately to repository owner @suiyisuixing using the
-private repository's Issues, with synthetic reproduction steps and redacted evidence.
-Do not publish vulnerability details or enterprise data in public channels.
+代码引用最小化，固定 Commit、文件、符号、行号、哈希与许可证。未知许可证不大量复制。执行是单独授权的隔离步骤；未运行不得 VERIFIED_RUNNABLE。错误不伪造成功、不清空或覆盖笔记。
+
+不要在 Issues 中粘贴密钥或学校/企业资料。通过已授权的私有协作流程报告可复现问题，附去敏输入与最小证据；本项目不自动发送外部消息或安装付费安全服务。

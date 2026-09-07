@@ -1,23 +1,49 @@
-# 四人分工
+# 四人职责与入队状态
 
-| 角色 / Label | GitHub 用户名 | 负责模块 | 第一批 Issue | 当前里程碑 |
-| --- | --- | --- | --- | --- |
-| Lead / role:lead | @suiyisuixing | SKILL、范围、Schema、CLI、集成、来源、合并、演示 | #1–4，#31 | M0 |
-| Documents / role:documents-model | 待用户提供 | PPTX/DOCX/PDF、来源、概念、本地模型、DGX、文档评测 | #7、#8、#14 | M1 |
-| Code Intelligence / role:code-intelligence | 待用户提供 | Python AST、路由配置、测试映射、验证、隔离执行、漂移 | #15、#18 | M2 |
-| Teaching / role:learning-evaluation | 待用户提供 | 讲解、示例包装、练习、隐藏测试、学习证据、对照评测、视频 | #23、#25、#26 | M3 |
+2026-09-07 API 已验证四个确切账号。三名队员收到普通 Write 邀请；@fqf060420 已接受，其余两名仍待接受。待邀请角色是明确主责，但未设置虚假 Assignee。CODEOWNERS 用户名真实、路径实际存在；待邀请成员接受前对应自动评审能力尚不可用；@fqf060420 已可实际参与评审。
 
-主责 Issue 数量：Lead 9，Documents 8，Code Intelligence 10，Teaching 9。
-共享任务单一主责：#31 Lead、#32 Code Intelligence、#33 Teaching、#34 Code Intelligence、
-#35 Lead、#36 Lead；其他角色通过依赖配合。仅 Lead 任务分配给现有账号，其他只加角色标签。
+| 账号 | 角色 | 主责 Issues（含历史关闭） | 真实 Assignee |
+| --- | --- | --- | --- |
+| @suiyisuixing | Lead / Product / Skill / Integration | #1, #2, #3, #4, #5, #6, #31, #35, #36, #37, #38, #52 | 已分配 @suiyisuixing |
+| @inogi-sama | Document Workspace / Frontend | #7, #8, #9, #14, #29, #39, #40, #41, #42, #53 | 等待邀请接受 |
+| @fqf060420 | AI Tutor / Local Model / Evaluation | #10, #11, #12, #13, #23, #24, #25, #26, #27, #28, #30, #33, #49, #50, #51, #55 | 已分配 @fqf060420（开放任务；历史关闭任务未重新分配） |
+| @zchzbjklg | GitHub Code Intelligence | #15, #16, #17, #18, #19, #20, #21, #22, #32, #34, #43, #44, #45, #46, #47, #48, #54 | 等待邀请接受 |
 
-未确认另外三名队员用户名，不邀请任何账号。账号确认并接受仓库邀请后才能克隆私有仓库、
-承担具体 Issue 和完成双人 PR 审核；届时再更新本表和 CODEOWNERS。
+## 未来 48 小时
 
-## 最先 48 小时
+先完成 #53/#54/#55 入队验收。首次功能实现从个人分支提交，来源/UI/模型分别在已定义接缝工作，公共契约由 Lead 协调。
 
-- Lead：核对四个 Schema 与模块样例；协调 #31 的一个概念纵向切片及 PR 审核。
-- Documents：完成带页码的 PPTX 最小解析；完成带章节/段落的 DOCX 最小解析。
-  同步明确 #12 的本地模型接口；运行时实现仍按 M5 排期。
-- Code Intelligence：完成 Python AST 索引；让真实/不存在的符号分别获得明确核验结果。
-- Teaching：准备第一个知识点讲解和限界练习；准备正确版、错误版和隐藏测试。
+### @suiyisuixing
+
+1. 冻结 Product、Skill 和 API 合同。
+2. 集成 Document → Tutor → GitHub Evidence → Note 纵向切片。
+3. 审核 Issue 迁移。
+4. 管理 PR 和受保护 main。
+
+### @inogi-sama
+
+1. 完成三栏 React 页面。
+2. 完成 PPTX 当前 Slide 最小读取。
+3. 完成当前页面与选区状态。
+4. 完成保存笔记 UI。
+5. 提交至少一个功能 PR。
+
+### @zchzbjklg
+
+1. 实现用户指定公开仓库模式。
+2. 固定一个真实仓库 Commit。
+3. 验证文件、符号和行号。
+4. 生成第一张真实代码来源卡。
+5. 提交至少一个功能 PR。
+
+### @fqf060420
+
+1. 实现 Document Context → Concept → Grounded Explanation。
+2. 实现 Beginner 和 University 两种解释。
+3. 建立本地 OpenAI-compatible Adapter 接口。
+4. 建立普通聊天与 Grounded Skill 对照测试。
+5. 提交至少一个功能 PR。
+
+## 审核与接受后的分配
+
+只有 GitHub API 确认成员已接受并拥有 Write 后，才将对应开放 Issues 设置为该用户 Assignee，并移除 waiting-for-collaborator。首选 Reviewer @inogi-sama，其次 @zchzbjklg、@fqf060420；未接受不能请求审核。账号本人完成 2FA，无须共享安全码。

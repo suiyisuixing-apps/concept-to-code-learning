@@ -1,17 +1,7 @@
-# Project 看板手动配置
+# Project 看板状态与免费手动配置
 
-状态：`PROJECT_BOARD_BLOCKED`。2026-09-07 实际执行 `gh project create`，CLI 返回
-缺少 `project` 和 `read:project` OAuth scopes；没有创建 Project，也没有 Project URL。
-保留全部 36 个 Issues、6 个 Milestones 和角色标签，不反复尝试，不启用付费服务。
+状态：PROJECT_BOARD_BLOCKED。2026-09-07 本轮只读取现有凭据 scope：gist、read:org、repo，仍缺 project/read:project。未重复执行已知失败的创建命令，没有 Project URL，没有扩大权限、购买服务或启动试用。使用 55 个 Issues、7 个 Milestones 和角色标签继续协作。
 
-账号本人可在现有 GitHub 网页中完成以下免费配置；无需新增订阅：
+本人以后授权后可创建私有免费 Project `Concept-to-Code Learning – DGX Spark Hackathon`，Status 为 Backlog、Ready、In Progress、Review、Blocked、Done。关联 suiyisuixing/concept-to-code-learning，将所有开放 Issues 加入（本轮 48 个）；按真实状态整理，邀请待接受可标 Blocked。不要把历史关闭任务或未验证实现伪装为新完成。
 
-1. 个人账号 suiyisuixing → Projects → New project → Board。
-2. 名称设为 `Concept-to-Code Onboarding – DGX Spark Hackathon`，可见性保持 Private。
-3. Status 选项设为 Backlog、Ready、In Progress、Review、Blocked、Done。
-4. 从 `suiyisuixing/concept-to-code-onboarding` 加入 #1–#36，核对共 36 项。
-5. 已经有验收证据且关闭的 Issue 设 Done；依赖齐备设 Ready，其余 Backlog。
-6. 将 Project 与本仓库关联，把实际 URL 写回本文件。
-
-若改用 CLI，只有账号本人决定并完成 `project` 授权后才能重试；本轮没有扩大凭据权限。
-看板未建不影响通过 Issues、Milestones、Role Labels 跟踪工作。
+看板不是代码开发阻塞项。本轮不创建定时任务，也不自动升级凭据范围。

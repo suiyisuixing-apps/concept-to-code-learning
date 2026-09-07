@@ -34,3 +34,7 @@ logs/
 Thumbs.db
 demo/external-repos/
 reports/demo/
+
+data/local/
+reports/learning-demo/
+.impeccable/review/

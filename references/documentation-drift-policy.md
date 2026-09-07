@@ -1,3 +1,5 @@
+> 历史保留：以下为 Phase 0 回归资产，不是当前比赛 MVP。新学习软件见 README.md 与 docs/rescope-decision.md。
+
 # Documentation drift
 
 Compare a source-cited document claim with a pinned, source-cited code observation.

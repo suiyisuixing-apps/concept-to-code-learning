@@ -1,8 +1,3 @@
-# Generated evidence
+# 报告边界
 
-`demo/` is ignored by Git and contains only regenerated synthetic Smoke Demo outputs.
-Every generated file is marked FIXTURE / SCAFFOLD_DEMO. A complete successful run
-replaces that output directory; a failed attempt clears the prior demo output so stale
-success cannot be mistaken for the latest result. Do not store manual content there.
-Execution reports outside `demo/` must distinguish local checks, remote CI, and
-pending human actions. Never include credentials or real learner/enterprise data.
+运行产物默认被 Git 忽略。reports/learning-demo 是新学习 fixture 的讲解和合成保存笔记，reports/demo 是 Phase 0 历史 smoke 的真实合成运行记录。两者都标 FIXTURE/SCAFFOLD_DEMO，不可互相替代运行证据。用户 UI 笔记在独立 data/local 中，CLI demo 不覆盖它。

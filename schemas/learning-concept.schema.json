@@ -1,0 +1,206 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "learning-concept",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "concept_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "keywords": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "document_context": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "document_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "file_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_type": {
+          "enum": [
+            "PDF",
+            "PPTX",
+            "DOCX",
+            "MARKDOWN",
+            "NOTEBOOK",
+            "WEB",
+            "MARKDOWN_FIXTURE"
+          ]
+        },
+        "current_page": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "current_slide": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "current_section": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "selected_text": {
+          "type": "string",
+          "maxLength": 10000
+        },
+        "selected_text_hash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "document_id",
+        "file_name",
+        "source_type",
+        "current_page",
+        "current_slide",
+        "current_section",
+        "selected_text",
+        "selected_text_hash"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "source_type": {
+                "const": "PDF"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "current_page": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "source_type": {
+                "const": "PPTX"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "current_slide": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "source_type": {
+                "enum": [
+                  "DOCX",
+                  "MARKDOWN",
+                  "MARKDOWN_FIXTURE"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "current_section": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "selected_text": {
+                "minLength": 1
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "selected_text_hash": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "selected_text_hash": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "status": {
+      "enum": [
+        "AI_GENERATED",
+        "NEEDS_CONFIRMATION",
+        "REJECTED"
+      ]
+    }
+  },
+  "required": [
+    "concept_id",
+    "name",
+    "description",
+    "keywords",
+    "document_context",
+    "status"
+  ]
+}

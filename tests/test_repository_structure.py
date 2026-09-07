@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from concept_to_code.scaffold import doctor, safe_file
+from concept_to_code_learning.scaffold import doctor, safe_file
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -16,7 +16,7 @@ def test_required_checkout_structure():
 def test_skill_frontmatter_is_valid_yaml():
     raw = (ROOT / "SKILL.md").read_text().split("---", 2)[1]
     metadata = yaml.safe_load(raw)
-    assert metadata["name"] == "concept-to-code-onboarding"
+    assert metadata["name"] == "concept-to-code-learning"
     assert isinstance(metadata["description"], str) and metadata["description"].strip()
 
 
@@ -35,11 +35,12 @@ def test_ci_cost_and_permission_constraints():
     assert [step["run"] for step in job["steps"] if "run" in step] == [
         'python -m pip install -e ".[dev]"', "ruff check .", "pytest -q",
         "python scripts/tutor.py doctor", "python scripts/tutor.py demo",
+        "npm ci", "npm test", "npm run build",
     ]
 
 
 @pytest.mark.parametrize("missing", ["SKILL.md", "references/document-grounding.md",
-                                     "src/concept_to_code/runtime/__init__.py"])
+                                     "src/concept_to_code_learning/runtime/__init__.py"])
 def test_doctor_fails_when_required_file_is_missing(project, missing):
     (project / missing).unlink()
     result = doctor(project)
@@ -48,14 +49,14 @@ def test_doctor_fails_when_required_file_is_missing(project, missing):
 
 
 def test_doctor_rejects_malformed_schema(project):
-    (project / "schemas/concept.schema.json").write_text("{broken")
+    (project / "schemas/legacy/concept.schema.json").write_text("{broken")
     result = doctor(project)
     assert result["status"] == "FAILED"
     assert any("INVALID_CONTRACT" in error for error in result["errors"])
 
 
 def test_doctor_rejects_semantically_invalid_schema(project):
-    path = project / "schemas/concept.schema.json"
+    path = project / "schemas/legacy/concept.schema.json"
     schema = json.loads(path.read_text())
     schema["properties"]["confidence"]["type"] = "invented-type"
     path.write_text(json.dumps(schema))

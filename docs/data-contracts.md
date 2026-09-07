@@ -1,28 +1,20 @@
-# 公共数据接口 V0.1
+# 六个活动契约
 
-四个独立 JSON Schema 使用 Draft 2020-12，无远程引用；禁止多余属性。必填字段可通过
-`contracts.validate_record` 校验，`doctor` 同时检查 Schema 自身是否合法。
+六个根目录 JSON Schema 使用 Draft 2020-12、required、additionalProperties=false 和有限状态。验证器禁止外部 $ref，不会触发远程加载。
 
-| Schema | 必填信息 | 有限状态 |
+| Schema | 主要内容 | 消费者 |
 | --- | --- | --- |
-| concept | ID、名称、定义、目标、来源、置信度、未决问题 | extraction_status: FIXTURE_DEFINED / EXTRACTED / NEEDS_CONFIRMATION / UNSUPPORTED_INPUT |
-| code-mapping | 概念 ID、commit、代码位置、测试、原因、核验状态、证据 | verification_status: VERIFIED / NEEDS_CONFIRMATION / REJECTED |
-| learning-artifact | 概念 ID、讲解/示例/练习/评分器路径、状态、证据 | status: SCAFFOLD_DEMO / DRAFT / VERIFIED_RUNNABLE / GRADED_PASS / GRADED_FAIL / NEEDS_CONFIRMATION |
-| drift-finding | finding ID、概念 ID、文档断言、代码观察、双方来源、责任角色、解决记录 | status: NEEDS_CONFIRMATION / CONFIRMED_DRIFT / NO_DRIFT / RESOLVED |
+| document-context | document ID、文件、格式、page/slide/section、选区及 hash | 前端/文档/讲解 |
+| learning-concept | 概念 ID、名字、描述、关键词、文档上下文、状态 | Tutor |
+| github-code-source | owner/name/URL/visibility、SHA、branch/tag、文件、符号、行号、片段/hash、许可证/URL、时间、核验、相关性 | 来源卡/Tutor/笔记 |
+| grounded-explanation | 问题、上下文、概念、级别、讲解、文档引用、GitHub 来源、比较、运行状态、待核验项 | Tutor/UI |
+| saved-note | 用户标题和正文、解释 ID、双来源、时间、authored_by_user、解释快照 | 本地持久化 |
+| runnable-example | 来源类型、source IDs、运行状态、命令、退出码、输出、执行时间、隔离描述 | 可选执行 |
 
-来源类型：PPTX 要求 slide；DOCX 要求 section 与 paragraph；PDF 要求 page；
-MARKDOWN_FIXTURE 要求 section 与 paragraph。位置从 1 开始，quote_hash 为被引段落
-原始 UTF-8 字节的 SHA-256，非整个文件的哈希。每个来源保留全部定位字段，无意义处为 null。
+`repository` 语义由 owner/name/URL/visibility 四字段表达；`lines` 为 line_start/end；`license` 为 license_name/url；`source_status` 是显式字段。GitHub 核验状态与示例执行状态独立，不能互相推导。
 
-代码类型：function / async_function / class / route / configuration / test。AST 负责
-Python 符号和行号，文件系统负责路径存在；配置不能仅因文件存在而冒充 AST 核验。
-`repository_commit` 在首次提交前允许 null；此时 evidence 必须指出 UNCOMMITTED_FIXTURE。
-提交后记录真实 HEAD，同时保存文件哈希与 dirty 标识，不能把工作区变化当成 commit 内容。
+有限状态：GITHUB_SOURCE_VERIFIED、GITHUB_SOURCE_UNVERIFIED、LOCAL_REPOSITORY_VERIFIED、ADAPTED_FROM_SOURCE、AI_GENERATED、VERIFIED_RUNNABLE、NOT_RUN、NEEDS_CONFIRMATION、REJECTED。每个字段只接受对应子集。Fixture 外层 mode/status 不等于来源/执行结论。
 
-缺失的练习和评分器路径必须是 null，不可编造。`VERIFIED_RUNNABLE` 至少要求真实示例
-路径与执行证据；`GRADED_PASS/FAIL` 还必须给出练习、评分器路径和确定性结果。
-Phase 0 的 artifact 状态始终是 SCAFFOLD_DEMO，即使其中的固定示例确实运行成功。
+已核验 GitHub 引用必须具备完整 SHA、路径、符号、行号、许可与核验方法；运行 VERIFIED_RUNNABLE 必须携带成功退出码、命令、时间和隔离。哈希一致性、行区间顺序、上下文归属由运行时验证补充 JSON Schema。固定讲解中的 concept.status=NEEDS_CONFIRMATION 表示自动概念识别尚未实现；UI 明确这是人工 Fixture，不代表发生了 AI 推理。
 
-报告外层固定 `mode: FIXTURE`、`status: SCAFFOLD_DEMO`；它们不等同于每个结构内部
-的领域状态。存在性核验不代表语义映射自动成立，pytest 通过不代表教学有效。
-新增或改变接口需 Lead 审核，并提供生产者与消费者样例、负例和迁移说明。
+`schemas/legacy/` 保存 4 个 Phase 0 契约，供旧回归用例验证，不是新软件公共接口。不复用旧 VERIFIED、GRADED_PASS 或员工掌握声明。

@@ -10,10 +10,10 @@ import sys
 import tempfile
 from pathlib import Path
 
-from concept_to_code.contracts import load_schemas, validate_record
+from concept_to_code_learning.legacy_contracts import load_schemas, validate_record
 
 REQUIRED_DIRS = (
-    "scripts", "src/concept_to_code", "schemas", "references", "evals",
+    "scripts", "src/concept_to_code_learning", "schemas", "references", "evals",
     "evals/concept-cases", "evals/mapping-cases", "evals/exercise-cases", "evals/graders",
     "demo/training-materials", "demo/mini-fastapi-repo", "demo/expected-results",
     "tests", "reports", "docs", ".github/workflows", ".github/ISSUE_TEMPLATE",
@@ -31,8 +31,9 @@ DOCS = (
 REQUIRED_FILES = (
     "SKILL.md", "README.md", "CONTRIBUTING.md", "SECURITY.md", "CODEOWNERS",
     "pyproject.toml", ".gitignore", ".env.example", "scripts/tutor.py",
-    "src/concept_to_code/__init__.py", "src/concept_to_code/cli.py",
-    "src/concept_to_code/contracts.py", "src/concept_to_code/scaffold.py",
+    "src/concept_to_code_learning/__init__.py", "src/concept_to_code_learning/cli.py",
+    "src/concept_to_code_learning/contracts.py",
+    "src/concept_to_code_learning/legacy_contracts.py", "src/concept_to_code_learning/scaffold.py",
     "evals/README.md", "demo/README.md", "demo/training-materials/README.md",
     "demo/mini-fastapi-repo/README.md", "demo/expected-results/README.md", "reports/README.md",
     "tests/test_cli.py", "tests/test_contracts.py", "tests/test_repository_structure.py",
@@ -41,7 +42,16 @@ REQUIRED_FILES = (
     ".github/pull_request_template.md",
     *(f"references/{name}.md" for name in REFERENCES),
     *(f"docs/{name}.md" for name in DOCS),
-    *(f"src/concept_to_code/{name}/__init__.py" for name in MODULES),
+    *(f"src/concept_to_code_learning/{name}/__init__.py" for name in MODULES),
+    "src/concept_to_code_learning/api.py", "src/concept_to_code_learning/store.py",
+    "src/concept_to_code_learning/tutor/fixture.py",
+    "src/concept_to_code_learning/github_intelligence/__init__.py",
+    "src/concept_to_code_learning/document_workspace/__init__.py",
+    "demo/learning/document.json", "demo/learning/github-source.json",
+    "demo/learning/FASTAPI-LICENSE.txt", "docs/api.md", "docs/rescope-decision.md",
+    "apps/web/package.json", "apps/web/package-lock.json", "apps/web/vite.config.js",
+    "apps/web/src/App.jsx", "apps/web/src/styles.css", "apps/web/src/App.test.jsx",
+    "tests/test_learning_api.py",
 )
 
 
@@ -52,7 +62,10 @@ def doctor(root: Path) -> dict:
     errors.extend(f"Missing directory: {p}" for p in REQUIRED_DIRS if not (root / p).is_dir())
     errors.extend(f"Missing file: {p}" for p in REQUIRED_FILES if not (root / p).is_file())
     try:
-        schemas = load_schemas(root)
+        from concept_to_code_learning.contracts import load_schemas as load_active_schemas
+
+        load_schemas(root)  # Preserve Phase 0 contract regression checks.
+        schemas = load_active_schemas(root)
     except ValueError as exc:
         errors.append(str(exc))
         schemas = {}

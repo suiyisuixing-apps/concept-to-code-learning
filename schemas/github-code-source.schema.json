@@ -1,0 +1,319 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "github-code-source",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "source_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "repository_owner": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "repository_name": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "repository_url": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uri"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "visibility": {
+      "enum": [
+        "public",
+        "private",
+        "local",
+        "unknown"
+      ]
+    },
+    "commit_sha": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "branch_or_tag": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "file_path": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "symbol": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "symbol_type": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "line_start": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "line_end": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "code_excerpt": {
+      "type": "string",
+      "maxLength": 6000
+    },
+    "excerpt_hash": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "license_name": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "license_url": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uri"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "retrieved_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "verification_status": {
+      "enum": [
+        "GITHUB_SOURCE_VERIFIED",
+        "GITHUB_SOURCE_UNVERIFIED",
+        "LOCAL_REPOSITORY_VERIFIED",
+        "NEEDS_CONFIRMATION",
+        "REJECTED"
+      ]
+    },
+    "source_status": {
+      "enum": [
+        "GITHUB_SOURCE_VERIFIED",
+        "GITHUB_SOURCE_UNVERIFIED",
+        "LOCAL_REPOSITORY_VERIFIED",
+        "ADAPTED_FROM_SOURCE",
+        "AI_GENERATED",
+        "VERIFIED_RUNNABLE",
+        "NOT_RUN",
+        "NEEDS_CONFIRMATION",
+        "REJECTED"
+      ]
+    },
+    "relevance_reason": {
+      "type": "string",
+      "minLength": 1
+    },
+    "verification_method": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "mode": {
+      "enum": [
+        "FIXTURE",
+        "LIVE"
+      ]
+    }
+  },
+  "required": [
+    "source_id",
+    "repository_owner",
+    "repository_name",
+    "repository_url",
+    "visibility",
+    "commit_sha",
+    "branch_or_tag",
+    "file_path",
+    "symbol",
+    "symbol_type",
+    "line_start",
+    "line_end",
+    "code_excerpt",
+    "excerpt_hash",
+    "license_name",
+    "license_url",
+    "retrieved_at",
+    "verification_status",
+    "source_status",
+    "relevance_reason",
+    "verification_method",
+    "mode"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "verification_status": {
+            "const": "GITHUB_SOURCE_VERIFIED"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "repository_owner": {
+            "type": "string",
+            "minLength": 1
+          },
+          "repository_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "repository_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "commit_sha": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{40}$"
+          },
+          "file_path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "symbol": {
+            "type": "string",
+            "minLength": 1
+          },
+          "symbol_type": {
+            "type": "string",
+            "minLength": 1
+          },
+          "line_start": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "line_end": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "excerpt_hash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "license_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "license_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "retrieved_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "verification_method": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_status": {
+            "const": "GITHUB_SOURCE_VERIFIED"
+          }
+        }
+      }
+    }
+  ]
+}
