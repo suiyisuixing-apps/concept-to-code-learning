@@ -1,6 +1,6 @@
 # 本地 Fixture API
 
-所有成功的 demo/notes 响应及预留接口都标记 `mode: FIXTURE`、`status: SCAFFOLD_DEMO`。
+以下 Phase 0.5 成功的 demo/notes 响应及预留接口都标记 `mode: FIXTURE`、`status: SCAFFOLD_DEMO`。
 
 | 接口 | 行为 |
 | --- | --- |
@@ -15,3 +15,7 @@
 解释仅接受合成文档中的真实页/原文选区与正确 SHA-256，错误或不支持的问题返回 422/NEEDS_CONFIRMATION。缺失解释 ID 的保存返回 404；用户没有显式保存、空标题、超限字段或伪造来源字段返回 422。保存只接受服务端生成的解释 ID，从数据库读取真实来源，不能用前端提交内容替换。
 
 GET 不创建笔记，再次提问不改变笔记；没有 PUT/DELETE 笔记端点。显示读取错误并允许重试，不把失败标为成功。SQLite 无账户隔离，仅用于单用户 loopback Fixture。
+
+## Sprint 1 版本化接口
+
+`/api/sprint-1` 使用新增四合同与独立版本表，旧 `/api/notes` 继续读取原记录；不会给旧快照补造 file_hash。完整 API、Provider 选择和错误表见 [Sprint 1 文档](sprint-1-first-real-vertical-slice.md)。响应中的 `FIXTURE` 是证据模式，`FAILED` 明确表示失败。

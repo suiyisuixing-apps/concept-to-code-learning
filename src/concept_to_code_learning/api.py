@@ -10,6 +10,12 @@ from pydantic import BaseModel, ConfigDict, Field
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from concept_to_code_learning import __version__
+from concept_to_code_learning.integration.api import create_router
+from concept_to_code_learning.integration.contracts import load_contracts
+from concept_to_code_learning.integration.errors import SliceError
+from concept_to_code_learning.integration.providers import ProviderConfig, build_providers
+from concept_to_code_learning.integration.service import VerticalSliceService
+from concept_to_code_learning.integration.store import SnapshotNoteStore
 from concept_to_code_learning.store import NoteStore
 from concept_to_code_learning.tutor.fixture import FixtureTutor
 
@@ -31,13 +37,19 @@ class SaveRequest(BaseModel):
     save_requested_by_user: bool
 
 
-def create_app(data_dir: Path | None = None, root: Path = ROOT) -> FastAPI:
+def create_app(data_dir: Path | None = None, root: Path = ROOT, *,
+               provider_config: ProviderConfig | None = None) -> FastAPI:
+    config = provider_config or ProviderConfig.from_env()
     tutor = FixtureTutor(root)
     storage = data_dir or Path(os.environ.get("C2C_DATA_DIR", root / "data/local"))
     store = NoteStore(storage, tutor.schemas)
     app = FastAPI(title="Concept-to-Code Learning · FIXTURE", version=__version__)
     app.add_middleware(TrustedHostMiddleware,
                        allowed_hosts=["localhost", "127.0.0.1", "[::1]", "testserver"])
+
+    @app.exception_handler(SliceError)
+    async def slice_error_handler(request, exc: SliceError):
+        return JSONResponse(status_code=exc.http_status, content=exc.payload())
 
     @app.get("/health")
     def health():
@@ -80,6 +92,11 @@ def create_app(data_dir: Path | None = None, root: Path = ROOT) -> FastAPI:
     @app.get("/api/notes")
     def notes():
         return {"mode": "FIXTURE", "status": "SCAFFOLD_DEMO", "notes": store.list()}
+
+    schemas = load_contracts(root)
+    sprint_store = SnapshotNoteStore(store, schemas)
+    service = VerticalSliceService(*build_providers(root, config), sprint_store, schemas, config)
+    app.include_router(create_router(service, root))
 
     if (root / "apps/web/dist/index.html").is_file():
         app.mount("/", StaticFiles(directory=root / "apps/web/dist", html=True), name="web")

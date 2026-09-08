@@ -50,10 +50,16 @@ python scripts/tutor.py serve
 | @zchzbjklg | GitHub 来源模式、固定 Commit、核验、证据卡、比较 |
 | @fqf060420 | 知识点、讲解级别、本地模型、DGX、Grounding 评测 |
 
-三名队员的 Write 邀请已发出；@fqf060420 已接受并获得对应开放 Issues 的真实分配，其余邀请仍待接受。未接受不代表已获得访问权。合并必须通过受保护 `main` 的 `phase0-checks` 和至少一名真实其他成员的批准。参见 [协作指南](CONTRIBUTING.md)、[分工](docs/roles-and-ownership.md)、[路线图](docs/roadmap.md)。
+2026-09-08 已核验三名队员均接受邀请并拥有 Write，开放任务已按角色分配；入队的个人测试与小型 PR 仍按各自证据记录。合并必须通过受保护 `main` 的 `phase0-checks` 和至少一名真实其他成员的批准。参见 [协作指南](CONTRIBUTING.md)、[分工](docs/roles-and-ownership.md)、[路线图](docs/roadmap.md)。
 
 ## 导航
 
 [SKILL](SKILL.md) · [产品范围](docs/product-scope.md) · [重构决策与历史](docs/rescope-decision.md) · [架构](docs/architecture.md) · [六个契约](docs/data-contracts.md) · [API](docs/api.md) · [来源核验](demo/learning/README.md) · [安全](SECURITY.md)
 
-现有仓库直接改名，ID `1360182264` 不变。基线 Commit `8c487316ccf598b0a549803d3cff3814302633c3` 和 `pre-rules-v0.1.0` 标签保留。未审核合并前不创建 `pre-rules-v0.2.0`，不创建 GitHub Release。
+现有仓库直接改名，ID `1360182264` 不变。基线 Commit `8c487316ccf598b0a549803d3cff3814302633c3` 和 `pre-rules-v0.1.0` 标签保留。PR #56 已由 @fqf060420 正式审核并合并；`pre-rules-v0.2.0` 固定在 `e83a64d63a78f11534fbe51631775ceeb3885ccb`。没有创建 GitHub Release。
+
+## Sprint 1 合同准备
+
+新增 `/api/sprint-1` 的版本化合同、三个 Fixture Adapter、VerticalSliceService 与不可变笔记快照。默认 Provider 均为 `fixture`；选择 `pptx`、`github` 或 `openai_compatible` 会明确报告未实现/未配置，不会自动联网或切换模型。当前 UI 继续使用 Phase 0.5 API。
+
+参见 [Sprint 1 接口与验收](docs/sprint-1-first-real-vertical-slice.md)、[兼容性记录](docs/sprint-1-contract-review.md)、[四人提示词](docs/codex-prompts/lead-integration.md)。这次合同 PR 不代表真实 PPTX、通用 GitHub 核验或模型模块已完成。

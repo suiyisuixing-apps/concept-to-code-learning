@@ -1,49 +1,20 @@
 # 四人职责与入队状态
 
-2026-09-07 API 已验证四个确切账号。三名队员收到普通 Write 邀请；@fqf060420 已接受，其余两名仍待接受。待邀请角色是明确主责，但未设置虚假 Assignee。CODEOWNERS 用户名真实、路径实际存在；待邀请成员接受前对应自动评审能力尚不可用；@fqf060420 已可实际参与评审。
+2026-09-08 基线：PR #56 已获 @fqf060420 正式 APPROVED 并由其合并；pre-rules-v0.2.0 固定在 e83a64d63a78f11534fbe51631775ceeb3885ccb。本文及 Sprint 1 合同通过独立 Lead 准备 PR 交付；模块开发前确认该 PR 已经他人审核并合并。
 
-| 账号 | 角色 | 主责 Issues（含历史关闭） | 真实 Assignee |
+2026-09-08 GitHub API 确认三名队员都已接受邀请并拥有 Write、无 Admin；未决邀请为 0。所有过时 waiting-for-collaborator 已移除，开放任务已分配到真实账号。下表为 API 分配快照；不是成员已完成任务的声明。
+
+| 账号 | 角色 | 实际 Assignee Issues（含历史关闭） | 访问 |
 | --- | --- | --- | --- |
-| @suiyisuixing | Lead / Product / Skill / Integration | #1, #2, #3, #4, #5, #6, #31, #35, #36, #37, #38, #52 | 已分配 @suiyisuixing |
-| @inogi-sama | Document Workspace / Frontend | #7, #8, #9, #14, #29, #39, #40, #41, #42, #53 | 等待邀请接受 |
-| @fqf060420 | AI Tutor / Local Model / Evaluation | #10, #11, #12, #13, #23, #24, #25, #26, #27, #28, #30, #33, #49, #50, #51, #55 | 已分配 @fqf060420（开放任务；历史关闭任务未重新分配） |
-| @zchzbjklg | GitHub Code Intelligence | #15, #16, #17, #18, #19, #20, #21, #22, #32, #34, #43, #44, #45, #46, #47, #48, #54 | 等待邀请接受 |
+| @suiyisuixing | Lead / Product / Skill / Integration | #1, #2, #3, #4, #5, #6, #27, #31, #35, #36, #37, #38, #52 | Owner / Admin |
+| @inogi-sama | Document Workspace / Frontend | #7, #8, #9, #14, #29, #39, #40, #41, #42, #53 | Write（无 Admin） |
+| @zchzbjklg | GitHub Code Intelligence | #15, #16, #17, #18, #19, #20, #21, #22, #32, #34, #43, #44, #45, #46, #47, #48, #54 | Write（无 Admin） |
+| @fqf060420 | AI Tutor / Local Model / Evaluation | #10, #11, #12, #13, #23, #24, #28, #30, #49, #50, #51, #55 | Write（无 Admin） |
 
-## 未来 48 小时
+Sprint 1 按本轮用户要求将 #27 来源笔记持久化转交 Lead；Tutor 负责讲解输出，Document 负责笔记 UI。历史 #25/#26/#33 继续关闭，不重新分配。
 
-先完成 #53/#54/#55 入队验收。首次功能实现从个人分支提交，来源/UI/模型分别在已定义接缝工作，公共契约由 Lead 协调。
+CODEOWNERS 保留原角色规则，并为本次创建的 integration/ 和 AGENTS.md 添加 Lead 路径；公共 Schema 变更由 Lead 管理。
 
-### @suiyisuixing
+入队 Issue：#53/#54/#55。仅凭 API 更新“接受邀请”，其他已有勾选保留并注明证据等级。@fqf060420 普通评论自报本地安装及 Python 测试；该评论未绑定完整 head SHA，不能证明当前代码测试全部完成。另已核验其 2026-09-08T08:28:50Z 对 #56 的正式 APPROVED。2FA/Clone 的已有自报记录不冒充 Lead 独立核验；个人功能分支、小型文档 PR、他人审核和合并后删分支仍待完成。
 
-1. 冻结 Product、Skill 和 API 合同。
-2. 集成 Document → Tutor → GitHub Evidence → Note 纵向切片。
-3. 审核 Issue 迁移。
-4. 管理 PR 和受保护 main。
-
-### @inogi-sama
-
-1. 完成三栏 React 页面。
-2. 完成 PPTX 当前 Slide 最小读取。
-3. 完成当前页面与选区状态。
-4. 完成保存笔记 UI。
-5. 提交至少一个功能 PR。
-
-### @zchzbjklg
-
-1. 实现用户指定公开仓库模式。
-2. 固定一个真实仓库 Commit。
-3. 验证文件、符号和行号。
-4. 生成第一张真实代码来源卡。
-5. 提交至少一个功能 PR。
-
-### @fqf060420
-
-1. 实现 Document Context → Concept → Grounded Explanation。
-2. 实现 Beginner 和 University 两种解释。
-3. 建立本地 OpenAI-compatible Adapter 接口。
-4. 建立普通聊天与 Grounded Skill 对照测试。
-5. 提交至少一个功能 PR。
-
-## 审核与接受后的分配
-
-只有 GitHub API 确认成员已接受并拥有 Write 后，才将对应开放 Issues 设置为该用户 Assignee，并移除 waiting-for-collaborator。首选 Reviewer @inogi-sama，其次 @zchzbjklg、@fqf060420；未接受不能请求审核。账号本人完成 2FA，无须共享安全码。
+各人的下一步为 docs/codex-prompts/ 中对应提示词。PR #56 合并及 v0.2 标签已完成；合同准备 PR 先行，再 Document/GitHub 并行、Tutor 联合验收、Lead 最终集成。详见 sprint-1-first-real-vertical-slice.md。
