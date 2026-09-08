@@ -37,7 +37,7 @@ def load_schemas(root: Path) -> dict[str, dict]:
     schemas = {}
     for name in SCHEMA_NAMES:
         try:
-            schema = json.loads((root / "schemas" / f"{name}.schema.json").read_text())
+            schema = json.loads((root / "schemas" / f"{name}.schema.json").read_text(encoding="utf-8"))
             if schema.get("type") != "object" or not schema.get("required"):
                 raise ValueError("Expected an object with required fields")
             _local_references_only(schema)

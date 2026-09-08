@@ -14,14 +14,14 @@ def test_required_checkout_structure():
 
 
 def test_skill_frontmatter_is_valid_yaml():
-    raw = (ROOT / "SKILL.md").read_text().split("---", 2)[1]
+    raw = (ROOT / "SKILL.md").read_text(encoding="utf-8").split("---", 2)[1]
     metadata = yaml.safe_load(raw)
     assert metadata["name"] == "concept-to-code-learning"
     assert isinstance(metadata["description"], str) and metadata["description"].strip()
 
 
 def test_ci_cost_and_permission_constraints():
-    workflow = yaml.load((ROOT / ".github/workflows/ci.yml").read_text(), Loader=yaml.BaseLoader)
+    workflow = yaml.load((ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
     assert set(workflow["on"]) == {"push", "pull_request"}
     assert all(trigger["branches"] == ["main"] for trigger in workflow["on"].values())
     assert workflow["permissions"] == {"contents": "read"}
@@ -49,7 +49,7 @@ def test_doctor_fails_when_required_file_is_missing(project, missing):
 
 
 def test_doctor_rejects_malformed_schema(project):
-    (project / "schemas/legacy/concept.schema.json").write_text("{broken")
+    (project / "schemas/legacy/concept.schema.json").write_text("{broken", encoding="utf-8")
     result = doctor(project)
     assert result["status"] == "FAILED"
     assert any("INVALID_CONTRACT" in error for error in result["errors"])
@@ -57,14 +57,14 @@ def test_doctor_rejects_malformed_schema(project):
 
 def test_doctor_rejects_semantically_invalid_schema(project):
     path = project / "schemas/legacy/concept.schema.json"
-    schema = json.loads(path.read_text())
+    schema = json.loads(path.read_text(encoding="utf-8"))
     schema["properties"]["confidence"]["type"] = "invented-type"
-    path.write_text(json.dumps(schema))
+    path.write_text(json.dumps(schema), encoding="utf-8")
     assert doctor(project)["status"] == "FAILED"
 
 
 def test_mapping_paths_cannot_escape_checkout(project):
     outside = project.parent / "outside.py"
-    outside.write_text("value = 1\n")
+    outside.write_text("value = 1\n", encoding="utf-8")
     with pytest.raises(ValueError, match="out-of-root"):
         safe_file(project, "../outside.py")

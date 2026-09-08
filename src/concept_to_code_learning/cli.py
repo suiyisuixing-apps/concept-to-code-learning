@@ -47,9 +47,9 @@ def main(argv: list[str] | None = None) -> int:
             assert NoteStore(Path(temp), tutor.schemas).list()[0] == note
         output.mkdir(exist_ok=True)
         (output / "grounded-explanation.json").write_text(
-            json.dumps(explanation, ensure_ascii=False, indent=2) + "\n")
+            json.dumps(explanation, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         (output / "saved-note.json").write_text(
-            json.dumps(note, ensure_ascii=False, indent=2) + "\n")
+            json.dumps(note, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     except (OSError, ValueError) as exc:
         print(f"demo: {exc}", file=sys.stderr)
         return 1

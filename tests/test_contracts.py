@@ -12,7 +12,7 @@ SCHEMAS = load_schemas(ROOT)
 
 
 def samples():
-    concept = json.loads((ROOT / "demo/training-materials/concept.json").read_text())
+    concept = json.loads((ROOT / "demo/training-materials/concept.json").read_text(encoding="utf-8"))
     code = ast_location(ROOT, "demo/mini-fastapi-repo/app.py", "can_view_profile")
     return {
         "concept": concept,
@@ -107,6 +107,6 @@ def test_resolved_drift_requires_resolution():
 def test_remote_schema_references_are_rejected_before_validation(project):
     schema = copy.deepcopy(SCHEMAS["concept"])
     schema["$ref"] = "https://example.invalid/never-fetch.json"
-    (project / "schemas/legacy/concept.schema.json").write_text(json.dumps(schema))
+    (project / "schemas/legacy/concept.schema.json").write_text(json.dumps(schema), encoding="utf-8")
     with pytest.raises(ValueError, match="remote schema references"):
         load_schemas(project)

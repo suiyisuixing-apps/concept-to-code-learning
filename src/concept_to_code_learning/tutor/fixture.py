@@ -35,8 +35,8 @@ class FixtureTutor:
     def __init__(self, root: Path):
         self.schemas = load_schemas(root)
         folder = root / "demo/learning"
-        self.document = json.loads((folder / "document.json").read_text())
-        self.source = json.loads((folder / "github-source.json").read_text())
+        self.document = json.loads((folder / "document.json").read_text(encoding="utf-8"))
+        self.source = json.loads((folder / "github-source.json").read_text(encoding="utf-8"))
         validate_record("github-code-source", self.source, self.schemas)
         if digest(self.source["code_excerpt"]) != self.source["excerpt_hash"]:
             raise ValueError("NEEDS_CONFIRMATION: frozen source excerpt hash mismatch")
