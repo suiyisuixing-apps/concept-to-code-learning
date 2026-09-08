@@ -1,28 +1,11 @@
-# 协作规则
+# 团队协作
 
-仅本轮用户明确授权的首次初始化提交可直接推送 `main`。此后禁止直接在 main 开发：
+先接受私有仓库 Write 邀请，启用个人 GitHub 2FA，再克隆仓库。不要共享密码、Token 或 SSH 私钥。账号职责见 docs/roles-and-ownership.md；等待邀请的角色标签不等于真实 Assignee。
 
-1. 每项功能使用 `feature/<issue-number>-<short-name>` 分支。
-2. 所有修改通过 Pull Request，关联 Issue、角色和 Milestone。
-3. 至少一名其他已授权成员审核；作者不能替代另一位审核人。
-4. 合并前通过 ruff、pytest、doctor、demo，以及远程 `phase0-checks` 检查。
-5. 禁止 force push，禁止删除 main；只有 Lead 在满足审核条件后执行最终合并。
-6. 禁止提交密钥、模型、大型数据、学校课程或企业资料、其他私有仓库实现代码。
-7. 公共 Schema 变更由 Lead 协调，增加跨模块兼容样例并更新文档。
+使用 Python 3.12 和 Node 20.19+，执行 README 的安装、ruff、pytest、doctor、demo、npm test/build。首次入队提交一个不改变产品逻辑的小型文档 PR，由另一位队员审核；合并后删除自己的功能分支。新工作从最新 main 建个人功能分支。
 
-GitHub 保护规则仅在现有零费用权益支持时设置。若平台拒绝并要求付费，记录
-`BLOCKED_BY_PLAN`，以上规则由团队人工执行；不试用、不升级、不绕过。
-CODEOWNERS 不是审核完成证明；其他成员用户名未确认前不能完成双人审核。
+main 要求至少 1 个其他成员批准，phase0-checks 必须成功且分支保持最新，管理员同样受约束。禁止直接绕过评审、关闭保护、force push、历史改写和未经批准的 Release。Phase 0.5 使用 rescope/concept-to-code-learning 分支，v0.2 标签只能在正常审核合并后创建。
 
-## 费用和 CI
+一个 PR 应说明具体行为、边界、来源/运行证据、关联 Issue、检查命令和结果。所有新能力区分已实现、Fixture 和未实现；真实解析不改原文件，检索遵循用户授权，来源必须固定 Commit，保存不能覆盖用户笔记。
 
-CI 仅对 main 的 push / pull_request 运行一个 Ubuntu Job，上限 10 分钟，取消同分支旧任务。
-禁止 schedule、多系统矩阵、模型或数据下载、网络测试、大型产物、自动发布和 Release。
-不使用 Codespaces、LFS、Packages 或付费 Marketplace App。使用现有免费 Actions 额度；
-额度耗尽则保留本地验收并停止远程执行，不购买额度，不修改零美元停止用量预算。
-
-## Pull Request 证据
-
-写明触发场景、行为变化、相关测试和剩余限制。执行输出需要真实退出码；
-Fixture 结果必须保留 `FIXTURE` / `SCAFFOLD_DEMO` 标识。
-语义映射、代码存在、示例运行、测试通过、教学效果分别记录，不能互相替代。
+CI 只有一个 Ubuntu job，最长 10 分钟，push main 与 PR main 触发，同分支取消旧 run。无 schedule、大模型、私有数据、付费 runner、Codespaces、LFS 或付费服务。

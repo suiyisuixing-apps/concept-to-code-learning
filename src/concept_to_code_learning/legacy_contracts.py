@@ -25,7 +25,7 @@ def _local_references_only(value: object) -> None:
 def load_schemas(root: Path) -> dict[str, dict]:
     schemas = {}
     for name in SCHEMA_NAMES:
-        path = root / "schemas" / f"{name}.schema.json"
+        path = root / "schemas" / "legacy" / f"{name}.schema.json"
         try:
             schema = json.loads(path.read_text(encoding="utf-8"))
             if not isinstance(schema, dict) or schema.get("type") != "object":

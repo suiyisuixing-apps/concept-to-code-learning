@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from concept_to_code.contracts import SCHEMA_NAMES, load_schemas, validate_record
-from concept_to_code.scaffold import ast_location
+from concept_to_code_learning.legacy_contracts import SCHEMA_NAMES, load_schemas, validate_record
+from concept_to_code_learning.scaffold import ast_location
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMAS = load_schemas(ROOT)
@@ -107,6 +107,6 @@ def test_resolved_drift_requires_resolution():
 def test_remote_schema_references_are_rejected_before_validation(project):
     schema = copy.deepcopy(SCHEMAS["concept"])
     schema["$ref"] = "https://example.invalid/never-fetch.json"
-    (project / "schemas/concept.schema.json").write_text(json.dumps(schema))
+    (project / "schemas/legacy/concept.schema.json").write_text(json.dumps(schema))
     with pytest.raises(ValueError, match="remote schema references"):
         load_schemas(project)

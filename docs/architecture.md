@@ -1,31 +1,16 @@
-# 架构与接口边界
+# 架构与接缝
 
-```mermaid
-flowchart LR
-  D[本地培训资料] --> P[documents 来源与概念]
-  R[只读 Python 仓库] --> C[code_intel AST 与映射]
-  P --> C
-  C --> T[teaching 讲解与练习]
-  T --> X[execution 临时工作区与确定性测试]
-  X --> E[reporting 学习证据]
-  C --> F[文档与代码漂移]
-  F --> E
-  M[runtime 授权本地模型] -.后续阶段.-> P
+```text
+apps/web (React + Vite)
+  文档页/选区 → /api/learning/explain → 讲解 + document_citations + github_sources
+                  ↓ 用户明确保存
+              /api/notes → SQLite 追加记录 → 刷新/重启后读取
+FastAPI api.py → tutor/fixture.py → 六个本地 JSON Schema
+             → store.py（服务端来源快照，不接受客户端替换来源）
 ```
 
-| 模块 | 输入 | 输出 | 负责人 |
-| --- | --- | --- | --- |
-| documents | 本地文件、学习目标 | Concept | Documents / Model |
-| code_intel | Concept、仓库快照 | CodeMapping、DriftFinding | Code Intelligence |
-| teaching | 已核验映射 | LearningArtifact 路径与内容 | Teaching / Evaluation |
-| execution | 已审核命令、隔离工作区 | 退出码、预期结果、测试证据 | Code Intelligence |
-| runtime | 显式本地端点配置 | 本地模型适配 | Documents / Model |
-| reporting | 前述结构和执行证据 | 六类最终产物 | Teaching / Evaluation |
-| cli / contracts | 命令与 JSON Schema | 阶段编排、数据校验 | Lead |
+`documents/` 与 `document_workspace/` 是真实文件导入、定位和不可变性接缝；`github_intelligence/` 与 `code_intel/` 是三种来源模式和通用核验接缝；`tutor/` 与 `runtime/` 是概念、讲解级别和本地模型接缝；`execution/` 负责未来隔离验证；`evals/` 负责 Grounding 对照。
 
-Phase 0 的逻辑在 `scaffold.py`：读取一个预定义 Concept，用标准库 AST 查找固定函数
-与测试，在临时目录执行合成示例和 pytest，再写三份报告。其他包仅保留导入边界。
-`contracts.py` 以唯一运行时依赖 jsonschema 实际验证 Draft 2020-12，其他逻辑优先标准库。
+上述空模块均为扩展边界，不是已实现功能。当前 FixtureTutor 不访问网络，只读取合成文档与一条冻结引用；四种文本为人工固定内容，不是模型输出。`scaffold.py` 与 `legacy_contracts.py` 保留 Phase 0 回归链，旧 grading/drift 字段不会进入新 UI。
 
-Fixture 临时副本不是操作系统沙箱。后续任意仓库执行必须单独设计权限、命令审核、
-资源和网络限制。CLI 当前不接收任意目标代码或文档路径。
+本地服务只绑定 127.0.0.1，Host allowlist 限定本地；没有开放 CORS、鉴权、多人服务器部署、遥测或同步。该骨架不应直接部署到公网。个人笔记只增不改；解释缓存与笔记持久化位于当前项目的本地数据库。前端的笔记正文与讲解状态独立，再提问不会清空用户文字。
