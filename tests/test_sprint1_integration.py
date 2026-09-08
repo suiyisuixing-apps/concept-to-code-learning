@@ -83,9 +83,9 @@ def test_nested_contracts_are_identical_and_refs_cannot_use_network(project):
             expected = {k: v for k, v in SCHEMAS[nested].items() if k not in ("title", "$schema")}
             assert SCHEMAS[name]["$defs"][nested] == expected
     path = project / "schemas/sprint-1/document-context.schema.json"
-    schema = json.loads(path.read_text())
+    schema = json.loads(path.read_text(encoding="utf-8"))
     schema["properties"]["file_name"] = {"$ref": "https://example.invalid/schema"}
-    path.write_text(json.dumps(schema))
+    path.write_text(json.dumps(schema), encoding="utf-8")
     with pytest.raises(SliceError, match="Cannot load"):
         load_contracts(project)
 
@@ -369,3 +369,42 @@ def test_real_document_seams_are_explicit_stubs(client, method, path):
     response = getattr(client, method)(PREFIX + path)
     assert response.status_code == 501
     assert response.json()["code"] == "PROVIDER_NOT_IMPLEMENTED"
+
+
+def test_contract_loading_is_independent_of_a_gbk_default(project, monkeypatch):
+    path = project / "schemas/sprint-1/document-context.schema.json"
+    schema = json.loads(path.read_text(encoding="utf-8"))
+    schema["title"] = "学习上下文"
+    path.write_text(json.dumps(schema, ensure_ascii=False), encoding="utf-8")
+    original = Path.open
+
+    def gbk_default(self, mode="r", buffering=-1, encoding=None, errors=None, newline=None):
+        if "b" not in mode and (encoding is None or encoding == "locale"):
+            encoding = "gbk"
+        return original(self, mode, buffering, encoding, errors, newline)
+
+    monkeypatch.setattr(Path, "open", gbk_default)
+    assert load_contracts(project)["document-context"]["title"] == "学习上下文"
+
+
+def test_sprint_connections_are_closed_after_success_and_failure(tmp_path, monkeypatch, records):
+    legacy = NoteStore(tmp_path, load_schemas(ROOT))
+    connections = []
+
+    def connect():
+        db = sqlite3.connect(legacy.path)
+        connections.append(db)
+        return db
+
+    monkeypatch.setattr(legacy, "connect", connect)
+    notes = SnapshotNoteStore(legacy, SCHEMAS)
+    answer = deepcopy(records["grounded-explanation"])
+    notes.remember(answer)
+    notes.save(answer["grounded_explanation_id"], "Title", "mine", True)
+    assert len(notes.list()) == 1
+    with pytest.raises(SliceError, match="Generate"):
+        notes.save("missing", "Title", "mine", True)
+    assert len(connections) == 5
+    for db in connections:
+        with pytest.raises(sqlite3.ProgrammingError, match="closed"):
+            db.execute("SELECT 1")

@@ -2,6 +2,7 @@
 
 import json
 import sqlite3
+from contextlib import closing
 from datetime import datetime, timezone
 from uuid import uuid4
 
@@ -13,7 +14,7 @@ class SnapshotNoteStore:
     def __init__(self, legacy_store, schemas: dict):
         self.storage = legacy_store
         self.schemas = schemas
-        with self.storage.connect() as db:
+        with closing(self.storage.connect()) as db, db:
             db.execute("CREATE TABLE IF NOT EXISTS sprint_explanations "
                        "(id TEXT PRIMARY KEY, body TEXT NOT NULL)")
             db.execute("CREATE TABLE IF NOT EXISTS sprint_notes "
@@ -22,7 +23,7 @@ class SnapshotNoteStore:
     def remember(self, explanation: dict) -> None:
         validate("grounded-explanation", explanation, self.schemas)
         try:
-            with self.storage.connect() as db:
+            with closing(self.storage.connect()) as db, db:
                 db.execute("INSERT INTO sprint_explanations VALUES (?, ?)",
                            (explanation["grounded_explanation_id"], json.dumps(explanation)))
         except sqlite3.Error as exc:
@@ -38,7 +39,7 @@ class SnapshotNoteStore:
                 and isinstance(user_text, str) and len(user_text) <= 20000,
                 "INVALID_NOTE", "note", "Provide a title and bounded personal text")
         try:
-            with self.storage.connect() as db:
+            with closing(self.storage.connect()) as db, db:
                 row = db.execute("SELECT body FROM sprint_explanations WHERE id = ?",
                                  (explanation_id,)).fetchone()
                 if row is None:
@@ -64,7 +65,7 @@ class SnapshotNoteStore:
 
     def list(self) -> list[dict]:
         try:
-            with self.storage.connect() as db:
+            with closing(self.storage.connect()) as db, db:
                 rows = db.execute("SELECT body FROM sprint_notes ORDER BY rowid DESC").fetchall()
             return [json.loads(row[0]) for row in rows]
         except sqlite3.Error as exc:

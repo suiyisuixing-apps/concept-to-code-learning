@@ -23,7 +23,8 @@ def load_contracts(root: Path) -> dict:
     schemas = {}
     for name in NAMES:
         try:
-            schema = json.loads((root / "schemas/sprint-1" / f"{name}.schema.json").read_text())
+            schema = json.loads((root / "schemas/sprint-1" / f"{name}.schema.json").read_text(
+                encoding="utf-8"))
             _local_references_only(schema)
             Draft202012Validator.check_schema(schema)
             schemas[name] = schema

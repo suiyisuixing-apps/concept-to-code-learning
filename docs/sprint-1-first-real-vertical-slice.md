@@ -1,6 +1,6 @@
 # Sprint 1：第一个真实纵向切片
 
-2026-09-08 基线：PR #56 已获 @fqf060420 正式 APPROVED 并由其合并；pre-rules-v0.2.0 固定在 e83a64d63a78f11534fbe51631775ceeb3885ccb。本文及 Sprint 1 合同通过独立 Lead 准备 PR 交付；模块开发前确认该 PR 已经他人审核并合并。
+2026-09-08 基线：PR #56 已获 @fqf060420 正式 APPROVED 并由其合并；pre-rules-v0.2.0 固定在 e83a64d63a78f11534fbe51631775ceeb3885ccb。本文及 Sprint 1 合同通过独立 [Lead 准备 PR #58](https://github.com/suiyisuixing/concept-to-code-learning/pull/58) 交付；模块开发前确认该 PR 已经他人审核并合并。
 
 ## 用户故事与唯一场景
 
@@ -110,7 +110,7 @@ session 保留三个 Provider 的选择，DocumentContext/GitHubCodeSource 保�
 | E01—E04 | 全 Fixture 壳；各阶段注入失败下游不执行；真实 PPTX/GitHub + Fixture Tutor；显式启用真实模型 | Lead |
 | UI01—UI03 | 上传/当前 Slide/选区；错误状态；用户文字与刷新读取笔记 | Document |
 
-已实现 C01—C05、Fixture 输入检查、存储快照/进程重启、全 Fixture API 与各阶段失败门禁；新增 113 个测试用例。D/G/T 的真实模块与 UI 验收仍等待各角色 PR，E 的真实混合链尚未执行。
+已实现 C01—C05、Fixture 输入检查、存储快照/进程重启、全 Fixture API 与各阶段失败门禁；新增 115 个测试用例。D/G/T 的真实模块与 UI 验收仍等待各角色 PR，E 的真实混合链尚未执行。
 
 测试用临时 C2C_DATA_DIR，禁止碰现有个人笔记。Mock 的通过只证明逻辑测试；真实公网验收单独 opt-in，记录仓库/SHA/行/许可与时间，不在默认 CI 执行。测试 ID 是计划标识，不能把矩阵行数当实际新增通过数。
 

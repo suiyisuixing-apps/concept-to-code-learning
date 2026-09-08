@@ -38,3 +38,7 @@ unsupported_claims 非空、引文不符、Tutor 替换来源或问题都拒绝�
 `GET /api/sprint-1/session` 的 `fixture_example` 是完整 ExplainRequest（文档句柄+页/选区、SourceRequest、question、explanation_level），POST 到 `/api/sprint-1/learning/explain` 得到新 GroundedExplanation；将返回 ID 和显式保存请求 POST 到 `/api/sprint-1/notes` 得到完整 SavedNote。`tests/test_sprint1_integration.py` 逐项验证四合同所有 required 字段及这一端到端流程。
 
 新增测试与最终通过数量见本 PR 正文；不得将测试矩阵编号数当通过数。旧 CLI doctor/demo 覆盖原基线；新版本合同与服务由 pytest 中的 Sprint 测试覆盖。所有默认验收离线，真实 PPTX/GitHub/模型仍是后续角色任务。
+
+## 新增文件的跨平台边界
+
+新增合同读取显式 UTF-8，新版存储在事务完成或异常后都关闭 SQLite 连接；测试模拟 GBK 默认编码并验证连接关闭。队员另有 [PR #57](https://github.com/suiyisuixing/concept-to-code-learning/pull/57) 修复既有模块的 UTF-8 问题，并自报旧存储在 Windows 的清理失败；本 PR 未吸收其变更。当前完整套件的本地通过证据来自 macOS，CI 来自 Ubuntu；不宣称 Windows 全套验证完成。
