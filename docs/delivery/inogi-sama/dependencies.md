@@ -8,4 +8,4 @@
 | python-pptx | 1.0.2 | PPTX Slide、文本框、表格和图片 | MIT |
 | python-docx | 1.2.0 | DOCX 标题、段落、表格和图片 | MIT |
 
-2026-09-09 本机两次 PyPI 安装均因代理重置/TLS EOF 失败，未把安装失败写成解析器测试通过。
+2026-09-09 最终在仓库 `.venv`（Python 3.12.14）安装成功，真实四格式测试 9/9 通过。根 `pyproject.toml` 和后端锁文件保持不变，等待 Lead 汇总。

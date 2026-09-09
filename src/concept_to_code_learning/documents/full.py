@@ -132,6 +132,7 @@ class FullDocumentProvider:
                 os.replace(staging, final)
             except FileExistsError:
                 shutil.rmtree(staging)
+            (final / original).chmod(0o444)
             return self.record(final)
         except LearningError:
             shutil.rmtree(staging, ignore_errors=True)
@@ -398,7 +399,7 @@ class FullDocumentProvider:
                 headings[:] = headings[:level - 1] + [heading.group(2)]
                 continue
             clean = re.sub(r"<[^>]*>", "", raw).strip()
-            clean = re.sub(r"\[([^]]+)\]\((?:javascript|data|file):[^)]*\)", r"\1", clean,
+            clean = re.sub(r"\[([^]]+)\]\((?:javascript|data|file):.*\)", r"\1", clean,
                            flags=re.I)
             if clean:
                 current.append(block("section", 1, len(current) + 1, "paragraph", clean, headings))

@@ -28,6 +28,7 @@ async def test_markdown_is_safe_unicode_persistent_and_selectable(provider):
     units = await provider.list_units(record.document_id)
     assert record.source_type == "MARKDOWN" and record.unit_count == 1
     assert "<script>" not in "\n".join(x.text for x in units[0].blocks)
+    assert next(x.text for x in units[0].blocks if x.text.startswith("x")) == "x"
     text_block = units[0].blocks[0]
     selected = "😀中"
     request = ContextRequest(document_revision=1, unit_id=units[0].unit_id,

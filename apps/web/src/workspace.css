@@ -1,0 +1,45 @@
+.block-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.block-search input {
+  min-width: 0;
+  flex: 1;
+}
+
+.block-search span,
+.machine-status {
+  color: #637069;
+  font: 11px ui-monospace, monospace;
+  white-space: nowrap;
+}
+
+.search-results {
+  display: grid;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.search-results button {
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.example {
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid #ccd2ce;
+  background: #fff;
+}
+
+.example pre {
+  overflow: auto;
+  padding: 12px;
+  background: #17201d;
+  color: #eef5f1;
+}
