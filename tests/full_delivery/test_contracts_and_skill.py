@@ -1,5 +1,6 @@
 """Generated contract drift, portable Skill commands and local HTTP smoke."""
 
+import http.client
 import importlib.util
 import json
 import os
@@ -18,7 +19,7 @@ from jsonschema import Draft202012Validator
 from concept_to_code_learning.full_contracts import models as m
 from concept_to_code_learning.full_contracts.compat import from_sprint_context, to_sprint_context
 from concept_to_code_learning.full_learning.errors import LearningError
-from concept_to_code_learning.full_learning.providers import ProviderSettings
+from concept_to_code_learning.full_learning.providers import ProviderSettings, build_providers
 
 
 def test_generated_contracts_and_openapi_match_the_python_models():
@@ -74,6 +75,30 @@ def load_client(path):
     return module
 
 
+def test_member_factories_receive_only_their_role_configuration(monkeypatch, tmp_path):
+    from types import SimpleNamespace
+    captured = {}
+    def module(name):
+        def factory(settings):
+            captured[name] = settings
+            return object()
+        return SimpleNamespace(build_provider=factory)
+    monkeypatch.setattr("concept_to_code_learning.full_learning.providers.importlib.import_module", module)
+    settings = ProviderSettings(ROOT, tmp_path, github_token="source-only",
+        model_base_url="http://127.0.0.1:9000", model_id="test-model", model_api_key="model-only",
+        authorized_local_roots=(tmp_path,))
+    build_providers(settings)
+    document = captured["concept_to_code_learning.documents.full"]
+    sources = captured["concept_to_code_learning.github_intelligence.full"]
+    tutor = captured["concept_to_code_learning.tutor.full"]
+    assert document.github_token is None and document.model_api_key is None
+    assert document.authorized_local_roots == () and document.model_base_url is None
+    assert sources.github_token == "source-only" and sources.authorized_local_roots == (tmp_path,)
+    assert sources.model_api_key is None and sources.model_base_url is None
+    assert tutor.model_api_key == "model-only" and tutor.model_id == "test-model"
+    assert tutor.github_token is None and tutor.authorized_local_roots == ()
+
+
 @pytest.mark.parametrize("url", ["https://example.org", "http://127.0.0.1.evil.invalid",
                                  "http://user:key@localhost:9000", "http://127.0.0.1/x"])
 def test_skill_cannot_send_documents_to_an_arbitrary_endpoint(url):
@@ -118,6 +143,32 @@ def test_portable_skill_package_runs_complete_controlled_http_workflow(app, tmp_
         explanation = json.loads(run("learn", "--file", str(file), "--question", "解释梯度下降", "--repo",
             "fixture/repo-a", "--network-authorized", "--selected-text", "梯度下降 😀").stdout)
         assert explanation["mode"] == "FIXTURE" and explanation["status"] == "COMPLETE"
+        # Paired transport control: same service, context, question, source scope and
+        # provider doubles; this does not measure a real model or host Skill benefit.
+        direct = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+        try:
+            direct.request("GET", f'/api/learning/v1/sessions/{explanation["session_id"]}')
+            response = direct.getresponse()
+            frozen = json.loads(response.read())
+            assert response.status == 200
+            direct.request("POST", "/api/learning/v1/explanations", body=json.dumps({
+                "session_id": frozen["session_id"], "context_revision": frozen["context_revision"],
+                "question": "解释梯度下降", "level": explanation["explanation"]["level"],
+                "scope": {"source_mode": "specified_public", "repository_allowlist": ["fixture/repo-a"],
+                          "network_authorized": True}}, ensure_ascii=False).encode("utf-8"),
+                headers={"Content-Type": "application/json"})
+            response = direct.getresponse()
+            without_skill = json.loads(response.read())
+            assert response.status == 200
+        finally:
+            direct.close()
+        for key in ("mode", "status"):
+            assert without_skill[key] == explanation[key]
+        for key in ("question", "context_snapshot", "level", "answer_sections", "provider_info"):
+            assert without_skill["explanation"][key] == explanation["explanation"][key]
+        for key in ("repository_url", "commit_sha", "file_path", "excerpt_sha256", "execution_status"):
+            assert without_skill["sources"][0][key] == explanation["sources"][0][key]
+        assert app.state.learning_service.store.list_notes()[1] == 0
         session_id, explanation_id = explanation["session_id"], explanation["explanation"]["explanation_id"]
         args = ["save", "--session-id", session_id, "--explanation-id", explanation_id,
                 "--idempotency-key", "skill-smoke-save", "--title", "学习笔记 😀"]

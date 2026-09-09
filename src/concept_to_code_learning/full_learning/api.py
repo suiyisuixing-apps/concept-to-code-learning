@@ -4,7 +4,7 @@ import hashlib
 from urllib.parse import urlsplit
 
 from fastapi import APIRouter, FastAPI, Query, Request
-from fastapi.exceptions import RequestValidationError
+from fastapi.exceptions import RequestValidationError, ResponseValidationError
 from fastapi.responses import JSONResponse, Response
 from pydantic import ValidationError
 
@@ -174,7 +174,8 @@ def install_error_handlers(app: FastAPI, *, dev_origin: str | None = None):
         return await request_validation_exception_handler(request, exc)
 
     @app.exception_handler(ValidationError)
-    async def output_error(request: Request, exc: ValidationError):
+    @app.exception_handler(ResponseValidationError)
+    async def output_error(request: Request, exc: ValidationError | ResponseValidationError):
         return JSONResponse(LearningError("INVALID_PROVIDER_RESPONSE", "provider",
                             "模块返回的内容不符合协议，未将其当作成功结果。", 502).payload(), status_code=502)
 

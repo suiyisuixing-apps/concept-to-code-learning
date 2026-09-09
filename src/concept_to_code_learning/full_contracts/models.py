@@ -428,6 +428,7 @@ class ExplanationResult(Record):
     status: Literal["COMPLETE", "NEEDS_SOURCE_SELECTION"]
     explanation: GroundedExplanation | None = None
     sources: list[CodeEvidence] = Field(default_factory=list)
+    source_observations: list[CodeEvidence] = Field(default_factory=list, max_length=3)
     candidates: list[SearchCandidate] = Field(default_factory=list)
     query_id: ID | None = None
     warnings: list[str] = Field(default_factory=list)

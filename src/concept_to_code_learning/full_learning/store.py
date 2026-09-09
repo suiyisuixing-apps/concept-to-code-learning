@@ -268,7 +268,8 @@ class LearningStore:
             require(result.explanation is not None, "EXPLANATION_NOT_FOUND", "notes", "讲解未完成。", 409)
             snapshot = canonical({"explanation": result.explanation.model_dump(mode="json"),
                                   "document": result.explanation.context_snapshot.model_dump(mode="json"),
-                                  "sources": [item.model_dump(mode="json") for item in result.sources]})
+                                  "sources": [item.model_dump(mode="json") for item in (
+                                      result.sources + result.source_observations)]})
             note_id, now = uid(), utcnow().isoformat()
             db.execute("INSERT INTO fd_notes VALUES (?,?,?,?,?)",
                        (note_id, 1, snapshot, digest(snapshot), now))

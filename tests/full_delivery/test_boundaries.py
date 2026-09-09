@@ -1,6 +1,8 @@
 import asyncio
 import json
 import sqlite3
+import threading
+from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 from conftest import activate, explain_body
@@ -75,6 +77,50 @@ def test_source_cache_hash_and_session_are_checked_on_every_id_read(client, app)
         db.execute("UPDATE fd_sources SET body=? WHERE id=?", ("{}", source_id))
     response = client.get(f'{PREFIX}/sources/{source_id}', params={"session_id": first["session_id"]})
     assert response.status_code == 409 and response.json()["code"] == "SOURCE_MISMATCH"
+
+
+def test_revoked_local_handle_is_rechecked_before_candidate_verification(client, providers):
+    session = activate(client)
+    result = client.post(PREFIX + "/sources/search", json={
+        "session_id": session["session_id"], "context_revision": session["context_revision"],
+        "question": "解释梯度下降", "concept_terms": ["gradient"],
+        "scope": {"source_mode": "local_authorized", "local_handle": "authorized-test-root"}}).json()
+
+    async def revoked():
+        return []
+
+    providers.sources.local_handles = revoked
+    response = client.post(PREFIX + "/sources/verify", json={
+        "session_id": session["session_id"], "query_id": result["query_id"],
+        "candidate_id": result["candidates"][0]["candidate_id"]})
+    assert response.status_code == 403 and response.json()["code"] == "AUTH_REQUIRED"
+    assert providers.sources.receipts == {}
+
+
+@pytest.mark.parametrize("field", ["title", "concept", "reason", "example"])
+def test_model_cannot_put_unverified_urls_in_other_rendered_prose(client, providers, field):
+    def add_url(answer):
+        if field == "title":
+            answer.answer_sections[0].title = "https://invented.example/"
+        elif field == "example":
+            answer.example_blocks[0].explanation = "https://invented.example/"
+        else:
+            setattr(answer.concept_code_links[0], field, "https://invented.example/")
+        return answer
+    providers.tutor.mutate = add_url
+    session = activate(client)
+    response = client.post(PREFIX + "/explanations", json=explain_body(session))
+    assert response.status_code == 502 and response.json()["code"] == "CITATION_INVALID"
+    assert client.get(f'{PREFIX}/sessions/{session["session_id"]}').json()["explanation_ids"] == []
+
+
+def test_invalid_document_response_has_safe_structured_error(client, providers):
+    async def invalid(*args):
+        return {"private": "/secret/user/document", "token": "do-not-echo"}
+    providers.document.get_unit = invalid
+    response = client.get(PREFIX + "/documents/doc-PDF/units/unit-PDF")
+    assert response.status_code == 502 and response.json()["code"] == "INVALID_PROVIDER_RESPONSE"
+    assert "do-not-echo" not in response.text and "/secret/user" not in response.text
 
 
 def test_blank_page_is_readable_but_cannot_generate_fabricated_text(client, providers):
@@ -233,3 +279,46 @@ def test_utc_dates_and_error_schema_do_not_leak_test_private_values(client):
     error = client.post(PREFIX + "/explanations", json={"session_id": "/private-path"}).json()
     assert set(m.LearningErrorResponse.model_fields) == set(error)
     assert "private-path" not in json.dumps(error)
+
+
+def test_http_cancel_returns_cancelled_and_does_not_persist_answer(client, providers, app):
+    session = activate(client)
+    providers.tutor.delay = True
+    providers.tutor.started = threading.Event()
+    body = explain_body(session, request_id="http-cancel")
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        future = pool.submit(client.post, PREFIX + "/explanations", json=body)
+        assert providers.tutor.started.wait(3)
+        assert client.delete(PREFIX + "/requests/http-cancel", params={
+            "session_id": session["session_id"]}).status_code == 204
+        response = future.result(timeout=5)
+    assert response.status_code == 409 and response.json()["code"] == "CANCELLED"
+    assert not app.state.learning_service.active
+
+
+def test_unknown_license_keeps_metadata_without_code_and_exports_it(client, providers):
+    def unknown(source):
+        return source.model_copy(update={"code_excerpt": "", "excerpt_sha256": m.digest(""),
+            "license_observation": m.LicenseObservation(status="UNKNOWN", limitations=["No license observed"])})
+    providers.sources.mutate = unknown
+    result = client.post(PREFIX + "/explanations", json=explain_body(activate(client))).json()
+    assert result["sources"] == [] and result["explanation"]["code_source_ids"] == []
+    assert result["source_observations"][0]["code_excerpt"] == ""
+    assert "LICENSE_UNKNOWN" in result["warnings"] and "NO_VERIFIED_CODE" in result["warnings"]
+    note = client.post(PREFIX + "/notes", json={"session_id": result["session_id"],
+        "explanation_id": result["explanation"]["explanation_id"], "idempotency_key": "unknown-license",
+        "save_requested_by_user": True, "title": "metadata only", "user_text": ""}).json()
+    exported = client.get(f'{PREFIX}/notes/{note["note_id"]}/export').text
+    assert "UNKNOWN" in exported and "固定版本来源" in exported and "def update" not in exported
+
+
+def test_concurrent_identical_saves_make_one_note(client, app):
+    result = client.post(PREFIX + "/explanations", json=explain_body(activate(client))).json()
+    body = m.SaveNoteRequest(session_id=result["session_id"],
+        explanation_id=result["explanation"]["explanation_id"], idempotency_key="concurrent-save",
+        title="same intent", user_text="same text", save_requested_by_user=True)
+    store = app.state.learning_service.store
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        results = list(pool.map(lambda _: store.save_note(body), range(4)))
+    assert len({note.note_id for note in results}) == 1
+    assert store.list_notes()[1] == 1

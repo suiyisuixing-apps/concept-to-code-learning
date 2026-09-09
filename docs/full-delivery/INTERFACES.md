@@ -65,10 +65,14 @@ scope_sha256 是 canonical JSON SourceScope 的 UTF-8 SHA256，由 Lead 传入�
 上述必需项为 PASSED。Python 指定 symbol 的 python_symbol=PASSED，其他语言或无符号为 NOT_APPLICABLE。
 来源仅 SOURCE_EXACT/NOT_RUN；代码行区间是 inclusive，片段哈希使用原始 UTF-8 文本，不 strip、不加注释。
 许可未明确时 metadata 可保留但 code_excerpt 为空、code_display_allowed=false，不进入教学代码证据。
+`ExplanationResult.source_observations` 保留最多三条未被采用的核验观察（包括许可未知的无代码元数据）；不能当作已引用来源。笔记保存这些观察的原版本，但 `code_source_ids` 仍仅表示实际教学引用。
 本地 dirty=true 必须 file_sha256 且 permalink=null；无已核验公开 remote 不生成网页副本链接。
 许可链接固定相同 commit。相关性单独记录，来源存在/AST有效不自动证明教学相关性。
 
 来源以 session/source_id 存储，绑定 query、scope hash、document epoch、内容 hash。source_id 不得复用不同内容或检索。
+本地句柄在检索、候选核验、复用来源时分别检查当前授权；撤销后，之前发现的候选不能继续调用核验器。
+模型生成的回答正文、标题、概念说明、示例说明、比较和限制不得包含任意网址；原文引用仍须逐字匹配服务端块，代码链接统一由来源元数据渲染。
+模块返回结构违反响应模型时统一返回 `INVALID_PROVIDER_RESPONSE`，不回显原返回值、Token 或主机路径。
 `GET /sources/{id}?session_id=...` 重新检查绑定和哈希。新请求缩小/改变授权范围需要重新检索；本地句柄撤销后不可在新讲解中继续使用。
 来源 Provider 负责检索缓存/限流等模块策略；中央 SQLite registry 是当前会话的证据副本，不表示本次又联网抓取。
 

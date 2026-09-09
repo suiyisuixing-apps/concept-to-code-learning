@@ -160,6 +160,9 @@ class LearningService:
         candidate = next((c for c in result.candidates if c.candidate_id == request.candidate_id), None)
         require(candidate is not None and candidate.discovery_status != "REJECTED", "SOURCE_MISMATCH",
                 "sources", "候选不属于本次服务端检索。", 404)
+        if query.source_mode == "local_authorized":
+            handles = await self.call("sources", self.providers.sources.local_handles)
+            require(query.local_handle in handles, "AUTH_REQUIRED", "sources", "本地仓库授权已失效。", 403)
         receipt = await self.call("sources", self.providers.sources.verify,
                                   query.model_copy(deep=True), candidate.model_copy(deep=True), scope_hash)
         require(isinstance(receipt, VerificationReceipt) and receipt.query_id == query.query_id
@@ -269,7 +272,12 @@ class LearningService:
             identities = {(source_map[s].repository_url, source_map[s].local_handle)
                           for s in answer.comparison.source_ids}
             require(len(identities) >= 2, "CITATION_INVALID", "tutor", "本次比较需要两个不同仓库。", 502)
-        prose = [section.text for section in answer.answer_sections] + answer.limitations
+        prose = [text for section in answer.answer_sections for text in (section.title, section.text)]
+        prose += answer.limitations + [text for link in answer.concept_code_links
+                                       for text in (link.concept, link.reason)]
+        prose += [example.explanation for example in answer.example_blocks]
+        if answer.metrics.truncation_reason:
+            prose.append(answer.metrics.truncation_reason)
         if answer.comparison:
             prose += [answer.comparison.summary, *answer.comparison.tradeoffs]
         require(not any(re.search(r"(?:https?://|www\.)", text, re.I) for text in prose),
@@ -326,7 +334,7 @@ class LearningService:
         self.store.check_request(request.request_id)
         require(context.coverage != "NO_EXTRACTABLE_TEXT", "NO_EXTRACTABLE_TEXT", "document",
                 "当前页可以阅读，但没有可用于讲解的文本。")
-        conversation, sources, warnings = [], [], []
+        conversation, sources, observations, warnings = [], [], [], []
         if request.continue_from:
             require(request.continue_from in session.explanation_ids, "DOCUMENT_VERSION_MISMATCH",
                     "session", "追问不属于当前冻结上下文。", 409)
@@ -363,6 +371,10 @@ class LearningService:
                                                           query_id=query.query_id, candidate_id=candidate_id))
                 if self.usable(source):
                     sources.append(source)
+                elif len(observations) < 3:
+                    observations.append(source)
+                    warnings.append("LICENSE_UNKNOWN" if source.license_observation.status != "DETECTED"
+                                    else "NO_RELEVANT_SOURCE")
         elif plan.needs_code and not sources:
             terms = plan.source_query.concept_terms if plan.source_query else plan.concepts
             try:
@@ -383,6 +395,8 @@ class LearningService:
                     if self.usable(source):
                         sources.append(source)
                     else:
+                        if len(observations) < 3:
+                            observations.append(source)
                         warnings.append("LICENSE_UNKNOWN" if source.license_observation.status != "DETECTED"
                                         else "NO_RELEVANT_SOURCE")
             except LearningError as exc:
@@ -396,6 +410,7 @@ class LearningService:
                     "NO_RELEVANT_SOURCE", "sources", "尚无两个不同仓库的核验证据，无法进行真实比较。")
         if not sources:
             warnings.append("NO_VERIFIED_CODE")
+        plan.uncertainties = plan.uncertainties + list(dict.fromkeys(warnings))
         answer = m.GroundedExplanation.model_validate(await self.call(
             "tutor", self.providers.tutor.explain, context.model_copy(deep=True), deepcopy(sources),
             plan.model_copy(deep=True), deepcopy(conversation), compare=request.compare))
@@ -404,7 +419,8 @@ class LearningService:
         used = [source for source in sources if source.source_id in answer.code_source_ids]
         return m.ExplanationResult(mode=answer.mode, request_id=request.request_id,
             session_id=request.session_id, context_revision=request.context_revision, status="COMPLETE",
-            explanation=answer, sources=used, warnings=list(dict.fromkeys(warnings)))
+            explanation=answer, sources=used, source_observations=observations,
+            warnings=list(dict.fromkeys(warnings)))
 
     async def close(self):
         tasks = list(self.active.values())

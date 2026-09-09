@@ -1464,6 +1464,14 @@
             "title": "Session Id",
             "type": "string"
           },
+          "source_observations": {
+            "items": {
+              "$ref": "#/components/schemas/CodeEvidence"
+            },
+            "maxItems": 3,
+            "title": "Source Observations",
+            "type": "array"
+          },
           "sources": {
             "items": {
               "$ref": "#/components/schemas/CodeEvidence"
