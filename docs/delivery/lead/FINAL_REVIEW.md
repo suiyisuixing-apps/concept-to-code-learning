@@ -27,7 +27,7 @@
 | #62 | fqf060420 | 4689f0ff74aa331e96f6bab3dbca1b8de85a5b72 | 未合并；SQLite显式关闭保留；该Head CI成功，raw connect与Sprint1调用已组合检查。可按句柄修复范围评审，原生Windows单列 |
 | #59 | zchzbjklg | e5b7f16dfb3ebc24d8af1fa1a00ea75711e5b7d9 | 未合并；入队文档原提交保留；该Head CI成功。只接受为协作记录，不能算来源模块完成 |
 | #64 | suiyisuixing | 3374aa2955729bd953480729a9632ce7d167567d | 已由用户合入main；该Head CI成功；本轮直接继承，不重复合并 |
-| #69 | suiyisuixing | 实现Head见上；最终发布Head见PR正文 | 新完整Lead候选，保持草稿/未合并；独立范围可审，完整产品验收仍hold_for_evidence |
+| #69 | suiyisuixing | 实现Head见上；最终发布Head见PR正文 | 新完整Lead候选，保持草稿/未合并；独立范围可审，Codex建议revise（开发依赖告警待修订）；完整产品证据仍待补齐 |
 
 三个完整模块入口为 [#66](https://github.com/suiyisuixing/concept-to-code-learning/issues/66)、[#67](https://github.com/suiyisuixing/concept-to-code-learning/issues/67)、[#68](https://github.com/suiyisuixing/concept-to-code-learning/issues/68)。截至本次核对，尚无对应新模块PR。实际Git祖先保留各作者；未对main、旧tag、历史Issue、权限/保护/CI进行本轮修改。
 
@@ -45,7 +45,7 @@
 
 ## 风险、审核与回滚
 
-这是共享运行时、公开合同和持久状态的较大候选，不能因测试绿色自动合并。Codex差异风险审核绑定实现提交和最终报告提交；评估产物独立封存，建议保留hold_for_evidence直到成员真实链与最终人工决定可核对。生产factory是受信任的已审核模块，参数最小化不等于同进程安全沙箱；真实模型间接指令防护/来源语义需要fqf和zch的实际评测。
+这是共享运行时、公开合同和持久状态的较大候选，不能因测试绿色自动合并。Codex差异风险审核绑定实现提交和最终报告提交；评估产物独立封存，建议revise：先处理现有Vitest开发依赖告警；成员真实链与最终人工决定仍须补齐。生产factory是受信任的已审核模块，参数最小化不等于同进程安全沙箱；真实模型间接指令防护/来源语义需要fqf和zch的实际评测。
 
 开发依赖存在同一Vitest公告的2项moderate；生产依赖audit为0。公告前置条件与当前构建/测试配置的关系见DEPENDENCIES，不运行强制升级。Python原生扩展/依赖锁在Mac验证，Windows/Linux/DGX分别按现场证据报告。
 

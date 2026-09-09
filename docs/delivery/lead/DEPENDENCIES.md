@@ -14,6 +14,6 @@ Python直接运行依赖固定：jsonschema4.26.0、fastapi0.141.1、uvicorn0.52
 
 [Vitest官方公告 GHSA-82fw-gwwq-j7x9](https://github.com/vitest-dev/vitest/security/advisories/GHSA-82fw-gwwq-j7x9)描述开发服务器公开mocker/interceptor插件的任意文件读取路径；修复在4.1.11及后续。当前vite.config.js只注册React插件，测试用jsdom的vitest run，未接入这些公开插件/浏览器模式；发布入口由FastAPI提供静态dist。本次源码检查没有发现公告所需的公开开发服务路径，因此不据依赖扫描直接断言产品可远程利用。
 
-告警仍保留，属于待处理开发依赖风险。需要跨Vitest主版本，按本次授权不运行 npm audit fix --force 或替inogi整体升级前端；由#66记录升级理由、兼容验证后由Lead接纳。不要将该开发服务器暴露到公网。没有运行攻击载荷、第三方项目脚本、增加付费服务、试用或付款方式；账单余额没有被独立审计。
+告警仍保留，属于已知待处理开发依赖风险；Codex整体差异审核建议revise，不能仅将它当作未知项等待补证。需要跨Vitest主版本，按本次授权不运行 npm audit fix --force 或替inogi整体升级前端；由#66记录升级理由、兼容验证后由Lead接纳。不要将该开发服务器暴露到公网。没有运行攻击载荷、第三方项目脚本、增加付费服务、试用或付款方式；账单余额没有被独立审计。
 
 npm ci另有whatwg-encoding弃用提示和esbuild/fsevents安装脚本政策提示；此次build成功，不称为警告全清除。Python测试的2项Starlette/httpx与anyio弃用警告也保留，未通过更换测试库或删测试消除。
