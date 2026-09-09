@@ -2,6 +2,7 @@
 
 import json
 import sqlite3
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
@@ -18,8 +19,14 @@ class NoteStore:
             db.execute("CREATE TABLE IF NOT EXISTS explanations (id TEXT PRIMARY KEY, body TEXT)")
             db.execute("CREATE TABLE IF NOT EXISTS notes (id TEXT PRIMARY KEY, body TEXT)")
 
+    @contextmanager
     def connect(self):
-        return sqlite3.connect(self.path, timeout=10)
+        db = sqlite3.connect(self.path, timeout=10)
+        try:
+            with db:  # commits on success, rolls back on error (previous behaviour)
+                yield db
+        finally:
+            db.close()  # on Windows an open handle blocks cleanup of temp dirs
 
     def remember(self, explanation: dict):
         with self.connect() as db:
