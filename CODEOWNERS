@@ -1,13 +1,15 @@
+# Responsibility and optional notifications; Code Owner approval is not required.
 * @suiyisuixing
+/AGENTS.md @suiyisuixing
 /SKILL.md @suiyisuixing
-/schemas/ @suiyisuixing @zchzbjklg
+/schemas/ @suiyisuixing
 /docs/ @suiyisuixing
-/apps/web/ @inogi-sama @suiyisuixing
-/src/concept_to_code_learning/documents/ @inogi-sama
-/src/concept_to_code_learning/document_workspace/ @inogi-sama
-/src/concept_to_code_learning/github_intelligence/ @zchzbjklg
-/src/concept_to_code_learning/code_intel/ @zchzbjklg
-/src/concept_to_code_learning/execution/ @zchzbjklg
-/src/concept_to_code_learning/tutor/ @fqf060420
-/src/concept_to_code_learning/runtime/ @fqf060420
-/evals/ @fqf060420 @suiyisuixing
+/apps/web/ @suiyisuixing @inogi-sama
+/src/concept_to_code_learning/documents/ @suiyisuixing @inogi-sama
+/src/concept_to_code_learning/document_workspace/ @suiyisuixing @inogi-sama
+/src/concept_to_code_learning/github_intelligence/ @suiyisuixing @zchzbjklg
+/src/concept_to_code_learning/code_intel/ @suiyisuixing @zchzbjklg
+/src/concept_to_code_learning/execution/ @suiyisuixing @zchzbjklg
+/src/concept_to_code_learning/tutor/ @suiyisuixing @fqf060420
+/src/concept_to_code_learning/runtime/ @suiyisuixing @fqf060420
+/evals/ @suiyisuixing @fqf060420

@@ -1,0 +1,142 @@
+{
+  "scope": "declared configuration, not live API validation",
+  "lead": "suiyisuixing",
+  "members": [
+    "inogi-sama",
+    "zchzbjklg",
+    "fqf060420"
+  ],
+  "verified_at": "2026-09-09",
+  "owner_only_status": "ENFORCED",
+  "ruleset_id": 22609095,
+  "ruleset": {
+    "id": 22609095,
+    "name": "main-lead-controlled",
+    "target": "branch",
+    "source_type": "Repository",
+    "source": "suiyisuixing/concept-to-code-learning",
+    "enforcement": "active",
+    "conditions": {
+      "ref_name": {
+        "exclude": [],
+        "include": [
+          "refs/heads/main",
+          "~DEFAULT_BRANCH"
+        ]
+      }
+    },
+    "rules": [
+      {
+        "type": "update"
+      },
+      {
+        "type": "deletion"
+      },
+      {
+        "type": "non_fast_forward"
+      },
+      {
+        "type": "pull_request",
+        "parameters": {
+          "required_approving_review_count": 0,
+          "dismiss_stale_reviews_on_push": false,
+          "required_reviewers": [],
+          "require_code_owner_review": false,
+          "require_last_push_approval": false,
+          "required_review_thread_resolution": false,
+          "require_extra_approval_for_unattributed_changes": true,
+          "allowed_merge_methods": [
+            "merge",
+            "squash",
+            "rebase"
+          ]
+        }
+      },
+      {
+        "type": "required_status_checks",
+        "parameters": {
+          "strict_required_status_checks_policy": true,
+          "do_not_enforce_on_create": false,
+          "required_status_checks": [
+            {
+              "context": "phase0-checks",
+              "integration_id": 15368
+            }
+          ]
+        }
+      }
+    ],
+    "node_id": "RRS_lACqUmVwb3NpdG9yec5RErv4zgFY_Mc",
+    "created_at": "2026-09-09T12:05:30.492+08:00",
+    "updated_at": "2026-09-09T12:05:30.673+08:00",
+    "bypass_actors": [
+      {
+        "actor_id": 5,
+        "actor_type": "RepositoryRole",
+        "bypass_mode": "pull_request"
+      }
+    ],
+    "current_user_can_bypass": "pull_requests_only",
+    "_links": {
+      "self": {
+        "href": "https://api.github.com/repos/suiyisuixing/concept-to-code-learning/rulesets/22609095"
+      },
+      "html": {
+        "href": "https://github.com/suiyisuixing/concept-to-code-learning/rules/22609095"
+      }
+    }
+  },
+  "classic": {
+    "url": "https://api.github.com/repos/suiyisuixing/concept-to-code-learning/branches/main/protection",
+    "required_status_checks": {
+      "url": "https://api.github.com/repos/suiyisuixing/concept-to-code-learning/branches/main/protection/required_status_checks",
+      "strict": true,
+      "contexts": [
+        "phase0-checks"
+      ],
+      "contexts_url": "https://api.github.com/repos/suiyisuixing/concept-to-code-learning/branches/main/protection/required_status_checks/contexts",
+      "checks": [
+        {
+          "context": "phase0-checks",
+          "app_id": 15368
+        }
+      ]
+    },
+    "required_pull_request_reviews": {
+      "url": "https://api.github.com/repos/suiyisuixing/concept-to-code-learning/branches/main/protection/required_pull_request_reviews",
+      "dismiss_stale_reviews": false,
+      "require_code_owner_reviews": false,
+      "require_last_push_approval": false,
+      "required_approving_review_count": 0
+    },
+    "required_signatures": {
+      "url": "https://api.github.com/repos/suiyisuixing/concept-to-code-learning/branches/main/protection/required_signatures",
+      "enabled": false
+    },
+    "enforce_admins": {
+      "url": "https://api.github.com/repos/suiyisuixing/concept-to-code-learning/branches/main/protection/enforce_admins",
+      "enabled": true
+    },
+    "required_linear_history": {
+      "enabled": false
+    },
+    "allow_force_pushes": {
+      "enabled": false
+    },
+    "allow_deletions": {
+      "enabled": false
+    },
+    "block_creations": {
+      "enabled": false
+    },
+    "required_conversation_resolution": {
+      "enabled": false
+    },
+    "lock_branch": {
+      "enabled": false
+    },
+    "allow_fork_syncing": {
+      "enabled": false
+    }
+  }
+}

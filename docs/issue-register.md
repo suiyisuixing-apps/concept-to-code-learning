@@ -59,3 +59,7 @@
 | [#53](https://github.com/suiyisuixing/concept-to-code-learning/issues/53) | Team onboarding – @inogi-sama | @inogi-sama | open | M0.5 – Product Rescope and Team Onboarding |
 | [#54](https://github.com/suiyisuixing/concept-to-code-learning/issues/54) | Team onboarding – @zchzbjklg | @zchzbjklg | open | M0.5 – Product Rescope and Team Onboarding |
 | [#55](https://github.com/suiyisuixing/concept-to-code-learning/issues/55) | Team onboarding – @fqf060420 | @fqf060420 | open | M0.5 – Product Rescope and Team Onboarding |
+
+## 2026-09-09 治理变更说明
+
+上文保留当时的历史范围与状态，不作为当前审批门禁。此日起只有 @suiyisuixing 最终审核与合并 main；成员 PR 由 Lead 审核，Lead 自有 PR 经人工自检、Codex 审计和 required CI 后可自行合并，无需外部批准。PR/CI、禁止直接 Push/Force Push/删除 main 仍保留。参见 [治理政策](governance/lead-controlled-merge-policy.md)。Project 是否已创建仍需单独核验，治理迁移不证明 Project 完成。
