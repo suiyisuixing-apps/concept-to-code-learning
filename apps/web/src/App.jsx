@@ -1,493 +1,82 @@
 import { useEffect, useRef, useState } from "react";
-import { api, hashText } from "./api.js";
+import { api, assetUrl, hashText, id, json, utf16ToCodePoint } from "./api.js";
 
-function Evidence({ source }) {
-  if (!source)
-    return (
-      <div className="empty-state">
-        <h3>让代码支持你的理解</h3>
-        <p>
-          提出依赖注入的问题后，这里会显示已核验的 FastAPI 官方示例和引用位置。
-        </p>
-        <p className="muted">
-          演示仅包含一条冻结来源。实时搜索与通用核验待实现。
-        </p>
-      </div>
-    );
-  const link = `${source.repository_url}/blob/${source.commit_sha}/${source.file_path}#L${source.line_start}-L${source.line_end}`;
-  return (
-    <article className="evidence">
-      <div className="source-heading">
-        <a href={source.repository_url} target="_blank" rel="noreferrer">
-          {source.repository_owner} / {source.repository_name}
-        </a>
-        <span className="small-label">公开仓库</span>
-      </div>
-      <p className="verification">固定来源已核验</p>
-      <p className="machine-status">{source.verification_status}</p>
-      <dl className="source-details">
-        <dt>仓库</dt>
-        <dd>
-          <a href={source.repository_url} target="_blank" rel="noreferrer">
-            {source.repository_url}
-          </a>
-        </dd>
-        <dt>Commit</dt>
-        <dd className="commit">{source.commit_sha}</dd>
-        <dt>文件</dt>
-        <dd>
-          <a href={link} target="_blank" rel="noreferrer">
-            {source.file_path}
-          </a>
-        </dd>
-        <dt>符号</dt>
-        <dd>
-          <code>{source.symbol}</code>
-        </dd>
-        <dt>行号</dt>
-        <dd>
-          {source.line_start}–{source.line_end} · {source.symbol_type}
-        </dd>
-        <dt>许可证</dt>
-        <dd>
-          <a href={source.license_url} target="_blank" rel="noreferrer">
-            {source.license_name}
-          </a>
-        </dd>
-      </dl>
-      <div className="code-heading">
-        <span>GitHub 原始代码 · 3 行</span>
-        <a href={link} target="_blank" rel="noreferrer">
-          打开源码
-        </a>
-      </div>
-      <pre aria-label="GitHub 原始代码">
-        <code>{source.code_excerpt}</code>
-      </pre>
-      <h3>为什么引用它</h3>
-      <p>{source.relevance_reason}</p>
-      <p className="muted">
-        片段未运行 · NOT_RUN
-        <br />
-        核验时间：{source.retrieved_at.slice(0, 10)}
-      </p>
-      <details>
-        <summary>查看核验依据</summary>
-        <p>{source.verification_method}</p>
-        <p className="commit">片段 SHA-256：{source.excerpt_hash}</p>
-      </details>
-    </article>
-  );
+const levels = ["Beginner", "University", "Engineering", "Source-code"];
+
+function ErrorBox({ error, retry }) {
+  if (!error) return null;
+  return <div className="error" role="alert"><strong>{error.code}</strong><span>{error.message}</span>
+    {error.neededAction && <small>{error.neededAction}</small>}
+    {error.retryable && retry && <button onClick={retry}>重试</button>}</div>;
+}
+
+function SourceCard({ source }) {
+  return <article className="source-card"><header><strong>{source.repository_owner ? `${source.repository_owner}/${source.repository_name}` : source.local_handle}</strong><span>{source.verification_status}</span></header>
+    <dl><dt>位置</dt><dd>{source.file_path}:{source.line_start}-{source.line_end}</dd><dt>版本</dt><dd><code>{source.commit_sha || source.file_sha256 || "本地内容"}</code></dd><dt>许可</dt><dd>{source.license_observation.status}</dd><dt>运行</dt><dd>{source.execution_status}</dd></dl>
+    {source.code_excerpt ? <pre aria-label="已核验原始代码"><code>{source.code_excerpt}</code></pre> : <p className="boundary">许可不明确，服务端未返回源码正文。</p>}
+    {source.permalink && <a href={source.permalink} target="_blank" rel="noreferrer">打开固定版本源码</a>}<p>{source.relevance.reason}</p></article>;
+}
+
+function pointOffset(root, container, offset) {
+  const range = window.document.createRange(); range.selectNodeContents(root);
+  try { range.setEnd(container, offset); } catch { return 0; }
+  const value = range.toString(); return utf16ToCodePoint(value, value.length);
+}
+
+function Reader({ record, units, unit, navigate, select, importing, importFile }) {
+  const nodes = useRef(new Map());
+  function capture() {
+    const selection = window.getSelection(); if (!selection || selection.isCollapsed || !unit) return;
+    const range = selection.getRangeAt(0), spans = [];
+    unit.blocks.forEach((item) => {
+      const node = nodes.current.get(item.block_id); if (!node || !selection.containsNode(node, true)) return;
+      let start = node.contains(range.startContainer) ? pointOffset(node, range.startContainer, range.startOffset) : 0;
+      let end = node.contains(range.endContainer) ? pointOffset(node, range.endContainer, range.endOffset) : Array.from(item.text).length;
+      start = Math.max(0, Math.min(start, Array.from(item.text).length)); end = Math.max(start, Math.min(end, Array.from(item.text).length));
+      if (end > start) spans.push({ block_id: item.block_id, start, end });
+    });
+    if (spans.length) select({ spans, text: spans.map((span) => { const text = unit.blocks.find((x) => x.block_id === span.block_id).text; return Array.from(text).slice(span.start, span.end).join(""); }).join("\n") });
+  }
+  return <section className="reader pane"><div className="pane-header"><div><p className="eyebrow">DOCUMENT</p><h2>{record?.file_name || "导入学习材料"}</h2></div><label className="import"><input type="file" accept=".pdf,.pptx,.docx,.md,.markdown" onChange={(e) => e.target.files[0] && importFile(e.target.files[0])}/>{importing ? "导入中…" : "导入文件"}</label></div>
+    {!record ? <div className="empty"><h3>选择 PDF、PPTX、DOCX 或 Markdown</h3><p>文件副本与提取结果只保存在本地数据目录。</p></div> : <><div className="doc-meta"><span>{record.source_type}</span><span>{record.unit_count} 个单元</span><span>修订 {record.revision}</span></div>
+      <nav className="unit-nav" aria-label="文档导航"><button aria-label="上一单元" disabled={!unit || unit.index === 1} onClick={() => navigate(unit.index - 2)}>←</button><select aria-label="当前页或章节" value={unit?.unit_id || ""} onChange={(e) => navigate(units.findIndex((x) => x.unit_id === e.target.value))}>{units.map((x) => <option key={x.unit_id} value={x.unit_id}>{x.index}. {x.heading_path.at(-1) || x.unit_type}</option>)}</select><button aria-label="下一单元" disabled={!unit || unit.index === units.length} onClick={() => navigate(unit.index)}>→</button></nav>
+      {unit?.preview.kind === "native_pdf" && <object className="pdf-preview" data={`${assetUrl(record.document_id, unit.preview.asset_id)}#page=${unit.index}`} type="application/pdf"><p>浏览器无法内嵌 PDF；可使用下方提取文字。</p></object>}
+      {unit?.preview.limitations?.length > 0 && <p className="boundary">{unit.preview.limitations.join(" ")}</p>}
+      <article className="blocks" tabIndex="0" onMouseUp={capture} onKeyUp={capture} aria-label="当前文档单元">{unit?.heading_path.length > 0 && <h3>{unit.heading_path.join(" / ")}</h3>}{unit?.blocks.map((item) => <div key={item.block_id} ref={(node) => node ? nodes.current.set(item.block_id, node) : nodes.current.delete(item.block_id)}>{item.kind === "code" ? <pre><code>{item.text}</code></pre> : item.kind === "table" ? <table><tbody>{item.table_rows.map((row, i) => <tr key={i}>{row.map((cell, j) => <td key={j}>{cell}</td>)}</tr>)}</tbody></table> : item.image_asset_id ? <img src={assetUrl(record.document_id, item.image_asset_id)} alt="文档内图片"/> : item.kind === "unsupported" ? <p className="boundary">此对象无法完整呈现，请参照原文件。</p> : <p>{item.text}</p>}</div>)}{unit?.extraction_status === "NO_EXTRACTABLE_TEXT" && <div className="empty"><strong>NO_EXTRACTABLE_TEXT</strong><p>没有可提取文字；原始页面或图片仍保留。</p></div>}</article></>}
+  </section>;
+}
+
+function Notes({ notes, query, setQuery, report }) {
+  const [active, setActive] = useState(null), [draft, setDraft] = useState({ title: "", user_text: "" });
+  async function open(note) { try { const value = await api(`/notes/${note.note_id}`); setActive(value); setDraft({ title: value.title, user_text: value.user_text }); } catch (e) { report(e); } }
+  async function edit() { try { const value = await api(`/notes/${active.note_id}`, json("PATCH", { expected_revision: active.revision, ...draft })); setActive(value); } catch (e) { report(e); } }
+  async function remove() { if (!confirm("确认删除？不会删除原文档或来源仓库。")) return; try { await api(`/notes/${active.note_id}`, json("DELETE", { expected_revision: active.revision, confirmed_by_user: true })); setActive(null); } catch (e) { report(e); } }
+  return <div className="notes"><input aria-label="搜索笔记" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="搜索笔记"/>{notes.map((note) => <button className="note-row" key={note.note_id} onClick={() => open(note)}><strong>{note.title}</strong><span>修订 {note.revision}</span></button>)}{!notes.length && <p className="empty">没有匹配笔记。</p>}
+    {active && <section className="note-editor"><p className="eyebrow">冻结来源 · 修订 {active.revision}</p><input aria-label="笔记标题" value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })}/><textarea aria-label="个人笔记" value={draft.user_text} onChange={(e) => setDraft({ ...draft, user_text: e.target.value })}/><div className="row"><button onClick={edit}>保存修改</button><a href={`/api/learning/v1/notes/${active.note_id}/export?format=markdown`}>Markdown</a><a href={`/api/learning/v1/notes/${active.note_id}/export?format=json`}>JSON</a><button className="danger" onClick={remove}>删除</button></div><details><summary>冻结的讲解与来源</summary>{active.explanation_snapshot.answer_sections.map((x) => <p key={x.title}><strong>{x.title}</strong><br/>{x.text}</p>)}{active.code_evidence_snapshot.map((x) => <SourceCard key={x.source_id} source={x}/>)}</details></section>}
+  </div>;
 }
 
 export default function App() {
-  const [session, setSession] = useState(null);
-  const [notes, setNotes] = useState([]);
-  const [page, setPage] = useState(0);
-  const [selection, setSelection] = useState("");
-  const [question, setQuestion] = useState("");
-  const [level, setLevel] = useState("Beginner");
-  const [answer, setAnswer] = useState(null);
-  const [view, setView] = useState("learn");
-  const [busy, setBusy] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
-  const [title, setTitle] = useState("依赖注入：我的理解");
-  const [userText, setUserText] = useState("");
-  const passage = useRef(null);
+  const [caps, setCaps] = useState(null), [session, setSession] = useState(null), [documents, setDocuments] = useState([]), [record, setRecord] = useState(null), [units, setUnits] = useState([]), [unit, setUnit] = useState(null);
+  const [selection, setSelection] = useState(null), [question, setQuestion] = useState(""), [level, setLevel] = useState("Beginner"), [scopeMode, setScopeMode] = useState("specified_public"), [repository, setRepository] = useState(""), [localHandle, setLocalHandle] = useState(""), [network, setNetwork] = useState(false), [approved, setApproved] = useState(false), [terms, setTerms] = useState("");
+  const [advanced, setAdvanced] = useState(false), [compare, setCompare] = useState(false), [result, setResult] = useState(null), [chosen, setChosen] = useState([]), [busy, setBusy] = useState(false), [importing, setImporting] = useState(false), [error, setError] = useState(null), [notice, setNotice] = useState(""), [tab, setTab] = useState("sources"), [notes, setNotes] = useState([]), [noteQuery, setNoteQuery] = useState(""), [noteText, setNoteText] = useState("");
+  const active = useRef(null), saveKey = useRef(null); const explanation = result?.explanation;
 
-  async function load() {
-    setError("");
-    try {
-      const [health, demo, saved] = await Promise.all([
-        api("/health"),
-        api("/api/demo/session"),
-        api("/api/notes"),
-      ]);
-      if (health.health !== "ok" || demo.mode !== "FIXTURE")
-        throw new Error("本地演示状态不匹配，请重启服务。");
-      setSession(demo);
-      setQuestion(demo.question);
-      setNotes(saved.notes);
-    } catch (err) {
-      setError(err.message);
-    }
-  }
-  useEffect(() => {
-    load();
-  }, []);
+  useEffect(() => { (async () => { try { const [c, s, d, n] = await Promise.all([api("/capabilities"), api("/sessions", { method: "POST" }), api("/documents"), api("/notes")]); setCaps(c); setSession(s); setDocuments(d.documents); setNotes(n.notes); if (d.documents[0]) await openDocument(d.documents[0], s); } catch (e) { setError(e); } })(); }, []);
+  useEffect(() => { if (!session) return; const timer = setTimeout(async () => { try { setNotes((await api(`/notes?q=${encodeURIComponent(noteQuery)}`)).notes); } catch (e) { setError(e); } }, 250); return () => clearTimeout(timer); }, [noteQuery, session]);
+  async function openDocument(doc, current = session) { const list = (await api(`/documents/${doc.document_id}/units`)).units; setRecord(doc); setUnits(list); setResult(null); setSelection(null); if (list[0]) await navigate(doc, list, 0, current); }
+  async function navigate(doc, list, index, current = session) { const target = list[index]; if (!target || !current) return; active.current = null; setUnit(target); setSelection(null); setResult(null); try { const next = await api(`/sessions/${current.session_id}/context`, json("POST", { document_id: doc.document_id, document_revision: doc.revision, unit_id: target.unit_id, selected_text: "", selected_text_hash: null, selection_locator: null, expected_context_revision: current.context_revision })); setSession(next); } catch (e) { setError(e); } }
+  async function chooseSelection(value) { setSelection(value); try { const next = await api(`/sessions/${session.session_id}/context`, json("POST", { document_id: record.document_id, document_revision: record.revision, unit_id: unit.unit_id, selected_text: value.text, selected_text_hash: await hashText(value.text), selection_locator: { spans: value.spans, normalization: "exact" }, expected_context_revision: session.context_revision })); setSession(next); } catch (e) { setSelection(null); setError(e); } }
+  async function importFile(file) { setImporting(true); setError(null); try { const value = await api(`/documents?file_name=${encodeURIComponent(file.name)}`, { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: file }); setDocuments((x) => [value, ...x.filter((d) => d.document_id !== value.document_id)]); await openDocument(value); } catch (e) { setError(e); } finally { setImporting(false); } }
+  function scope() { const values = terms.split(",").map((x) => x.trim()).filter(Boolean); return { source_mode: scopeMode, repository_allowlist: repository.trim() ? [repository.trim()] : [], local_handle: scopeMode === "local_authorized" ? localHandle || null : null, language_hint: null, scope_limit: { repositories: 5, files: 10 }, network_authorized: scopeMode !== "local_authorized" && network, query_terms_approved: approved, approved_query_terms: values, max_sources: compare ? 2 : 3 }; }
+  async function ask(followup = false) { if (!question.trim() || !session?.context_revision) return; const requestId = id(), revision = session.context_revision; active.current = { requestId, revision }; setBusy(true); setError(null); try { const value = await api("/explanations", json("POST", { request_id: requestId, session_id: session.session_id, context_revision: revision, question: question.trim(), level, scope: scope(), source_ids: [], candidate_ids: chosen, query_id: result?.query_id || null, compare, continue_from: followup ? explanation?.explanation_id || null : null })); if (active.current?.requestId === requestId && active.current?.revision === revision) setResult(value); } catch (e) { if (active.current?.requestId === requestId) setError(e); } finally { if (active.current?.requestId === requestId) setBusy(false); } }
+  async function cancel() { const value = active.current; if (!value) return; active.current = null; setBusy(false); try { await api(`/requests/${value.requestId}?session_id=${session.session_id}`, { method: "DELETE" }); setNotice("已取消；问题输入仍保留。"); } catch (e) { setError(e); } }
+  async function saveNote() { if (!explanation) return; if (!saveKey.current) saveKey.current = id("save"); try { const value = await api("/notes", json("POST", { session_id: session.session_id, explanation_id: explanation.explanation_id, idempotency_key: saveKey.current, save_requested_by_user: true, title: question.slice(0, 160), user_text: noteText })); setNotes((x) => [value, ...x.filter((n) => n.note_id !== value.note_id)]); setNotice("笔记已保存；重复点击不会创建副本。"); } catch (e) { setError(e); } }
 
-  if (!session)
-    return (
-      <main className="startup">
-        <h1>Concept-to-Code Learning</h1>
-        {error ? (
-          <>
-            <p role="alert">{error}</p>
-            <button onClick={load}>重新连接</button>
-          </>
-        ) : (
-          <p role="status">正在连接本地学习空间…</p>
-        )}
-      </main>
-    );
-  const current = session.document.pages[page];
-
-  function changePage(index) {
-    setPage(index);
-    setSelection("");
-  }
-  function captureSelection() {
-    const range = window.getSelection();
-    if (
-      range &&
-      passage.current?.contains(range.anchorNode) &&
-      passage.current?.contains(range.focusNode)
-    ) {
-      setSelection(range.toString().trim());
-    }
-  }
-  async function explain(selected = selection) {
-    if (busy || !question.trim()) return;
-    setBusy(true);
-    setError("");
-    setNotice("");
-    setView("learn");
-    try {
-      const context = {
-        ...session.document_context,
-        current_page: current.page,
-        current_section: current.section,
-        selected_text: selected,
-        selected_text_hash: await hashText(selected),
-      };
-      setAnswer(
-        await api("/api/learning/explain", {
-          question,
-          document_context: context,
-          explanation_level: level,
-        }),
-      );
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setBusy(false);
-    }
-  }
-  async function save() {
-    if (!answer || saving || !title.trim()) return;
-    setSaving(true);
-    setError("");
-    setNotice("");
-    try {
-      const note = await api("/api/notes", {
-        grounded_explanation_id: answer.grounded_explanation_id,
-        title,
-        user_text: userText,
-        save_requested_by_user: true,
-      });
-      setNotes((items) => [note, ...items]);
-      setNotice("笔记已保存到本地，包含文档引用和 GitHub 来源。");
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <>
-      <header className="app-header">
-        <div className="identity">
-          <svg viewBox="0 0 32 32" aria-hidden="true">
-            <path d="M5 7h9c2 0 3 1 3 3v17c0-2-1-3-3-3H5zM27 7h-7M22 13l-3 3 3 3M26 13l3 3-3 3" />
-          </svg>
-          <div>
-            <h1>
-              Concept-to-Code <span>Learning</span>
-            </h1>
-            <p>读懂概念，找到真实代码</p>
-          </div>
-        </div>
-        <div className="header-state">
-          <span className="local-state">本地演示已连接</span>
-          <span className="fixture-label">FIXTURE</span>
-        </div>
-      </header>
-      <div className="demo-banner">
-        <strong>合成讲义 + 固定讲解</strong>
-        <span>
-          体验从阅读到来源笔记的完整流程。未接入 AI 模型、真实文件导入或实时
-          GitHub 搜索。
-        </span>
-        <code>SCAFFOLD_DEMO</code>
-      </div>
-      <main className="workspace">
-        <section
-          className="pane document-pane"
-          aria-labelledby="document-heading"
-        >
-          <div className="pane-title">
-            <h2 id="document-heading">文档学习区</h2>
-            <span>合成示例</span>
-          </div>
-          <div className="document-meta">
-            <h3>{session.document.file_name}</h3>
-            <p>Markdown Fixture · 共 {session.document.pages.length} 页</p>
-          </div>
-          <nav className="pagination" aria-label="文档翻页">
-            <button
-              aria-label="上一页"
-              disabled={page === 0}
-              onClick={() => changePage(page - 1)}
-            >
-              上一页
-            </button>
-            <span>
-              第 {page + 1} / {session.document.pages.length} 页
-            </span>
-            <button
-              aria-label="下一页"
-              disabled={page === session.document.pages.length - 1}
-              onClick={() => changePage(page + 1)}
-            >
-              下一页
-            </button>
-          </nav>
-          <article
-            ref={passage}
-            className="document-page"
-            tabIndex={0}
-            aria-label="可选择的当前页正文"
-            onMouseUp={captureSelection}
-            onKeyUp={captureSelection}
-          >
-            <h3>{current.title}</h3>
-            {current.paragraphs.map((text) => (
-              <p key={text}>{text}</p>
-            ))}
-          </article>
-          <div className="selection-context">
-            <label htmlFor="selected-passage">选中文字</label>
-            <textarea
-              id="selected-passage"
-              rows={3}
-              value={selection}
-              onChange={(e) => setSelection(e.target.value)}
-              placeholder="在正文中选中一句话，或粘贴当前页原文。"
-            />
-            <div className="action-row">
-              <button
-                className="secondary"
-                disabled={busy || !question.trim()}
-                onClick={() => explain("")}
-              >
-                解释当前页
-              </button>
-              <button
-                disabled={busy || !question.trim() || !selection.trim()}
-                onClick={() => explain(selection)}
-              >
-                解释选中文字
-              </button>
-            </div>
-            {!question.trim() && <p className="muted">先在学习助手中输入问题，再开始讲解。</p>}
-          </div>
-          <p className="import-note">
-            PDF、PPTX、DOCX 导入将在后续任务中提供。
-          </p>
-        </section>
-        <section className="pane tutor-pane" aria-labelledby="tutor-heading">
-          <div className="pane-title">
-            <h2 id="tutor-heading">AI 学习助手</h2>
-            <nav className="view-tabs" aria-label="学习与笔记">
-              <button
-                aria-pressed={view === "learn"}
-                onClick={() => setView("learn")}
-              >
-                讲解
-              </button>
-              <button
-                aria-pressed={view === "notes"}
-                onClick={() => setView("notes")}
-              >
-                我的笔记 ({notes.length})
-              </button>
-            </nav>
-          </div>
-          {error && (
-            <p className="error" role="alert">
-              {error}
-            </p>
-          )}
-          {notice && (
-            <p className="notice" role="status">
-              {notice}
-            </p>
-          )}
-          {view === "notes" ? (
-            <div className="notes-list">
-              <h3>我的来源笔记</h3>
-              <p className="muted">
-                只有点击保存才会新增笔记；已有内容会保留。
-              </p>
-              {!notes.length && (
-                <p>
-                  还没有笔记。先提出问题，再把讲解、来源和自己的理解一起保存。
-                </p>
-              )}
-              {notes.map((note) => (
-                <article className="saved-note" key={note.note_id}>
-                  <h3>{note.title}</h3>
-                  <p className="user-note">
-                    {note.user_text || "未添加个人文字"}
-                  </p>
-                  <details>
-                    <summary>已保存的讲解与来源</summary>
-                    <p className="answer-text">
-                      {note.grounded_explanation.explanation}
-                    </p>
-                    {note.document_sources.map((doc) => (
-                      <blockquote key={doc.quote_hash}>
-                        {doc.file_name} · 第 {doc.page} 页<p>{doc.quote}</p>
-                      </blockquote>
-                    ))}
-                    {note.github_sources.map((source) => (
-                      <Evidence key={source.source_id} source={source} />
-                    ))}
-                  </details>
-                  <time dateTime={note.created_at}>
-                    {new Date(note.created_at).toLocaleString("zh-CN")}
-                  </time>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <>
-              <form
-                className="question-form"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  explain();
-                }}
-              >
-                <label htmlFor="question">你想理解什么？</label>
-                <textarea
-                  id="question"
-                  rows={3}
-                  maxLength={2000}
-                  value={question}
-                  onChange={(e) => setQuestion(e.target.value)}
-                />
-                <p className="question-context">
-                  当前上下文：第 {current.page} 页 ·{" "}
-                  {selection ? "选中文字" : current.section}
-                </p>
-                <div className="ask-controls">
-                  <div>
-                    <label htmlFor="level">解释难度</label>
-                    <select
-                      id="level"
-                      value={level}
-                      onChange={(e) => setLevel(e.target.value)}
-                    >
-                      {session.explanation_levels.map((item) => (
-                        <option key={item}>{item}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <button type="submit" disabled={busy || !question.trim()}>
-                    {busy ? "正在整理讲解…" : "结合代码讲解"}
-                  </button>
-                </div>
-              </form>
-              {busy && (
-                <p className="loading" role="status">
-                  正在读取当前上下文和冻结来源…
-                </p>
-              )}
-              {answer ? (
-                <article className="answer">
-                  <div className="answer-heading">
-                    <h3>{answer.concept.name}</h3>
-                    <span>{answer.explanation_level} · 固定讲解</span>
-                  </div>
-                  <p className="answered-question">问题：{answer.question}</p>
-                  <p className="answer-text">{answer.explanation}</p>
-                  <div className="document-citations">
-                    <h4>文档依据</h4>
-                    {answer.document_citations.map((doc) => (
-                      <blockquote key={doc.quote_hash}>
-                        <cite>
-                          {doc.file_name} · 第 {doc.page} 页
-                        </cite>
-                        <p>{doc.quote}</p>
-                      </blockquote>
-                    ))}
-                  </div>
-                  <p className="muted">
-                    右侧为本次引用的真实代码。讲解为人工编写的
-                    Fixture，未调用模型。
-                  </p>
-                  <div className="save-note">
-                    <h3>记下自己的理解</h3>
-                    <label htmlFor="note-title">笔记标题</label>
-                    <input
-                      id="note-title"
-                      maxLength={160}
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                    />
-                    <label htmlFor="note-text">我的补充</label>
-                    <textarea
-                      id="note-text"
-                      rows={3}
-                      maxLength={20000}
-                      value={userText}
-                      onChange={(e) => setUserText(e.target.value)}
-                      placeholder="用自己的话记下这个概念。再次提问不会清除这里的文字。"
-                    />
-                    <button
-                      onClick={save}
-                      disabled={saving || busy || !title.trim()}
-                    >
-                      {saving ? "正在保存…" : "保存为学习笔记"}
-                    </button>
-                    <p className="muted">
-                      同时保存本次讲解、文档引用与 GitHub 来源。
-                    </p>
-                  </div>
-                </article>
-              ) : (
-                <div className="empty-state">
-                  <h3>从一个问题开始</h3>
-                  <p>
-                    试试左侧的依赖注入讲义。选择难度，然后查看概念如何落到真实代码里。
-                  </p>
-                  <p className="muted">
-                    此演示仅回答依赖注入主题；其他问题会提示证据不足。
-                  </p>
-                </div>
-              )}
-            </>
-          )}
-        </section>
-        <aside
-          className="pane evidence-pane"
-          aria-labelledby="evidence-heading"
-        >
-          <div className="pane-title">
-            <h2 id="evidence-heading">GitHub 代码证据</h2>
-            <span>{answer ? "1 条来源" : "等待提问"}</span>
-          </div>
-          <Evidence source={answer?.github_sources[0]} />
-        </aside>
-      </main>
-      <footer className="app-footer">
-        <span>数据保存在当前本地演示空间</span>
-        <span>Concept-to-Code Learning · 0.2.0.dev0</span>
-      </footer>
-    </>
-  );
+  return <><header className="topbar"><div><h1>Concept-to-Code</h1><p>文档学习工作台</p></div><select aria-label="切换文档" value={record?.document_id || ""} onChange={(e) => openDocument(documents.find((x) => x.document_id === e.target.value))}><option value="">选择文档</option>{documents.map((x) => <option value={x.document_id} key={x.document_id}>{x.file_name}</option>)}</select><div className={`connection ${caps?.integrated_product === "READY_FOR_LIVE_CHECK" ? "ready" : "partial"}`}><span/> {caps?.integrated_product === "READY_FOR_LIVE_CHECK" ? "本地服务可用" : "部分能力可用"}</div></header>
+    <main className="workspace"><Reader record={record} units={units} unit={unit} navigate={(i) => navigate(record, units, i)} select={chooseSelection} importing={importing} importFile={importFile}/><section className="assistant pane"><div className="pane-header"><div><p className="eyebrow">LEARNING ASSISTANT</p><h2>结合材料与真实代码</h2></div><span className="context-chip">{selection ? "已选文字" : "当前单元"}</span></div><ErrorBox error={error} retry={() => ask()}/>{notice && <p className="notice" role="status">{notice}</p>}{caps?.tutor?.available === false && <div className="setup"><strong>模型尚未配置</strong><p>{caps.tutor.needed_action || "配置模型后可生成讲解；阅读与笔记仍可使用。"}</p></div>}
+      <label>问题<textarea aria-label="学习问题" value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="这个概念如何在真实项目中使用？"/></label><div className="levels" role="group" aria-label="解释等级">{levels.map((x) => <button key={x} aria-pressed={level === x} onClick={() => setLevel(x)}>{x}</button>)}</div><fieldset><legend>代码来源</legend><select aria-label="来源模式" value={scopeMode} onChange={(e) => setScopeMode(e.target.value)}><option value="specified_public">指定公开仓库</option><option value="public_search">公开搜索</option><option value="local_authorized">已授权本地仓库</option></select>{scopeMode === "local_authorized" ? <input aria-label="本地句柄" value={localHandle} onChange={(e) => setLocalHandle(e.target.value)} placeholder="服务端授权句柄"/> : <input aria-label="公开仓库" value={repository} onChange={(e) => setRepository(e.target.value)} placeholder="owner/repository（可选）"/>}{scopeMode !== "local_authorized" && <><label className="check"><input type="checkbox" checked={network} onChange={(e) => setNetwork(e.target.checked)}/>允许本次联网</label>{scopeMode === "public_search" && <label className="check"><input type="checkbox" checked={approved} onChange={(e) => setApproved(e.target.checked)}/>确认发送搜索词</label>}<input aria-label="批准的搜索词" value={terms} onChange={(e) => setTerms(e.target.value)} placeholder="依赖注入, FastAPI"/></>}<button className="link-button" onClick={() => setAdvanced(!advanced)}>{advanced ? "收起高级选项" : "高级选项"}</button>{advanced && <label className="check"><input type="checkbox" checked={compare} onChange={(e) => setCompare(e.target.checked)}/>比较两个仓库</label>}</fieldset><div className="ask-row"><button className="primary" disabled={busy || !question.trim() || !session?.context_revision} onClick={() => ask()}>{busy ? "正在生成…" : "开始讲解"}</button>{busy && <button onClick={cancel}>取消</button>}{explanation && <button onClick={() => ask(true)}>继续追问</button>}</div>
+      {result?.status === "NEEDS_SOURCE_SELECTION" && <section className="candidates"><h3>选择候选来源</h3>{result.candidates.map((x) => <label key={x.candidate_id}><input type="checkbox" checked={chosen.includes(x.candidate_id)} onChange={(e) => setChosen((v) => e.target.checked ? [...v, x.candidate_id] : v.filter((i) => i !== x.candidate_id))}/><strong>{x.repository || x.local_handle}</strong><span>{x.file_hint} · {x.ranking_reason}</span></label>)}<button onClick={() => ask()}>使用所选来源</button></section>}
+      {explanation && <article className="answer"><p className="eyebrow">{explanation.status} · {explanation.level}</p>{explanation.answer_sections.map((x) => <section key={x.title}><h3>{x.title}</h3><p>{x.text}</p></section>)}{explanation.limitations.length > 0 && <div className="boundary"><strong>能力边界</strong>{explanation.limitations.map((x) => <p key={x}>{x}</p>)}</div>}<label>我的理解<textarea aria-label="我的理解" value={noteText} onChange={(e) => setNoteText(e.target.value)} placeholder="这里的文字不会被追问覆盖。"/></label><button onClick={saveNote}>保存为笔记</button></article>}</section>
+      <aside className="side pane"><nav><button aria-pressed={tab === "sources"} onClick={() => setTab("sources")}>来源</button><button aria-pressed={tab === "notes"} onClick={() => setTab("notes")}>笔记 {notes.length}</button></nav>{tab === "sources" ? <div>{!result?.sources?.length && <div className="empty"><h3>暂无代码来源</h3><p>候选不等于已核验来源；许可不明时不展示原码。</p></div>}{result?.sources?.map((x) => <SourceCard key={x.source_id} source={x}/>)}</div> : <Notes notes={notes} query={noteQuery} setQuery={setNoteQuery} report={setError}/>}</aside></main></>;
 }
