@@ -27,3 +27,7 @@ Phase 0 被定位为企业新员工入职、单一私有仓库讲解、强制练
 ## 当前交付边界
 
 0.2.0.dev0 实现 React/Vite 三栏、FastAPI Fixture API、六契约、固定 FastAPI 来源与本地 SQLite 来源笔记。Fixture 始终显式标记。真实解析、通用检索与验证、模型、DGX、比较和新来源运行仍是后续工作。单条来源核验不是通用实现。
+
+## 2026-09-09 治理变更说明
+
+上文保留当时的历史范围与状态，不作为当前审批门禁。此日起只有 @suiyisuixing 最终审核与合并 main；成员 PR 由 Lead 审核，Lead 自有 PR 经人工自检、Codex 审计和 required CI 后可自行合并，无需外部批准。PR/CI、禁止直接 Push/Force Push/删除 main 仍保留。参见 [治理政策](governance/lead-controlled-merge-policy.md)。Project 是否已创建仍需单独核验，治理迁移不证明 Project 完成。
