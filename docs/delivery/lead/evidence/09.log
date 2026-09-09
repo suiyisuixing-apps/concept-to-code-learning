@@ -1,0 +1,13 @@
+
+> concept-to-code-learning-web@0.2.0-dev.0 build
+> vite build
+
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 30 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   1.25 kB │ gzip:  0.76 kB
+dist/assets/index-uikIZqvN.css    9.99 kB │ gzip:  2.95 kB
+dist/assets/index-CNtXTaWD.js   205.75 kB │ gzip: 65.34 kB
+✓ built in 254ms
