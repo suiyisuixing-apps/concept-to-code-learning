@@ -1,0 +1,120 @@
+Browser tab: 2, Title: "Concept-to-Code Learning", URL: "http://127.0.0.1:8769/".
+1 AXWebArea Concept-to-Code Learning, URL: 127.0.0.1:8769/
+	2 container root
+		3 container
+			4 heading Concept-to-Code Learning, Value: 1
+				5 text Concept-to-Code  Learning
+			6 text 读懂概念，找到真实代码 本地演示已连接 FIXTURE
+		7 text 合成讲义 + 固定讲解
+		8 text 体验从阅读到来源笔记的完整流程。未接入 AI 模型、真实文件导入或实时 GitHub 搜索。
+		9 text SCAFFOLD_DEMO
+		10 container
+			11 container 文档学习区
+				12 heading 文档学习区, Value: 2, ID: document-heading
+					13 text 文档学习区
+				14 text 合成示例
+				15 heading 依赖注入学习讲义 · 合成示例.md, Value: 3
+					16 text 依赖注入学习讲义 · 合成示例.md
+				17 container
+					18 text Markdown Fixture · 共  3  页
+				19 container 文档翻页
+					20 button (disabled) 上一页
+					21 text 第  1  /  3  页
+					22 button 下一页
+				23 container 可选择的当前页正文
+					24 heading 把需要的东西交给函数, Value: 3
+						25 text 把需要的东西交给函数
+					26 text 依赖注入（Dependency Injection）让函数声明自己需要什么，由外部提供具体依赖，而不是在函数内部创建全部对象。
+					27 text 在 FastAPI 中，路径函数通过 Depends 声明依赖。框架先调用依赖函数，再把返回结果交给路径函数。
+					28 text 例如，多个接口都需要查询参数。可以把参数解析放进 common_parameters，再让接口接收解析后的字典。
+				29 text 选中文字
+				30 text entry area (settable) 选中文字, ID: selected-passage
+				31 button 解释当前页
+				32 button (disabled) 解释选中文字
+				33 text PDF、PPTX、DOCX 导入将在后续任务中提供。
+			34 container AI 学习助手
+				35 heading AI 学习助手, Value: 2, ID: tutor-heading
+					36 text AI 学习助手
+				37 container 学习与笔记
+					38 checkbox 讲解, Value: 1
+					39 checkbox 我的笔记 (0), Value: 0
+						40 text 我的笔记 (
+						41 text 0
+						42 text )
+				43 container
+					44 text 你想理解什么？
+					45 text entry area (settable) 你想理解什么？, Value: 依赖注入到底是什么？真实项目中怎么使用？, ID: question
+					46 text 当前上下文：第  1  页 · 依赖注入的基本想法 解释难度
+					47 pop up button (collapsed, settable) 解释难度, Value: Beginner, ID: level, Secondary Actions: Expand
+						48 menu
+							49 (selected) Beginner
+							50 University
+							51 Engineering
+							52 Source-code level
+					53 button 结合代码讲解
+				68 container
+					69 heading 依赖注入, Value: 3
+						70 text 依赖注入
+					71 text Beginner  · 固定讲解 问题： 依赖注入到底是什么？真实项目中怎么使用？ 依赖注入可以理解为：函数先列出需要的材料，外部把材料送进来。在这里，read_items 需要 commons，FastAPI 根据 Depends(common_parameters) 取得它，再交给函数。函数使用收到的值，不需要自己重复处理查询参数。
+
+当前依据：第 1 页「依赖注入的基本想法」。本次使用当前页全文。
+					72 heading 文档依据, Value: 4
+						73 text 文档依据
+					74 text 依赖注入学习讲义 · 合成示例.md  · 第  1  页
+					75 text 依赖注入（Dependency Injection）让函数声明自己需要什么，由外部提供具体依赖，而不是在函数内部创建全部对象。
+
+在 FastAPI 中，路径函数通过 Depends 声明依赖。框架先调用依赖函数，再把返回结果交给路径函数。
+
+例如，多个接口都需要查询参数。可以把参数解析放进 common_parameters，再让接口接收解析后的字典。
+					76 text 右侧为本次引用的真实代码。讲解为人工编写的 Fixture，未调用模型。
+					77 heading 记下自己的理解, Value: 3
+						78 text 记下自己的理解
+					79 text 笔记标题
+					80 text field (settable) 笔记标题, Value: 依赖注入：我的理解, ID: note-title
+					81 text 我的补充
+					82 text entry area (settable) 我的补充, ID: note-text
+					83 button 保存为学习笔记
+					84 text 同时保存本次讲解、文档引用与 GitHub 来源。
+			58 container GitHub 代码证据
+				59 heading GitHub 代码证据, Value: 2, ID: evidence-heading
+					60 text GitHub 代码证据
+				61 text 1 条来源
+				85 container
+					86 link Description: fastapi / fastapi, Value: github.com/fastapi/fastapi
+					87 text 公开仓库 固定来源已核验 GITHUB_SOURCE_VERIFIED
+					88 definition list
+						89 container 仓库
+							90 text 仓库
+						91 link Description: https://github.com/fastapi/fastapi, Value: github.com/fastapi/fastapi
+						92 container Commit
+							93 text Commit
+						94 text 50113da16fec53b66b80d75e80a89296de4fa5a5
+						95 container 文件
+							96 text 文件
+						97 link Description: docs_src/dependencies/tutorial001_an_py310.py, Value: github.com/fastapi/fastapi/blob/50113da16fec53b66b80d75e80a89296de4fa5a5/docs_src/dependencies/tutorial001_an_py310.py#L12-L14
+						98 container 符号
+							99 text 符号
+						100 text read_items
+						101 container 行号
+							102 text 行号
+						103 container
+							104 text 12 – 14  ·  async_function
+						105 container 许可证
+							106 text 许可证
+						107 link Description: MIT, Value: github.com/fastapi/fastapi/blob/50113da16fec53b66b80d75e80a89296de4fa5a5/LICENSE
+					108 text GitHub 原始代码 · 3 行
+					109 link Description: 打开源码, Value: github.com/fastapi/fastapi/blob/50113da16fec53b66b80d75e80a89296de4fa5a5/docs_src/dependencies/tutorial001_an_py310.py#L12-L14
+					110 container GitHub 原始代码
+						111 text @app.get("/items/")
+async def read_items(commons: Annotated[dict, Depends(common_parameters)]):
+    return commons
+					112 heading 为什么引用它, Value: 3
+						113 text 为什么引用它
+					114 text FastAPI 官方示例在 read_items 的参数中用 Depends(common_parameters) 声明依赖，由框架提供解析后的参数。 片段未运行 · NOT_RUN
+					115 text 核验时间： 2026-09-07
+					116 button (collapsed) 查看核验依据, Secondary Actions: Expand
+						117 text 查看核验依据
+		66 container
+			67 text 数据保存在当前本地演示空间 Concept-to-Code Learning · 0.2.0.dev0
+
+The focused UI element is 1 AXWebArea Concept-to-Code Learning, URL: 127.0.0.1:8769/

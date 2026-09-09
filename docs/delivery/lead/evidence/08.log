@@ -1,0 +1,13 @@
+
+> concept-to-code-learning-web@0.2.0-dev.0 test
+> vitest run
+
+
+ RUN  v3.2.7 <CANDIDATE_ROOT>/apps/web
+
+ ✓ src/App.test.jsx (5 tests) 536ms
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  15:39:06
+   Duration  863ms (transform 32ms, setup 34ms, collect 43ms, tests 536ms, environment 100ms, prepare 26ms)

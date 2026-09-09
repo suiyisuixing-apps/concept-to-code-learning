@@ -1,0 +1,15 @@
+本地学习软件：http://127.0.0.1:8769
+真实能力状态：http://127.0.0.1:8769/api/learning/v1/capabilities
+现有网页为 Fixture 演示；真实模块以能力状态为准。按 Ctrl+C 停止。
+INFO:     Started server process [80203]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8769 (Press CTRL+C to quit)
+INFO:     127.0.0.1:50953 - "GET /api/learning/v1/capabilities HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51004 - "GET / HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:51004 - "GET /assets/index-uikIZqvN.css HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:51006 - "GET /assets/index-CNtXTaWD.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:51006 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51004 - "GET /api/demo/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51007 - "GET /api/notes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51028 - "POST /api/learning/explain HTTP/1.1" 200 OK
