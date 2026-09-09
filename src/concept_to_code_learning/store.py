@@ -2,7 +2,7 @@
 
 import json
 import sqlite3
-from contextlib import contextmanager
+from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
@@ -15,26 +15,21 @@ class NoteStore:
         folder.mkdir(parents=True, exist_ok=True)
         self.path = folder / "fixture-notes.sqlite3"
         self.schemas = schemas
-        with self.connect() as db:
+        with closing(self.connect()) as db, db:
             db.execute("CREATE TABLE IF NOT EXISTS explanations (id TEXT PRIMARY KEY, body TEXT)")
             db.execute("CREATE TABLE IF NOT EXISTS notes (id TEXT PRIMARY KEY, body TEXT)")
 
-    @contextmanager
     def connect(self):
-        db = sqlite3.connect(self.path, timeout=10)
-        try:
-            with db:  # commits on success, rolls back on error (previous behaviour)
-                yield db
-        finally:
-            db.close()  # on Windows an open handle blocks cleanup of temp dirs
+        """Return a raw connection; callers own transaction scope and explicit closing."""
+        return sqlite3.connect(self.path, timeout=10)
 
     def remember(self, explanation: dict):
-        with self.connect() as db:
+        with closing(self.connect()) as db, db:
             db.execute("INSERT INTO explanations VALUES (?, ?)",
                        (explanation["grounded_explanation_id"], json.dumps(explanation)))
 
     def save(self, explanation_id: str, title: str, user_text: str) -> dict:
-        with self.connect() as db:
+        with closing(self.connect()) as db, db:
             row = db.execute("SELECT body FROM explanations WHERE id = ?",
                              (explanation_id,)).fetchone()
             if row is None:
@@ -55,6 +50,6 @@ class NoteStore:
         return note
 
     def list(self) -> list[dict]:
-        with self.connect() as db:
+        with closing(self.connect()) as db, db:
             rows = db.execute("SELECT body FROM notes ORDER BY rowid DESC").fetchall()
         return [json.loads(row[0]) for row in rows]
