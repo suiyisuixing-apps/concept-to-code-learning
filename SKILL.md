@@ -82,3 +82,7 @@ A fixture run passes only if the current context reaches the explanation, a real
 - `docs/api.md`, `docs/data-contracts.md`, `docs/architecture.md`: integration boundaries.
 - `references/github-source-policy.md`, `references/document-grounding.md`, `references/runnable-example-policy.md`: evidence and privacy rules.
 - `docs/rescope-decision.md`: preserved baseline and product correction.
+
+## Sprint 1 integration boundary
+
+The Lead preparation provides versioned contracts and offline Fixture orchestration under `/api/sprint-1`; see `docs/sprint-1-first-real-vertical-slice.md`. Real PPTX parsing, general GitHub verification and model inference remain unimplemented. Do not infer real capability from provider configuration or a successful fixture test. Existing Phase 0.5 commands and contracts remain available.
