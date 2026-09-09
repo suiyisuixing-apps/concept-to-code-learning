@@ -5,6 +5,7 @@ import socket
 import sqlite3
 import subprocess
 import sys
+from contextlib import closing
 from copy import deepcopy
 from dataclasses import replace
 from pathlib import Path
@@ -213,7 +214,7 @@ def test_bad_tutor_output_is_not_remembered(service, monkeypatch, change):
     if change == "unsupported":
         assert failure.value.payload()["details"]["unsupported_claims"] == [
             "An unsupported assertion"]
-    with service.notes.storage.connect() as db:
+    with closing(service.notes.storage.connect()) as db, db:
         assert db.execute("SELECT count(*) FROM sprint_explanations").fetchone()[0] == 0
     assert service.notes.list() == []
 
@@ -317,7 +318,7 @@ def test_legacy_api_and_rows_remain_unchanged_while_new_notes_are_written(tmp_pa
     answer = fixture.explain(QUESTION, fixture.context(), "Beginner")
     legacy.remember(answer)
     old_note = legacy.save(answer["grounded_explanation_id"], "Legacy note", "DO NOT REWRITE")
-    with legacy.connect() as db:
+    with closing(legacy.connect()) as db, db:
         before = db.execute("SELECT * FROM notes").fetchall()
     client = TestClient(create_app(tmp_path, provider_config=ProviderConfig()))
     response = client.post(f"{PREFIX}/learning/explain", json=fixture_request(ROOT)).json()
@@ -325,7 +326,7 @@ def test_legacy_api_and_rows_remain_unchanged_while_new_notes_are_written(tmp_pa
                                       "title": "New", "save_requested_by_user": True})
     assert client.get("/api/notes").json()["notes"] == [old_note]
     validate_record("saved-note", old_note, load_schemas(ROOT))
-    with legacy.connect() as db:
+    with closing(legacy.connect()) as db, db:
         assert db.execute("SELECT * FROM notes").fetchall() == before
     assert "file_hash" not in old_note["grounded_explanation"]["document_context"]
     with pytest.raises(SliceError):
@@ -337,7 +338,7 @@ def test_legacy_api_and_rows_remain_unchanged_while_new_notes_are_written(tmp_pa
 def test_failed_save_rolls_back_without_changing_old_notes(service):
     answer = explain(service)
     first = service.save_note(answer["grounded_explanation_id"], "First", "preserved", True)
-    with service.notes.storage.connect() as db:
+    with closing(service.notes.storage.connect()) as db, db:
         db.execute("CREATE TRIGGER reject_note BEFORE INSERT ON sprint_notes "
                    "BEGIN SELECT RAISE(ABORT, 'simulated storage failure'); END")
     with pytest.raises(SliceError) as failure:

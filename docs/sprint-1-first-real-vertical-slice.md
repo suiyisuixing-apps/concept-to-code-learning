@@ -1,6 +1,8 @@
 # Sprint 1：第一个真实纵向切片
 
-2026-09-08 基线：PR #56 已获 @fqf060420 正式 APPROVED 并由其合并；pre-rules-v0.2.0 固定在 e83a64d63a78f11534fbe51631775ceeb3885ccb。本文及 Sprint 1 合同通过独立 [Lead 准备 PR #58](https://github.com/suiyisuixing/concept-to-code-learning/pull/58) 交付；模块开发前确认该 PR 已经他人审核并合并。
+适用范围：2026-09-09 起执行 Lead 单一负责制，见 [治理政策](governance/lead-controlled-merge-policy.md)。下文合同与实现描述对应 PR #58；治理文档本身不引入这些运行时代码，使用前核验 #58 是否已进入 main。
+
+2026-09-08 基线：PR #56 已获 @fqf060420 正式 APPROVED 并由其合并；pre-rules-v0.2.0 固定在 e83a64d63a78f11534fbe51631775ceeb3885ccb。本文及 Sprint 1 合同通过独立 [Lead 准备 PR #58](https://github.com/suiyisuixing/concept-to-code-learning/pull/58) 交付；模块开发前确认该 PR 已由 Lead 完成自检、Codex 审计、required CI 并合并。Lead PR 无需外部批准。
 
 ## 用户故事与唯一场景
 
@@ -23,7 +25,7 @@ Real PPTX → Current Slide → Selected Text → DocumentContext → User Quest
 
 ## 四个公共合同
 
-详见 [合同审查与兼容方案](sprint-1-contract-review.md)。四个版本化合同已在本 PR 的 schemas/sprint-1/ 实现，原六个根合同保持兼容；他人审核并合并后成为团队共同基线。
+详见 [合同审查与兼容方案](sprint-1-contract-review.md)。四个版本化合同已在本 PR 的 schemas/sprint-1/ 实现，原六个根合同保持兼容；Lead 自检、Codex 审计和 required CI 成功且由 Lead 合并后成为团队共同基线。
 
 | 合同 | Sprint 1 最小内容 |
 | --- | --- |
@@ -117,12 +119,12 @@ session 保留三个 Provider 的选择，DocumentContext/GitHubCodeSource 保�
 ## 合并顺序
 
 0. PR #56 由非作者正式 APPROVED，必需 CI 成功，正常合并；创建 pre-rules-v0.2.0，保留 v0.1。
-1. Lead 在 feat/sprint-1-integration-contracts 提交“合同准备 PR”（主 Issue #5），由他人审核并正常合并；本轮不抢做真实模块。
+1. Lead 在 feat/sprint-1-integration-contracts 提交“合同准备 PR”（主 Issue #5），完成 Lead 自检、Codex 审计和 required CI 后由 Lead 合并；本轮不抢做真实模块。
 2. Document PR 与 GitHub Verification PR 基于共同合同并行，分别解决 #7 与 #46。
 3. Tutor 可以先使用 Fixture 合同并行开发；实际联合验收等待 Document/GitHub PR。
 4. 最终再提交独立的 Lead 集成 PR，落实 #52。它不同于前置合同准备 PR，不能在当前合同 PR 中把所有模块都做完。
 
-每条分支和 PR 只解决一个聚焦问题；相关任务引用不代表全部自动关闭。负责人不能批准或自动合并自己的 Sprint PR；main 保护始终不降低。
+每条分支和 PR 只解决一个聚焦问题；相关任务引用不代表全部自动关闭。只有 @suiyisuixing 可以合并 main。成员不得合并自己或他人的 PR；Lead 自有 PR 通过人工自检、Codex 审计和 required CI 且无 P0/P1 后可自行合并。PR、CI、禁止强推和删除 main 的保护保持启用。
 
 ## 14 项纵向验收
 

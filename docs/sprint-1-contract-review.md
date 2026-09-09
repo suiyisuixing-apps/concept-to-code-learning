@@ -1,6 +1,8 @@
 # Sprint 1 合同审查与兼容性记录
 
-基线：pre-rules-v0.2.0 / e83a64d63a78f11534fbe51631775ceeb3885ccb，已由真实队员审核并合并。此 PR 冻结独立 `contract_version: sprint-1`，主 Issue #5；正式共同基线仍须等待本 PR 的他人审核与合并。
+适用范围：2026-09-09 起执行 Lead 单一负责制，见 [治理政策](governance/lead-controlled-merge-policy.md)。下文合同与实现描述对应 PR #58；治理文档本身不引入这些运行时代码，使用前核验 #58 是否已进入 main。
+
+基线：pre-rules-v0.2.0 / e83a64d63a78f11534fbe51631775ceeb3885ccb，已由真实队员审核并合并。此 PR 冻结独立 `contract_version: sprint-1`，主 Issue #5；正式共同基线仍须等待 Lead 自检、Codex 审计、required CI 成功及 Lead 合并。
 
 | 活动合同 | 审查结论 | 本 PR 的最小增量与原因 |
 | --- | --- | --- |

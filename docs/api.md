@@ -1,6 +1,6 @@
 # 本地 Fixture API
 
-以下 Phase 0.5 成功的 demo/notes 响应及预留接口都标记 `mode: FIXTURE`、`status: SCAFFOLD_DEMO`。
+所有成功的 demo/notes 响应及预留接口都标记 `mode: FIXTURE`、`status: SCAFFOLD_DEMO`。
 
 | 接口 | 行为 |
 | --- | --- |
@@ -16,6 +16,8 @@
 
 GET 不创建笔记，再次提问不改变笔记；没有 PUT/DELETE 笔记端点。显示读取错误并允许重试，不把失败标为成功。SQLite 无账户隔离，仅用于单用户 loopback Fixture。
 
-## Sprint 1 版本化接口
+## 接缝与治理
 
-`/api/sprint-1` 使用新增四合同与独立版本表，旧 `/api/notes` 继续读取原记录；不会给旧快照补造 file_hash。完整 API、Provider 选择和错误表见 [Sprint 1 文档](sprint-1-first-real-vertical-slice.md)。响应中的 `FIXTURE` 是证据模式，`FAILED` 明确表示失败。
+公共 API/Schema 变更由 Lead 审核，只有 @suiyisuixing 可以合并。Lead 自有 PR 经人工自检、Codex 审计与 required CI 后可自行合并，无需外部批准；所有 PR 不得有 P0/P1 阻塞。
+
+`/api/sprint-1` 的版本合同和独立快照表由 PR #58 引入，使用前核验其 main 合并状态；旧 `/api/notes` 保留原记录，不补造旧 hash。真实 PPTX、通用 GitHub 核验和模型仍须独立实现与验收。见 [Sprint 1](sprint-1-first-real-vertical-slice.md) 和 [治理政策](governance/lead-controlled-merge-policy.md)。

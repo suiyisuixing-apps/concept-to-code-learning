@@ -50,16 +50,14 @@ python scripts/tutor.py serve
 | @zchzbjklg | GitHub 来源模式、固定 Commit、核验、证据卡、比较 |
 | @fqf060420 | 知识点、讲解级别、本地模型、DGX、Grounding 评测 |
 
-2026-09-08 已核验三名队员均接受邀请并拥有 Write，开放任务已按角色分配；入队的个人测试与小型 PR 仍按各自证据记录。合并必须通过受保护 `main` 的 `phase0-checks` 和至少一名真实其他成员的批准。参见 [协作指南](CONTRIBUTING.md)、[分工](docs/roles-and-ownership.md)、[路线图](docs/roadmap.md)。
+2026-09-09 API 已核验三名成员均为 Write，@suiyisuixing 为唯一 Admin、唯一最终审核人和 main 合并人。所有 PR 保留强制 phase0-checks；外部批准数为 0。成员 PR 由 Lead 审核；Lead 自有 PR 经人工自检、Codex 审计、CI 且无 P0/P1 后可自行合并。团队建议非阻塞。详见 [Lead 合并政策](docs/governance/lead-controlled-merge-policy.md)、[协作指南](CONTRIBUTING.md)、[分工](docs/roles-and-ownership.md)。
 
 ## 导航
 
 [SKILL](SKILL.md) · [产品范围](docs/product-scope.md) · [重构决策与历史](docs/rescope-decision.md) · [架构](docs/architecture.md) · [六个契约](docs/data-contracts.md) · [API](docs/api.md) · [来源核验](demo/learning/README.md) · [安全](SECURITY.md)
 
-现有仓库直接改名，ID `1360182264` 不变。基线 Commit `8c487316ccf598b0a549803d3cff3814302633c3` 和 `pre-rules-v0.1.0` 标签保留。PR #56 已由 @fqf060420 正式审核并合并；`pre-rules-v0.2.0` 固定在 `e83a64d63a78f11534fbe51631775ceeb3885ccb`。没有创建 GitHub Release。
+现有仓库直接改名，ID `1360182264` 不变。基线 Commit `8c487316ccf598b0a549803d3cff3814302633c3` 和 `pre-rules-v0.1.0` 标签保留。PR #56 已合并，`pre-rules-v0.2.0` 固定在 `e83a64d63a78f11534fbe51631775ceeb3885ccb`；历史标签保持原指向。本次不创建 GitHub Release 或新 Tag。
 
 ## Sprint 1 合同准备
 
-新增 `/api/sprint-1` 的版本化合同、三个 Fixture Adapter、VerticalSliceService 与不可变笔记快照。默认 Provider 均为 `fixture`；选择 `pptx`、`github` 或 `openai_compatible` 会明确报告未实现/未配置，不会自动联网或切换模型。当前 UI 继续使用 Phase 0.5 API。
-
-参见 [Sprint 1 接口与验收](docs/sprint-1-first-real-vertical-slice.md)、[兼容性记录](docs/sprint-1-contract-review.md)、[四人提示词](docs/codex-prompts/lead-integration.md)。这次合同 PR 不代表真实 PPTX、通用 GitHub 核验或模型模块已完成。
+版本化合同与 `/api/sprint-1` 由 [PR #58](https://github.com/suiyisuixing/concept-to-code-learning/pull/58) 引入；请核验该 PR 是否已进入 main。治理文档本身不引入运行时代码。详见 [Sprint 1 接缝](docs/sprint-1-first-real-vertical-slice.md) 与 [角色提示词](docs/codex-prompts/lead-integration.md)。这些合同及 Fixture 不代表真实 PPTX、通用 GitHub 核验或模型已完成。

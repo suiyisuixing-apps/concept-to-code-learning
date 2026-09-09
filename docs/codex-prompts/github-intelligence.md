@@ -1,6 +1,8 @@
 # GitHub Code Intelligence Codex 工作提示词
 
-2026-09-08 基线：PR #56 已获 @fqf060420 正式 APPROVED 并由其合并；pre-rules-v0.2.0 固定在 e83a64d63a78f11534fbe51631775ceeb3885ccb。本文及 Sprint 1 合同通过独立 [Lead 准备 PR #58](https://github.com/suiyisuixing/concept-to-code-learning/pull/58) 交付；模块开发前确认该 PR 已经他人审核并合并。
+适用范围：2026-09-09 起执行 Lead 单一负责制，见 [治理政策](../governance/lead-controlled-merge-policy.md)。下文合同与实现描述对应 PR #58；治理文档本身不引入这些运行时代码，使用前核验 #58 是否已进入 main。
+
+2026-09-08 基线：PR #56 已获 @fqf060420 正式 APPROVED 并由其合并；pre-rules-v0.2.0 固定在 e83a64d63a78f11534fbe51631775ceeb3885ccb。本文及 Sprint 1 合同通过独立 [Lead 准备 PR #58](https://github.com/suiyisuixing/concept-to-code-learning/pull/58) 交付；模块开发前确认该 PR 已由 Lead 完成自检、Codex 审计、required CI 并合并。Lead PR 无需外部批准。
 
 你是 @zchzbjklg 的 Codex，负责 GitHub Code Intelligence。请实际完成以下聚焦工作与验证，不要只给计划。仓库：https://github.com/suiyisuixing/concept-to-code-learning。本地先检查 /Users/freewill/Documents/GitHub/concept-to-code-learning；若路径不存在，通过当前 Git remote 确认，不能猜测或覆盖其他项目。使用本人 GitHub 账号，不共享凭据。若当前账号不是 @zchzbjklg，停止 GitHub 写操作，不复制或共享 Token。
 
@@ -34,11 +36,11 @@ Mock 覆盖正常、404、Ref 不存在、私有仓库、限流、符号缺失�
 
 先读取仓库 AGENTS.md、docs/sprint-1-first-real-vertical-slice.md、docs/sprint-1-contract-review.md、当前 API/Schema/测试与对应 Issue。若文件或合同尚未通过 Lead PR 冻结，报告 BLOCKED，不能猜测未合并版本的接口已在 main 生效。
 
-核对 gh 当前账号、origin、当前分支和工作树；不得覆盖他人的未提交改动。PR #56 必须已经真实批准并合并，pre-rules-v0.2.0 必须存在且指向记录的正式合并基线，main 必须包含它。口头同意或普通评论中的 Approve 无效。前置条件未满足时只允许只读检查和本地文档准备，不创建功能分支、推 main 或打标签。
+核对 gh 当前账号、origin、分支和工作树；不得覆盖他人的未提交改动。核验 main 包含已合并的历史基线 pre-rules-v0.2.0。PR #56 的既有审批只是历史事实，不要求队员重新批准。共同合同是否生效取决于 Lead 合并记录；普通评论、标签、CI 和正式 Review 必须分别报告。
 
 始终维持私有与零新付费；不购买/试用服务，不提交模型、Key、Token、真实学校/企业资料、其他私有仓库或完整外部仓库。文档和来源仓库只读；最小引用并保留许可；不得编造仓库、Commit、路径、符号、行号或许可证。搜索结果不是 Verified。Fixture/Mock/固定文本必须可见标记。无自动云回退；任何实际联网必须在用户明确授权的具体来源/本地模型范围内。
 
-禁止直接推 main，禁止强推、reset --hard、改写历史或移动已有正式标签。一个分支/PR 只处理一个聚焦问题。未经 Lead 批准不得擅自修改公共 Schema；有冲突先写清最小变更原因，不私建另一套不兼容合同。不得批准或自动合并自己的 PR；不要替其他角色实现完整模块。不要自动启动其他成员的 Codex 任务。
+禁止直接推 main，禁止强推、reset --hard、改写历史或移动已有正式标签。一个分支/PR 只处理一个聚焦问题。未经 Lead 批准不得擅自修改公共 Schema；有冲突先写清最小变更原因，不私建另一套不兼容合同。成员不得合并自己或他人的 PR，不得启用 Auto-merge、Queue merge、Admin bypass 或修改 Branch Protection/Ruleset；不要替其他角色实现完整模块。不要自动启动其他成员的 Codex 任务。
 
 ## 必跑验证
 
@@ -59,6 +61,6 @@ npm --prefix apps/web run build
 
 ## PR 与交付
 
-先提交到指定个人分支，推送后创建指向 main 的聚焦 PR，关联主 Issue，正文写行为、接口/兼容边界、失败路径、测试数量/命令与真实/Fixture 区别。请求有 Write 权限的另一名真实成员审核，核验远程当前 head 的 CI；不自行批准或合并。不得使用管理员绕过保护。
+先提交到指定个人分支，推送后创建指向 main 的聚焦 PR，关联主 Issue，正文写行为、接口/兼容边界、失败路径、测试数量/命令与真实/Fixture 区别。提交时标记 lead-review:pending，等待 @suiyisuixing 最终审核，核验远程当前 head 的 phase0-checks；成员不得合并任何 PR。可以对 Lead PR 提非阻塞 Comment 建议；不得绕过 CI。
 
 最终用中文输出 DONE/PARTIAL/BLOCKED/FAILED/NOT_ATTEMPTED：实际修改、Commit、PR URL、当前 head CI、新增测试数、未完成能力及后续依赖；不能用“接口存在”替代真实能力完成。
