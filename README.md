@@ -1,5 +1,7 @@
 # Concept-to-Code Learning
 
+> 当前候选：**完整模块交付 / PARTIAL**。Lead 已提供新接口、中央编排和来源笔记；三名成员完整模块尚未交付，真实文档/来源/模型链不能宣称可用。现有网页仍是明确标注的 Fixture 演示。查看 [完整范围与任务书](docs/full-delivery/PLAN.md)、[启动说明](docs/full-delivery/RUNNING.md)、[实际能力 API](docs/full-delivery/INTERFACES.md) 和 [审核材料](docs/delivery/lead/FINAL_REVIEW.md)。以下原演示说明保留。
+
 文档学习 + AI 讲解 + GitHub 真实代码引用。用户围绕当前页、章节或选中文字提问，按自己的理解程度阅读讲解，核对真实源码，再主动保存有来源的个人笔记。
 
 **0.2.0.dev0 · Phase 0.5 · FIXTURE / SCAFFOLD_DEMO**

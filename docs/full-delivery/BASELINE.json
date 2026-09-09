@@ -1,0 +1,37 @@
+{
+  "repository": "https://github.com/suiyisuixing/concept-to-code-learning",
+  "checked_at": "2026-09-09T06:33:55.305578+00:00",
+  "main_sha": "369acd673d2ae0d1ae3bc8f591a2c7e51e4dc459",
+  "BASELINE_KIND": "UNMERGED_CONTRACT",
+  "contract_head": "60d4a5cd8ebbf50341219940f762993975a4781d",
+  "included_unmerged_prs": [
+    {
+      "number": 58,
+      "author": "suiyisuixing",
+      "head": "60d4a5cd8ebbf50341219940f762993975a4781d",
+      "merged_to_main": false
+    },
+    {
+      "number": 60,
+      "author": "fqf060420",
+      "head": "4a9b4548f66ae589860a49a9d6481822f35b0c0e",
+      "merged_to_main": false
+    },
+    {
+      "number": 62,
+      "author": "fqf060420",
+      "head": "4689f0ff74aa331e96f6bab3dbca1b8de85a5b72",
+      "merged_to_main": false
+    },
+    {
+      "number": 59,
+      "author": "zchzbjklg",
+      "head": "e5b7f16dfb3ebc24d8af1fa1a00ea75711e5b7d9",
+      "merged_to_main": false
+    }
+  ],
+  "merged_prs": [
+    64
+  ],
+  "strategy": "Normal merge commits preserve each PR author and ancestry in a feature candidate; no main merges. Add full-delivery-v1 alongside unchanged Sprint 1 contracts."
+}

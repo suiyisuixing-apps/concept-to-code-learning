@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "expected_revision": {
+      "minimum": 1,
+      "title": "Expected Revision",
+      "type": "integer"
+    },
+    "title": {
+      "maxLength": 160,
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "user_text": {
+      "maxLength": 20000,
+      "title": "User Text",
+      "type": "string"
+    }
+  },
+  "required": [
+    "expected_revision",
+    "title",
+    "user_text"
+  ],
+  "title": "EditNoteRequest",
+  "type": "object"
+}

@@ -1,3 +1,5 @@
+> 当前范围已由 [完整模块任务书](full-delivery/README.md) 取代；以下保留旧阶段的任务与证据，不作为本轮功能上限。
+
 # Lead / Product / Skill / Integration Codex 工作提示词
 
 适用范围：2026-09-09 起执行 Lead 单一负责制，见 [治理政策](../governance/lead-controlled-merge-policy.md)。下文合同与实现描述对应 PR #58；治理文档本身不引入这些运行时代码，使用前核验 #58 是否已进入 main。

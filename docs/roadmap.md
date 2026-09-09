@@ -1,3 +1,5 @@
+> 2026-09-09 当前执行范围： [完整学习版](full-delivery/PLAN.md)；[新接口与职责](full-delivery/INTERFACES.md)。以下旧阶段说明保留作兼容和历史参考。
+
 # 路线图
 
 以下是内部计划，不代表官方比赛规则。截止日期按 Asia/Singapore 的对应日理解；GitHub Milestone API 实际将 due_on 规范化到该日 00:00:00Z，因此不再声称 API 保存了 23:59:59 本地时间。需要小时级提醒时另行明确，不自动创建提醒。

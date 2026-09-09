@@ -1,6 +1,7 @@
-"""Loopback-only fixture API; no runtime outbound network or repository mutation."""
+"""Loopback API: preserved Fixture routes plus capability-aware learning integration."""
 
 import os
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -10,6 +11,13 @@ from pydantic import BaseModel, ConfigDict, Field
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from concept_to_code_learning import __version__
+from concept_to_code_learning.full_learning.api import create_router as create_learning_router
+from concept_to_code_learning.full_learning.api import install_error_handlers
+from concept_to_code_learning.full_learning.ports import ProviderBundle
+from concept_to_code_learning.full_learning.providers import ProviderSettings
+from concept_to_code_learning.full_learning.providers import build_providers as build_full_providers
+from concept_to_code_learning.full_learning.service import LearningService
+from concept_to_code_learning.full_learning.store import LearningStore
 from concept_to_code_learning.integration.api import create_router
 from concept_to_code_learning.integration.contracts import load_contracts
 from concept_to_code_learning.integration.errors import SliceError
@@ -38,12 +46,24 @@ class SaveRequest(BaseModel):
 
 
 def create_app(data_dir: Path | None = None, root: Path = ROOT, *,
-               provider_config: ProviderConfig | None = None) -> FastAPI:
+               provider_config: ProviderConfig | None = None,
+               full_providers: ProviderBundle | None = None) -> FastAPI:
     config = provider_config or ProviderConfig.from_env()
     tutor = FixtureTutor(root)
     storage = data_dir or Path(os.environ.get("C2C_DATA_DIR", root / "data/local"))
     store = NoteStore(storage, tutor.schemas)
-    app = FastAPI(title="Concept-to-Code Learning · FIXTURE", version=__version__)
+    learning = LearningService(full_providers or build_full_providers(ProviderSettings.from_env(root, storage)),
+                               LearningStore(storage))
+
+    @asynccontextmanager
+    async def lifespan(app):
+        yield
+        await learning.close()
+
+    app = FastAPI(title="Concept-to-Code Learning · capability-aware", version=__version__,
+                  lifespan=lifespan)
+    app.state.learning_service = learning
+    install_error_handlers(app, dev_origin=os.environ.get("C2C_DEV_ORIGIN"))
     app.add_middleware(TrustedHostMiddleware,
                        allowed_hosts=["localhost", "127.0.0.1", "[::1]", "testserver"])
 
@@ -97,6 +117,7 @@ def create_app(data_dir: Path | None = None, root: Path = ROOT, *,
     sprint_store = SnapshotNoteStore(store, schemas)
     service = VerticalSliceService(*build_providers(root, config), sprint_store, schemas, config)
     app.include_router(create_router(service, root))
+    app.include_router(create_learning_router(learning, store, sprint_store))
 
     if (root / "apps/web/dist/index.html").is_file():
         app.mount("/", StaticFiles(directory=root / "apps/web/dist", html=True), name="web")

@@ -1,0 +1,32 @@
+{
+  "artifacts": {
+    "docs/full-delivery/openapi.json": "9847ceb3c3651bbf534f9b66556b8b505a7a0abaf6ddd79499a042cdbb6f8ec1",
+    "schemas/full-delivery-v1/ActivateContext.schema.json": "d494751a156b790115d0a427d0f7eed5734f3824e1043922caf8bfee5e788048",
+    "schemas/full-delivery-v1/Capabilities.schema.json": "dd1afe9033191c2f4bfcb9c54c899f5360ab3ea7710bccfb7a1eeceb495865d1",
+    "schemas/full-delivery-v1/CodeEvidence.schema.json": "7ce3de9d16c6871c2035309696a0680051c9f62ff7bd3d2628a0f60680daecc1",
+    "schemas/full-delivery-v1/ContextRequest.schema.json": "3e558406da09f420cc6351d5f2974948839592e0e12f94ac6b5c7daea620256e",
+    "schemas/full-delivery-v1/DeleteNoteRequest.schema.json": "b36ec847eb4adde4970fc6fb21146c866d5397cea9fe674ed0007bfc937b96d3",
+    "schemas/full-delivery-v1/DocumentContext.schema.json": "9e496b27db10cc57aeb59cb1da66a8497333e162fddfb1d6299e46d7e86fa1d0",
+    "schemas/full-delivery-v1/DocumentRecord.schema.json": "3fd3e2053d21caeed0044a10617601be056f9b97153a9d35d85415b8d9d0a328",
+    "schemas/full-delivery-v1/DocumentUnit.schema.json": "6b5595e048a159b9d153e038c4cec741fdff77441309392842b2ff8e5be5b08d",
+    "schemas/full-delivery-v1/EditNoteRequest.schema.json": "14b74599faadb329dfed15a02e77db7491de35a4d4c12d8371f4313a0b2d171c",
+    "schemas/full-delivery-v1/ExplanationRequest.schema.json": "c66fee43c629f62891e91f7c4f266e2db7ca44329a2b4b39443f647de0c728ca",
+    "schemas/full-delivery-v1/ExplanationResult.schema.json": "2827619e61f2c21f1a25296e917f86a6022cac8e646080dda5aa1a6f73c305e5",
+    "schemas/full-delivery-v1/GroundedExplanation.schema.json": "b632ff3fb9fec9769f5543de1d9d50ed3ccf6985289962f0bb7f03a24f6f1194",
+    "schemas/full-delivery-v1/LearningErrorResponse.schema.json": "cc0426c44ac9e4163d2046ec5bb1feaa45c28c0356ca1115e897b575cb2e13c5",
+    "schemas/full-delivery-v1/NoteList.schema.json": "5126753223acec399e2e48cbeac3f953c162e938257f36c73ca66e153e629065",
+    "schemas/full-delivery-v1/SaveNoteRequest.schema.json": "3987a2fa3156d57d7e3ee3b8a166583acb8eed33299b94ec4f8f91881c2b0bc6",
+    "schemas/full-delivery-v1/SavedNote.schema.json": "38a777c3e6f8549b8f3eeb68fc69e2686640bbff78640ac7bc2ef850e8c972a8",
+    "schemas/full-delivery-v1/SearchCandidate.schema.json": "41b7988364c0b4ceae554c5ee37c85355aa429e3d431a0c0f384b8d7a6aeb181",
+    "schemas/full-delivery-v1/SearchRequest.schema.json": "15f5c6bb2dbd6e065921f54f1b6ceb79d077f8d4e80a0110fe80095f75191554",
+    "schemas/full-delivery-v1/SearchResult.schema.json": "94ba9bf57cb1d06d34bc3c86bea0f22c0ea0c3ca5322578409a18733194072c7",
+    "schemas/full-delivery-v1/SessionRecord.schema.json": "52c15e5c5757fb759b247a29209dff913042568d4b4b3cf60e7b64d87aea9a60",
+    "schemas/full-delivery-v1/SourceQuery.schema.json": "c43e2bf66437c77988ed1cfd5db89e2a5f6102029b538d898f3d930306f2de99",
+    "schemas/full-delivery-v1/SourceScope.schema.json": "6af7c418062d9808855aba4e2e5a56dacf25a37c748a24e25bd5ecc95856c0f6",
+    "schemas/full-delivery-v1/TeachingPlan.schema.json": "41cf86a1e18d868fea810e2d49fdf9400315d932c09966f9d132f08f5eb36303",
+    "schemas/full-delivery-v1/VerifyRequest.schema.json": "ff96cd95f9b7bba14b94c0bfeffdc4d842b93d26f7888eab7293ff6c04af5ad0"
+  },
+  "contract_version": "full-delivery-v1",
+  "generated_from": "full_contracts/models.py",
+  "runtime_invariants": "See INTERFACES.md; hashes/authorization require server validation."
+}

@@ -1,0 +1,1331 @@
+{
+  "$defs": {
+    "AnswerSection": {
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "maxLength": 20000,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "text"
+      ],
+      "title": "AnswerSection",
+      "type": "object"
+    },
+    "Block": {
+      "additionalProperties": false,
+      "properties": {
+        "bbox": {
+          "anyOf": [
+            {
+              "maxItems": 4,
+              "minItems": 4,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bbox"
+        },
+        "block_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Block Id",
+          "type": "string"
+        },
+        "image_asset_id": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Image Asset Id"
+        },
+        "kind": {
+          "enum": [
+            "paragraph",
+            "table",
+            "caption",
+            "code",
+            "formula",
+            "image",
+            "unsupported"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "source_locator": {
+          "$ref": "#/$defs/SourceLocator"
+        },
+        "table_rows": {
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "maxItems": 1000,
+          "title": "Table Rows",
+          "type": "array"
+        },
+        "text": {
+          "default": "",
+          "maxLength": 100000,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "block_id",
+        "kind",
+        "source_locator"
+      ],
+      "title": "Block",
+      "type": "object"
+    },
+    "CodeEvidence": {
+      "additionalProperties": false,
+      "properties": {
+        "code_excerpt": {
+          "maxLength": 20000,
+          "title": "Code Excerpt",
+          "type": "string"
+        },
+        "commit_sha": {
+          "anyOf": [
+            {
+              "pattern": "^[a-f0-9]{40}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Commit Sha"
+        },
+        "contract_version": {
+          "const": "full-delivery-v1",
+          "default": "full-delivery-v1",
+          "title": "Contract Version",
+          "type": "string"
+        },
+        "dirty": {
+          "default": false,
+          "title": "Dirty",
+          "type": "boolean"
+        },
+        "excerpt_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Excerpt Sha256",
+          "type": "string"
+        },
+        "execution_status": {
+          "default": "NOT_RUN",
+          "enum": [
+            "NOT_RUN",
+            "RUN_PASSED",
+            "RUN_FAILED",
+            "BLOCKED"
+          ],
+          "title": "Execution Status",
+          "type": "string"
+        },
+        "file_blob_sha": {
+          "anyOf": [
+            {
+              "pattern": "^[a-f0-9]{40}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "File Blob Sha"
+        },
+        "file_path": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "File Path",
+          "type": "string"
+        },
+        "file_sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "File Sha256"
+        },
+        "language": {
+          "title": "Language",
+          "type": "string"
+        },
+        "license_observation": {
+          "$ref": "#/$defs/LicenseObservation"
+        },
+        "line_end": {
+          "minimum": 1,
+          "title": "Line End",
+          "type": "integer"
+        },
+        "line_start": {
+          "minimum": 1,
+          "title": "Line Start",
+          "type": "integer"
+        },
+        "local_handle": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Local Handle"
+        },
+        "mode": {
+          "enum": [
+            "LIVE",
+            "FIXTURE",
+            "UNAVAILABLE"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "permalink": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Permalink"
+        },
+        "provenance_kind": {
+          "enum": [
+            "SOURCE_EXACT",
+            "ADAPTED_FROM_SOURCE",
+            "AI_GENERATED"
+          ],
+          "title": "Provenance Kind",
+          "type": "string"
+        },
+        "relevance": {
+          "$ref": "#/$defs/Relevance"
+        },
+        "repository_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Repository Name"
+        },
+        "repository_owner": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Repository Owner"
+        },
+        "repository_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Repository Url"
+        },
+        "requested_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Requested Ref"
+        },
+        "retrieved_at": {
+          "format": "date-time",
+          "title": "Retrieved At",
+          "type": "string"
+        },
+        "revision": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "source_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Source Id",
+          "type": "string"
+        },
+        "source_mode": {
+          "enum": [
+            "specified_public",
+            "public_search",
+            "local_authorized"
+          ],
+          "title": "Source Mode",
+          "type": "string"
+        },
+        "symbol": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Symbol"
+        },
+        "symbol_kind": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Symbol Kind"
+        },
+        "verification_checks": {
+          "additionalProperties": {
+            "enum": [
+              "PASSED",
+              "FAILED",
+              "NOT_APPLICABLE",
+              "NOT_CHECKED"
+            ],
+            "type": "string"
+          },
+          "title": "Verification Checks",
+          "type": "object"
+        },
+        "verification_status": {
+          "enum": [
+            "VERIFIED",
+            "UNVERIFIED",
+            "NEEDS_CONFIRMATION",
+            "REJECTED"
+          ],
+          "title": "Verification Status",
+          "type": "string"
+        },
+        "visibility": {
+          "enum": [
+            "public",
+            "local"
+          ],
+          "title": "Visibility",
+          "type": "string"
+        }
+      },
+      "required": [
+        "mode",
+        "source_id",
+        "source_mode",
+        "visibility",
+        "file_path",
+        "language",
+        "line_start",
+        "line_end",
+        "code_excerpt",
+        "excerpt_sha256",
+        "license_observation",
+        "retrieved_at",
+        "verification_checks",
+        "provenance_kind",
+        "verification_status",
+        "relevance"
+      ],
+      "title": "CodeEvidence",
+      "type": "object"
+    },
+    "Comparison": {
+      "additionalProperties": false,
+      "properties": {
+        "source_ids": {
+          "items": {
+            "maxLength": 200,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_.:-]+$",
+            "type": "string"
+          },
+          "maxItems": 3,
+          "minItems": 2,
+          "title": "Source Ids",
+          "type": "array"
+        },
+        "summary": {
+          "title": "Summary",
+          "type": "string"
+        },
+        "tradeoffs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tradeoffs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "source_ids",
+        "summary",
+        "tradeoffs"
+      ],
+      "title": "Comparison",
+      "type": "object"
+    },
+    "ConceptCodeLink": {
+      "additionalProperties": false,
+      "properties": {
+        "concept": {
+          "title": "Concept",
+          "type": "string"
+        },
+        "reason": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "source_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Source Id",
+          "type": "string"
+        },
+        "symbol": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Symbol"
+        }
+      },
+      "required": [
+        "concept",
+        "source_id",
+        "reason"
+      ],
+      "title": "ConceptCodeLink",
+      "type": "object"
+    },
+    "DocumentCitation": {
+      "additionalProperties": false,
+      "properties": {
+        "block_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Block Id",
+          "type": "string"
+        },
+        "quote": {
+          "maxLength": 10000,
+          "minLength": 1,
+          "title": "Quote",
+          "type": "string"
+        },
+        "quote_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Quote Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "block_id",
+        "quote",
+        "quote_sha256"
+      ],
+      "title": "DocumentCitation",
+      "type": "object"
+    },
+    "DocumentContext": {
+      "additionalProperties": false,
+      "properties": {
+        "contract_version": {
+          "const": "full-delivery-v1",
+          "default": "full-delivery-v1",
+          "title": "Contract Version",
+          "type": "string"
+        },
+        "coverage": {
+          "enum": [
+            "TEXT",
+            "PARTIAL",
+            "NO_EXTRACTABLE_TEXT"
+          ],
+          "title": "Coverage",
+          "type": "string"
+        },
+        "document_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Document Id",
+          "type": "string"
+        },
+        "document_revision": {
+          "minimum": 1,
+          "title": "Document Revision",
+          "type": "integer"
+        },
+        "file_name": {
+          "title": "File Name",
+          "type": "string"
+        },
+        "mode": {
+          "enum": [
+            "LIVE",
+            "FIXTURE",
+            "UNAVAILABLE"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "original_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Original Sha256",
+          "type": "string"
+        },
+        "relevant_context_blocks": {
+          "items": {
+            "$ref": "#/$defs/Block"
+          },
+          "title": "Relevant Context Blocks",
+          "type": "array"
+        },
+        "revision": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "selected_text": {
+          "default": "",
+          "maxLength": 10000,
+          "title": "Selected Text",
+          "type": "string"
+        },
+        "selected_text_hash": {
+          "anyOf": [
+            {
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Selected Text Hash"
+        },
+        "selection_locator": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SelectionLocator"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "source_type": {
+          "enum": [
+            "PDF",
+            "PPTX",
+            "DOCX",
+            "MARKDOWN"
+          ],
+          "title": "Source Type",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "READY",
+            "PARTIAL",
+            "NO_EXTRACTABLE_TEXT"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "unit_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Unit Id",
+          "type": "string"
+        },
+        "unit_locator": {
+          "$ref": "#/$defs/SourceLocator"
+        },
+        "visible_text": {
+          "maxLength": 100000,
+          "title": "Visible Text",
+          "type": "string"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "mode",
+        "document_id",
+        "document_revision",
+        "original_sha256",
+        "source_type",
+        "file_name",
+        "unit_id",
+        "unit_locator",
+        "visible_text",
+        "relevant_context_blocks",
+        "coverage",
+        "status"
+      ],
+      "title": "DocumentContext",
+      "type": "object"
+    },
+    "ExampleBlock": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "maxLength": 20000,
+          "title": "Code",
+          "type": "string"
+        },
+        "execution_status": {
+          "default": "NOT_RUN",
+          "enum": [
+            "NOT_RUN",
+            "RUN_PASSED",
+            "RUN_FAILED",
+            "BLOCKED"
+          ],
+          "title": "Execution Status",
+          "type": "string"
+        },
+        "explanation": {
+          "title": "Explanation",
+          "type": "string"
+        },
+        "language": {
+          "title": "Language",
+          "type": "string"
+        },
+        "provenance_kind": {
+          "enum": [
+            "SOURCE_EXACT",
+            "ADAPTED_FROM_SOURCE",
+            "AI_GENERATED"
+          ],
+          "title": "Provenance Kind",
+          "type": "string"
+        },
+        "source_id": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Id"
+        }
+      },
+      "required": [
+        "provenance_kind",
+        "language",
+        "code",
+        "explanation"
+      ],
+      "title": "ExampleBlock",
+      "type": "object"
+    },
+    "GroundedExplanation": {
+      "additionalProperties": false,
+      "properties": {
+        "answer_sections": {
+          "items": {
+            "$ref": "#/$defs/AnswerSection"
+          },
+          "maxItems": 20,
+          "minItems": 1,
+          "title": "Answer Sections",
+          "type": "array"
+        },
+        "code_source_ids": {
+          "items": {
+            "maxLength": 200,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_.:-]+$",
+            "type": "string"
+          },
+          "maxItems": 3,
+          "title": "Code Source Ids",
+          "type": "array"
+        },
+        "comparison": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Comparison"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "concept_code_links": {
+          "items": {
+            "$ref": "#/$defs/ConceptCodeLink"
+          },
+          "title": "Concept Code Links",
+          "type": "array"
+        },
+        "context_snapshot": {
+          "$ref": "#/$defs/DocumentContext"
+        },
+        "contract_version": {
+          "const": "full-delivery-v1",
+          "default": "full-delivery-v1",
+          "title": "Contract Version",
+          "type": "string"
+        },
+        "document_citations": {
+          "items": {
+            "$ref": "#/$defs/DocumentCitation"
+          },
+          "maxItems": 100,
+          "title": "Document Citations",
+          "type": "array"
+        },
+        "example_blocks": {
+          "items": {
+            "$ref": "#/$defs/ExampleBlock"
+          },
+          "title": "Example Blocks",
+          "type": "array"
+        },
+        "explanation_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Explanation Id",
+          "type": "string"
+        },
+        "level": {
+          "enum": [
+            "Beginner",
+            "University",
+            "Engineering",
+            "Source-code"
+          ],
+          "title": "Level",
+          "type": "string"
+        },
+        "limitations": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Limitations",
+          "type": "array"
+        },
+        "metrics": {
+          "$ref": "#/$defs/Metrics"
+        },
+        "mode": {
+          "enum": [
+            "LIVE",
+            "FIXTURE",
+            "UNAVAILABLE"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "provider_info": {
+          "$ref": "#/$defs/ProviderInfo"
+        },
+        "question": {
+          "title": "Question",
+          "type": "string"
+        },
+        "revision": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "status": {
+          "enum": [
+            "GROUNDED",
+            "NO_VERIFIED_CODE",
+            "FIXTURE"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "unsupported_claims": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Unsupported Claims",
+          "type": "array"
+        }
+      },
+      "required": [
+        "mode",
+        "explanation_id",
+        "question",
+        "context_snapshot",
+        "level",
+        "answer_sections",
+        "provider_info",
+        "metrics",
+        "status"
+      ],
+      "title": "GroundedExplanation",
+      "type": "object"
+    },
+    "LicenseFile": {
+      "additionalProperties": false,
+      "properties": {
+        "commit_sha": {
+          "anyOf": [
+            {
+              "pattern": "^[a-f0-9]{40}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Commit Sha"
+        },
+        "content_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Content Sha256",
+          "type": "string"
+        },
+        "identifier": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Identifier"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "permalink": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Permalink"
+        }
+      },
+      "required": [
+        "path",
+        "content_sha256"
+      ],
+      "title": "LicenseFile",
+      "type": "object"
+    },
+    "LicenseObservation": {
+      "additionalProperties": false,
+      "properties": {
+        "code_display_allowed": {
+          "default": false,
+          "title": "Code Display Allowed",
+          "type": "boolean"
+        },
+        "files": {
+          "items": {
+            "$ref": "#/$defs/LicenseFile"
+          },
+          "title": "Files",
+          "type": "array"
+        },
+        "limitations": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Limitations",
+          "type": "array"
+        },
+        "status": {
+          "enum": [
+            "DETECTED",
+            "UNKNOWN",
+            "MIXED"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "LicenseObservation",
+      "type": "object"
+    },
+    "Metrics": {
+      "additionalProperties": false,
+      "properties": {
+        "input_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Input Tokens"
+        },
+        "input_truncated": {
+          "default": false,
+          "title": "Input Truncated",
+          "type": "boolean"
+        },
+        "latency_ms": {
+          "minimum": 0,
+          "title": "Latency Ms",
+          "type": "number"
+        },
+        "output_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Output Tokens"
+        },
+        "token_source": {
+          "default": "UNAVAILABLE",
+          "enum": [
+            "PROVIDER_USAGE",
+            "ESTIMATE",
+            "UNAVAILABLE"
+          ],
+          "title": "Token Source",
+          "type": "string"
+        },
+        "truncation_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Truncation Reason"
+        }
+      },
+      "required": [
+        "latency_ms"
+      ],
+      "title": "Metrics",
+      "type": "object"
+    },
+    "ProviderInfo": {
+      "additionalProperties": false,
+      "properties": {
+        "endpoint_kind": {
+          "enum": [
+            "loopback",
+            "authorized_remote",
+            "fixture",
+            "unavailable"
+          ],
+          "title": "Endpoint Kind",
+          "type": "string"
+        },
+        "mode": {
+          "enum": [
+            "LIVE",
+            "FIXTURE",
+            "UNAVAILABLE"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "model_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Id"
+        },
+        "provider_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Provider Id",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "AVAILABLE",
+            "UNAVAILABLE",
+            "FIXTURE"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider_id",
+        "mode",
+        "endpoint_kind",
+        "status"
+      ],
+      "title": "ProviderInfo",
+      "type": "object"
+    },
+    "Relevance": {
+      "additionalProperties": false,
+      "properties": {
+        "basis": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Basis",
+          "type": "array"
+        },
+        "reason": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "SUPPORTED",
+            "CANDIDATE",
+            "UNCERTAIN",
+            "NOT_RELEVANT"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "reason"
+      ],
+      "title": "Relevance",
+      "type": "object"
+    },
+    "SelectionLocator": {
+      "additionalProperties": false,
+      "properties": {
+        "normalization": {
+          "default": "exact",
+          "enum": [
+            "exact",
+            "whitespace-v1"
+          ],
+          "title": "Normalization",
+          "type": "string"
+        },
+        "spans": {
+          "items": {
+            "$ref": "#/$defs/SelectionSpan"
+          },
+          "maxItems": 50,
+          "minItems": 1,
+          "title": "Spans",
+          "type": "array"
+        }
+      },
+      "required": [
+        "spans"
+      ],
+      "title": "SelectionLocator",
+      "type": "object"
+    },
+    "SelectionSpan": {
+      "additionalProperties": false,
+      "properties": {
+        "block_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Block Id",
+          "type": "string"
+        },
+        "end": {
+          "minimum": 0,
+          "title": "End",
+          "type": "integer"
+        },
+        "start": {
+          "minimum": 0,
+          "title": "Start",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "block_id",
+        "start",
+        "end"
+      ],
+      "title": "SelectionSpan",
+      "type": "object"
+    },
+    "SourceLocator": {
+      "additionalProperties": false,
+      "properties": {
+        "block_id": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Block Id"
+        },
+        "heading_path": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 30,
+          "title": "Heading Path",
+          "type": "array"
+        },
+        "index": {
+          "minimum": 1,
+          "title": "Index",
+          "type": "integer"
+        },
+        "unit_type": {
+          "enum": [
+            "page",
+            "slide",
+            "section"
+          ],
+          "title": "Unit Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "unit_type",
+        "index"
+      ],
+      "title": "SourceLocator",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "code_evidence_snapshot": {
+      "items": {
+        "$ref": "#/$defs/CodeEvidence"
+      },
+      "title": "Code Evidence Snapshot",
+      "type": "array"
+    },
+    "contract_version": {
+      "const": "full-delivery-v1",
+      "default": "full-delivery-v1",
+      "title": "Contract Version",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "document_snapshot": {
+      "$ref": "#/$defs/DocumentContext"
+    },
+    "explanation_snapshot": {
+      "$ref": "#/$defs/GroundedExplanation"
+    },
+    "mode": {
+      "enum": [
+        "LIVE",
+        "FIXTURE",
+        "UNAVAILABLE"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "note_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_.:-]+$",
+      "title": "Note Id",
+      "type": "string"
+    },
+    "revision": {
+      "default": 1,
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "snapshot_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Snapshot Sha256",
+      "type": "string"
+    },
+    "status": {
+      "const": "SAVED",
+      "default": "SAVED",
+      "title": "Status",
+      "type": "string"
+    },
+    "title": {
+      "title": "Title",
+      "type": "string"
+    },
+    "updated_at": {
+      "format": "date-time",
+      "title": "Updated At",
+      "type": "string"
+    },
+    "user_text": {
+      "title": "User Text",
+      "type": "string"
+    }
+  },
+  "required": [
+    "mode",
+    "note_id",
+    "title",
+    "user_text",
+    "explanation_snapshot",
+    "document_snapshot",
+    "code_evidence_snapshot",
+    "snapshot_sha256",
+    "created_at",
+    "updated_at"
+  ],
+  "title": "SavedNote",
+  "type": "object"
+}

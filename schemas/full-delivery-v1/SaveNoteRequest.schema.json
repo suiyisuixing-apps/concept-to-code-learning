@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "explanation_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_.:-]+$",
+      "title": "Explanation Id",
+      "type": "string"
+    },
+    "idempotency_key": {
+      "maxLength": 200,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_.:-]+$",
+      "title": "Idempotency Key",
+      "type": "string"
+    },
+    "save_requested_by_user": {
+      "title": "Save Requested By User",
+      "type": "boolean"
+    },
+    "session_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_.:-]+$",
+      "title": "Session Id",
+      "type": "string"
+    },
+    "title": {
+      "maxLength": 160,
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "user_text": {
+      "default": "",
+      "maxLength": 20000,
+      "title": "User Text",
+      "type": "string"
+    }
+  },
+  "required": [
+    "session_id",
+    "explanation_id",
+    "idempotency_key",
+    "save_requested_by_user",
+    "title"
+  ],
+  "title": "SaveNoteRequest",
+  "type": "object"
+}

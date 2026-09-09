@@ -6,6 +6,8 @@ Concept-to-Code Learning 面向正在学习技术材料的学生、自学者与�
 
 三种来源模式：用户指定的 GitHub 仓库、授权的本地只读仓库、明确允许后的公开 GitHub 搜索。搜索与验证分开；任意检索结果都不能自动成为已核验来源。
 
-当前 Phase 0.5 只实现合成 Markdown 分页、依赖注入固定讲解、一条独立核验的 FastAPI 冻结引用和本地笔记。真实解析、实时检索、一般化核验、模型、运行验证、比较属于后续 Issues。Fixture 不证明完整 MVP。
+当前执行范围为 FULL-DELIVERY-PLAN-1，见 [完整模块任务书](codex-prompts/full-delivery/README.md)。Lead 集成候选已增加 full-delivery-v1 合同、中央编排、会话/选区与来源边界、个人笔记修订/导出和可调用 Skill。四格式文档/UI、三模式来源和真实 Tutor 由三名成员连续完成，开发不再以旧 PPTX 小切片为上限。
+
+实际能力仍按证据：现有网页保留 Phase0.5合成 Markdown、固定讲解、一条冻结引用和旧笔记；成员完整模块未交付时新流水线报告不可用。Fixture 和 Provider 组合测试不证明完整真实产品或模型效果。
 
 旧企业入职定位已废止，详见 rescope-decision.md。学习效果由未来 Grounding 对照评测评估，不自动给用户贴“掌握知识”的标签。
