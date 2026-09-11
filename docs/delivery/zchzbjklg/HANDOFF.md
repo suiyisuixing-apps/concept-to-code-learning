@@ -78,11 +78,15 @@
 
 | # | 失败用例 | 归属 | 性质 |
 |---|---|---|---|
-| 1–4 | `tests/documents/test_full_provider.py`（4 项：office external relationship / real pdf / real pptx / real docx） | @inogi-sama 文档模块 | **本机 venv 缺依赖**（`python-docx`/`python-pptx`/`pypdf`/`PyMuPDF`/`Pillow` 均 MISSING，已实测）。`pyproject.toml` 的 `[project.optional-dependencies]` 只有 `dev`，文档依赖未由 Lead 汇总。**非代码缺陷** |
+| 1–4 | `tests/documents/test_full_provider.py`（4 项：office external relationship / real pdf / real pptx / real docx） | @inogi-sama 文档模块 | **本机 venv 未按锁文件装依赖**：实测 `python-docx`/`python-pptx`/`pypdf`/`Pillow` 均 MISSING。但 `requirements/full-delivery-py312.lock`（**CI 使用的锁文件**）**已包含** `python-docx==1.2.0`、`python-pptx==1.0.2`、`pypdf==6.18.0`、`pillow==12.3.0`、`lxml==6.1.3`。**CI 会装齐这些依赖，故这 4 项在 CI 中预计不存在**；本机失败纯属本地环境未对齐锁文件。**非代码缺陷** |
 | 5 | `tests/full_delivery/test_boundaries.py::test_uninstalled_modules_report_partial_without_fixture_fallback` | 集成层（Lead） | 集成边界用例，超出本模块所有权 |
-| 6 | `tests/github_intelligence/test_product_completion.py::test_docx_images_keep_their_section_and_hyperlinks_never_fetch` | **Lead 写的跨模块集成回归**（寄放在我目录下，`git log` 作者为 `suiyisuixing`） | 同一缺依赖问题；该文件导入 `documents.full`，测的是文档 provider，不是我模块 |
+| 6 | `tests/github_intelligence/test_product_completion.py::test_docx_images_keep_their_section_and_hyperlinks_never_fetch` | **Lead 写的跨模块集成回归**（寄放在我目录下，`git log` 作者为 `suiyisuixing`） | 同一本地缺依赖问题；该文件导入 `documents.full`，测的是文档 provider，不是我模块。CI 装锁文件后预计消除 |
 | 7 | `tests/test_local_model_adapter.py::test_redirects_are_never_followed` | @fqf060420 模型模块 | **顺序依赖抖动**：单独运行 → `1 passed`（已实测）。本切片只新增一个测试文件，无模块级副作用，不可能影响该用例 |
 | 8–9 | `tests/test_text_encoding.py`（2 项 ERROR） | 集成层（Lead） | 采集期错误，见 §3 说明 |
+
+> **如需在本机复现 CI 全绿**：按锁文件重建环境，即
+> `python -m pip install -c requirements/full-delivery-py312.lock -e ".[dev]"`
+> （与 `.github/workflows/ci.yml` 的安装步骤一致）。本机 venv 未执行该步骤，故缺文档依赖。
 
 **本切片新增的 20 个用例无一失败，也无一被跳过。**
 
@@ -167,6 +171,34 @@
 
 ## 8. PR
 
+- PR：**#73** `[#67] 补齐 C7 失败矩阵：超时 / 取消 / 截断 / 注入 / 哈希错配`
 - 分支：`feat/67-source-failure-matrix` → 目标 `feat/full-learning-integration`
-- 标签：`lead-review:pending`
+- 标签：`lead-review:pending`、`role:github-intelligence`、`area:code-intelligence`
+- 审核人：@suiyisuixing（作者不自审；已发评论请求审核）
 - **成员不合并**；最终审核与合并由 @suiyisuixing 完成。
+
+### 关于 CI
+
+`gh pr checks 73` → `no checks reported`。原因：`.github/workflows/ci.yml` 的触发条件为
+
+```yaml
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+```
+
+即 **只有以 `main` 为目标的 PR 才触发 CI**。本 PR 目标是 `feat/full-learning-integration`，按仓库设计**不会**触发 CI。
+因此"当前 Head 的 required CI"在本 PR 上不适用；真正跑 CI 的时机是集成分支 → `main`（现有草稿 PR #69）。
+
+**未修改 `ci.yml`**（改 CI 配置凑绿属红线）。本切片改动在 CI 下的预期：
+CI 按 `requirements/full-delivery-py312.lock` 安装依赖（含文档依赖），并执行
+`ruff check .` → `pytest -q` → `doctor` → `demo` → 前端三连。
+新增测试仅依赖标准库 + `httpx` + `pytest`，且已在本机 **Windows** 与项目 Python 3.12 下跑绿，故对 `phase0-checks`（ubuntu）与 `windows-checks`（windows）均预期通过。
+
+### 下一个切片（本模块剩余项）
+
+| 项 | 说明 |
+|---|---|
+| Notebook 静态读取 | C4 提到"若支持"；当前未实现且未声明 |
+| 歧义候选的主动追问 | 字段已就绪，触发点在 Lead 编排层 |
+| 真实端点实测 | 待 Lead 授权外网 / 配置 `C2C_GITHUB_TOKEN` 后执行 |

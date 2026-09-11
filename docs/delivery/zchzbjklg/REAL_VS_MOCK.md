@@ -85,4 +85,4 @@ git -C <root> -c user.name=... -c user.email=... commit -m synthetic
 |---|---|---|
 | `C2C_GITHUB_TOKEN` 未配置 | 未实测认证路径（配额提升、私有范围行为） | Lead / 运维 |
 | 本机未授权外网实测 | 未实测真实端点连通性与真实限流响应 | Lead 授权后由 Lead 复验 |
-| 本机 venv 缺文档依赖（`python-docx`/`python-pptx`/`pypdf`/`PyMuPDF`/`Pillow`） | 4 个文档模块测试 + 1 个 Lead 集成回归失败 | Lead 汇总文档依赖后由 @inogi-sama 复验（**不属本模块**） |
+| 本机 venv 未按 `requirements/full-delivery-py312.lock` 安装 | 4 个文档模块测试 + 1 个 Lead 集成回归在本机失败。锁文件**已包含** `python-docx`/`python-pptx`/`pypdf`/`pillow`，CI 会装齐 → **这些失败在 CI 中预计不存在**，属本地环境未对齐 | 本机执行 `python -m pip install -c requirements/full-delivery-py312.lock -e ".[dev]"` 即可对齐（**不属本模块职责**，由 @inogi-sama 复验） |
