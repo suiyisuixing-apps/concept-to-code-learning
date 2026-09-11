@@ -1,0 +1,311 @@
+{
+  "$defs": {
+    "ScopeLimit": {
+      "additionalProperties": false,
+      "properties": {
+        "files": {
+          "default": 10,
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Files",
+          "type": "integer"
+        },
+        "repositories": {
+          "default": 5,
+          "maximum": 20,
+          "minimum": 1,
+          "title": "Repositories",
+          "type": "integer"
+        }
+      },
+      "title": "ScopeLimit",
+      "type": "object"
+    },
+    "SourceQuery": {
+      "additionalProperties": false,
+      "properties": {
+        "approved_query_terms": {
+          "items": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 20,
+          "title": "Approved Query Terms",
+          "type": "array"
+        },
+        "auto_public_search": {
+          "default": false,
+          "title": "Auto Public Search",
+          "type": "boolean"
+        },
+        "concept_terms": {
+          "items": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 20,
+          "minItems": 1,
+          "title": "Concept Terms",
+          "type": "array"
+        },
+        "contract_version": {
+          "const": "full-delivery-v1",
+          "default": "full-delivery-v1",
+          "title": "Contract Version",
+          "type": "string"
+        },
+        "file_hints": {
+          "items": {
+            "maxLength": 300,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 5,
+          "title": "File Hints",
+          "type": "array"
+        },
+        "language_hint": {
+          "anyOf": [
+            {
+              "maxLength": 50,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Language Hint"
+        },
+        "local_handle": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Local Handle"
+        },
+        "max_sources": {
+          "default": 3,
+          "maximum": 3,
+          "minimum": 1,
+          "title": "Max Sources",
+          "type": "integer"
+        },
+        "mode": {
+          "enum": [
+            "LIVE",
+            "FIXTURE",
+            "UNAVAILABLE"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "network_authorized": {
+          "default": false,
+          "title": "Network Authorized",
+          "type": "boolean"
+        },
+        "query_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Query Id",
+          "type": "string"
+        },
+        "query_terms_approved": {
+          "default": false,
+          "title": "Query Terms Approved",
+          "type": "boolean"
+        },
+        "question": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Question",
+          "type": "string"
+        },
+        "repository_allowlist": {
+          "items": {
+            "maxLength": 200,
+            "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$",
+            "type": "string"
+          },
+          "maxItems": 20,
+          "title": "Repository Allowlist",
+          "type": "array"
+        },
+        "repository_hints": {
+          "items": {
+            "maxLength": 200,
+            "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$",
+            "type": "string"
+          },
+          "maxItems": 3,
+          "title": "Repository Hints",
+          "type": "array"
+        },
+        "revision": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "scope_limit": {
+          "$ref": "#/$defs/ScopeLimit"
+        },
+        "source_mode": {
+          "default": "specified_public",
+          "enum": [
+            "specified_public",
+            "public_search",
+            "local_authorized"
+          ],
+          "title": "Source Mode",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "PLANNED",
+            "AUTHORIZED",
+            "NEEDS_CONFIRMATION"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "mode",
+        "query_id",
+        "question",
+        "concept_terms",
+        "status"
+      ],
+      "title": "SourceQuery",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "concepts": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Concepts",
+      "type": "array"
+    },
+    "contract_version": {
+      "const": "full-delivery-v1",
+      "default": "full-delivery-v1",
+      "title": "Contract Version",
+      "type": "string"
+    },
+    "level": {
+      "enum": [
+        "Beginner",
+        "University",
+        "Engineering",
+        "Source-code"
+      ],
+      "title": "Level",
+      "type": "string"
+    },
+    "mode": {
+      "enum": [
+        "LIVE",
+        "FIXTURE",
+        "UNAVAILABLE"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "needs_code": {
+      "title": "Needs Code",
+      "type": "boolean"
+    },
+    "plan_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_.:-]+$",
+      "title": "Plan Id",
+      "type": "string"
+    },
+    "prerequisites": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Prerequisites",
+      "type": "array"
+    },
+    "question": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Question",
+      "type": "string"
+    },
+    "reuse_previous_sources": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reuse Previous Sources"
+    },
+    "revision": {
+      "default": 1,
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "source_query": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SourceQuery"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "status": {
+      "enum": [
+        "READY",
+        "NEEDS_CONFIRMATION"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "uncertainties": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Uncertainties",
+      "type": "array"
+    }
+  },
+  "required": [
+    "mode",
+    "plan_id",
+    "question",
+    "level",
+    "concepts",
+    "needs_code",
+    "status"
+  ],
+  "title": "TeachingPlan",
+  "type": "object"
+}

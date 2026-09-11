@@ -11,17 +11,26 @@ from concept_to_code_learning.scaffold import doctor, run_demo
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Concept-to-Code Learning · FIXTURE")
-    parser.add_argument("command", choices=("doctor", "demo", "serve"))
+    parser = argparse.ArgumentParser(description="Concept-to-Code Learning · local software")
+    parser.add_argument("command", choices=("doctor", "demo", "serve", "start"))
     parser.add_argument("--port", type=int, default=8766)
+    parser.add_argument("--data-dir", type=Path)
     args = parser.parse_args(argv)
     root = Path.cwd().resolve()
-    if args.command == "serve":
+    if args.command in {"serve", "start"}:
+        if not 1 <= args.port <= 65535:
+            parser.error("Port must be between 1 and 65535")
+        if args.command == "start" and not (root / "apps/web/dist/index.html").is_file():
+            print("请先安装依赖并运行 npm --prefix apps/web run build。", file=sys.stderr)
+            return 1
         import uvicorn
 
         from concept_to_code_learning.api import create_app
 
-        uvicorn.run(create_app(root=root), host="127.0.0.1", port=args.port)
+        print(f"本地学习软件：http://127.0.0.1:{args.port}\n"
+              f"真实能力状态：http://127.0.0.1:{args.port}/api/learning/v1/capabilities\n"
+              "阅读器与笔记可直接使用；模型连接状态见页面提示。按 Ctrl+C 停止。", flush=True)
+        uvicorn.run(create_app(root=root, data_dir=args.data_dir), host="127.0.0.1", port=args.port)
         return 0
     if args.command == "doctor":
         result = doctor(root)
@@ -47,9 +56,9 @@ def main(argv: list[str] | None = None) -> int:
             assert NoteStore(Path(temp), tutor.schemas).list()[0] == note
         output.mkdir(exist_ok=True)
         (output / "grounded-explanation.json").write_text(
-            json.dumps(explanation, ensure_ascii=False, indent=2) + "\n")
+            json.dumps(explanation, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         (output / "saved-note.json").write_text(
-            json.dumps(note, ensure_ascii=False, indent=2) + "\n")
+            json.dumps(note, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     except (OSError, ValueError) as exc:
         print(f"demo: {exc}", file=sys.stderr)
         return 1

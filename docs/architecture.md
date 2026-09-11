@@ -1,3 +1,5 @@
+> 2026-09-09 当前执行范围： [完整学习版](full-delivery/PLAN.md)；[新接口与职责](full-delivery/INTERFACES.md)。以下旧阶段说明保留作兼容和历史参考。
+
 # 架构与接缝
 
 ```text

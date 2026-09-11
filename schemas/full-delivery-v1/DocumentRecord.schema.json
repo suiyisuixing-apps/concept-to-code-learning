@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "capabilities": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Capabilities",
+      "type": "array"
+    },
+    "contract_version": {
+      "const": "full-delivery-v1",
+      "default": "full-delivery-v1",
+      "title": "Contract Version",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "document_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_.:-]+$",
+      "title": "Document Id",
+      "type": "string"
+    },
+    "file_name": {
+      "maxLength": 240,
+      "minLength": 1,
+      "title": "File Name",
+      "type": "string"
+    },
+    "import_status": {
+      "enum": [
+        "READY",
+        "PARTIAL",
+        "NO_EXTRACTABLE_TEXT",
+        "FAILED"
+      ],
+      "title": "Import Status",
+      "type": "string"
+    },
+    "mode": {
+      "enum": [
+        "LIVE",
+        "FIXTURE",
+        "UNAVAILABLE"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "original_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Original Sha256",
+      "type": "string"
+    },
+    "revision": {
+      "default": 1,
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "source_type": {
+      "enum": [
+        "PDF",
+        "PPTX",
+        "DOCX",
+        "MARKDOWN"
+      ],
+      "title": "Source Type",
+      "type": "string"
+    },
+    "unit_count": {
+      "minimum": 0,
+      "title": "Unit Count",
+      "type": "integer"
+    },
+    "warnings": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "mode",
+    "document_id",
+    "file_name",
+    "source_type",
+    "original_sha256",
+    "unit_count",
+    "import_status",
+    "created_at"
+  ],
+  "title": "DocumentRecord",
+  "type": "object"
+}

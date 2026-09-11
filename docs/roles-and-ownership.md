@@ -1,3 +1,5 @@
+> 2026-09-09 当前执行范围： [完整学习版](full-delivery/PLAN.md)；[新接口与职责](full-delivery/INTERFACES.md)。以下旧阶段说明保留作兼容和历史参考。
+
 # 四人职责与入队状态
 
 适用范围：2026-09-09 起执行 Lead 单一负责制，见 [治理政策](governance/lead-controlled-merge-policy.md)。下文合同与实现描述对应 PR #58；治理文档本身不引入这些运行时代码，使用前核验 #58 是否已进入 main。

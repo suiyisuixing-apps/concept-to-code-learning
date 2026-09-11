@@ -1,0 +1,747 @@
+{
+  "checked_at": "2026-09-11T11:56:22.817863+00:00",
+  "base_head": "511b24f4be9a519911fb7724008df854e9c0b4d2",
+  "public_retrieval": {
+    "status": "VERIFIED_EARLIER_IN_THIS_REPAIR",
+    "records": [
+      {
+        "case": "generic_followup_after_partial_selection",
+        "seconds": 14.697,
+        "acquisition": "workbench anonymous GitHub client, no gh token",
+        "sources": [
+          {
+            "commit_sha": "3dfd2015bfec71e003c00dc870b1b6f9f6933650",
+            "file_path": "examples/linear_model/plot_ols_ridge.py",
+            "permalink": "https://github.com/scikit-learn/scikit-learn/blob/3dfd2015bfec71e003c00dc870b1b6f9f6933650/examples/linear_model/plot_ols_ridge.py#L33-L81",
+            "file_sha256": "e08ae367bbb3db28e1fbedcce3435deff4b54486e3b3b49b89454a254aed9f3e"
+          }
+        ]
+      },
+      {
+        "case": "outside_old_vocabulary_shortest_path",
+        "seconds": 27.498,
+        "acquisition": "workbench anonymous GitHub client, no gh token",
+        "sources": [
+          {
+            "commit_sha": "85293e3e2b88f4d2ce330d956b139cf628aa1e82",
+            "file_path": "src/algorithms/graph/dijkstra/dijkstra.js",
+            "permalink": "https://github.com/trekhleb/javascript-algorithms/blob/85293e3e2b88f4d2ce330d956b139cf628aa1e82/src/algorithms/graph/dijkstra/dijkstra.js#L1-L80",
+            "file_sha256": "3bd01aca24f51a681b9e59cd0ef4c2ee0b691c26a41049751449066ac8f0b7c2"
+          }
+        ]
+      }
+    ],
+    "latest_full_fresh_retrieval": "Current automatic discovery recorded in final_contextual_flow; individual immutable HTTP responses may come from product cache."
+  },
+  "module_tests": {
+    "frontend": 30,
+    "ruff": "passed",
+    "schema_openapi": "current",
+    "production_build": "passed",
+    "doctor": "passed",
+    "demo": "FIXTURE",
+    "python": 423
+  },
+  "user_documents_used_for_testing": false,
+  "third_party_code_executed": false,
+  "main_merged": false,
+  "human_lead_review": "pending",
+  "limitations": [
+    "Limited local examples do not establish universal retrieval or model accuracy.",
+    "Anonymous GitHub quota and network availability can prevent new repository reads.",
+    "Source verification establishes identity and integrity, not correctness of every generated sentence."
+  ],
+  "earlier_model_comparison": {
+    "acquisition": "existing product-verified immutable source records explicitly selected in isolated QA sessions; no new GitHub retrieval in these model comparisons",
+    "coder": [
+      {
+        "case": "history_setup_document_only",
+        "question": "输入 X 与目标 Y 是什么关系？",
+        "status": "NO_VERIFIED_CODE",
+        "first_preview_seconds": 5.522,
+        "total_seconds": 7.211,
+        "answer_sections": [
+          {
+            "title": "核心意思",
+            "text": "输入 X 是提供给模型的信息，目标 Y 是我们希望模型预测的信息。训练过程学习 X 和 Y 之间的关系，然后在新的输入 X 上进行预测。"
+          }
+        ],
+        "limitations": [],
+        "model": "Qwen2.5-Coder-7B-Instruct-4bit",
+        "metrics": {
+          "latency_ms": 7199.0,
+          "input_tokens": 1109,
+          "output_tokens": 139,
+          "token_source": "PROVIDER_USAGE",
+          "input_truncated": false,
+          "truncation_reason": null
+        },
+        "sources": []
+      },
+      {
+        "case": "generic_followup_after_partial_selection",
+        "question": "所以GitHub上面可以找到代码吗？给我看看例子？",
+        "status": "GROUNDED",
+        "first_preview_seconds": 7.576,
+        "total_seconds": 17.655,
+        "answer_sections": [
+          {
+            "title": "代码怎么实现",
+            "text": "可以，在GitHub上确实能找到相关代码示例。以 `scikit-learn/scikit-learn` 项目中的 `examples/linear_model/plot_ols_ridge.py` 文件为例，该代码中 `fit` 方法接收的是 `X_train`（输入特征）和 `y_train`（标签目标），用于训练线性回归模型。例如，代码中明确调用 `regressor = LinearRegression().fit(X_train, y_train)`，说明模型在训练阶段学习了输入特征 `X_train` 与输出标签 `y_train` 之间的映射关系。预测时，模型仅使用 `X_test` 调用 `regressor.predict(X_test)`，无需提供 `y_test`，因为预测是基于模型已学得的映射关系。这与原文中‘训练学习X和Y的关系，预测时只需新输入X’的描述完全一致。"
+          }
+        ],
+        "limitations": [],
+        "model": "Qwen2.5-Coder-7B-Instruct-4bit",
+        "metrics": {
+          "latency_ms": 17646.0,
+          "input_tokens": 2971,
+          "output_tokens": 411,
+          "token_source": "PROVIDER_USAGE",
+          "input_truncated": true,
+          "truncation_reason": "按选区优先保留材料；长文本、源码或较早对话已裁剪。"
+        },
+        "sources": [
+          {
+            "repository_owner": "scikit-learn",
+            "repository_name": "scikit-learn",
+            "commit_sha": "3dfd2015bfec71e003c00dc870b1b6f9f6933650",
+            "file_path": "examples/linear_model/plot_ols_ridge.py",
+            "line_start": 33,
+            "line_end": 81,
+            "permalink": "https://github.com/scikit-learn/scikit-learn/blob/3dfd2015bfec71e003c00dc870b1b6f9f6933650/examples/linear_model/plot_ols_ridge.py#L33-L81",
+            "file_blob_sha": "d94d767de17360b8995ed3e7c599b252ba83feea",
+            "file_sha256": "e08ae367bbb3db28e1fbedcce3435deff4b54486e3b3b49b89454a254aed9f3e",
+            "excerpt_sha256": "0b613e4b3c29e3b772fbd0c8210dda6b6411971756b3cdc369e8a0e6b1011abd",
+            "verification_checks": {
+              "commit": "PASSED",
+              "excerpt_hash": "PASSED",
+              "file": "PASSED",
+              "license": "PASSED",
+              "line_range": "PASSED",
+              "public_repository": "PASSED",
+              "python_symbol": "NOT_APPLICABLE",
+              "scope": "PASSED"
+            },
+            "licenses": [
+              "BSD-3-Clause"
+            ]
+          }
+        ]
+      },
+      {
+        "case": "code_followup",
+        "question": "其中 fit 接收哪些数据，预测时为什么不需要 y？",
+        "status": "GROUNDED",
+        "first_preview_seconds": 7.137,
+        "total_seconds": 16.949,
+        "answer_sections": [
+          {
+            "title": "代码怎么实现",
+            "text": "在源码 `「plot_ols_ridge.py」` 中，`fit` 方法接收的数据是 `X_train`（输入特征）和 `y_train`（标签目标）。例如，代码中明确调用 `regressor = LinearRegression().fit(X_train, y_train)`。这表示模型在训练阶段学习输入特征 `X_train` 与输出标签 `y_train` 之间的映射关系。预测时不需要提供 `y`，因为模型已经通过训练掌握了 `X` 到 `y` 的映射，预测过程仅调用 `regressor.predict(X_test)`，输入为新的特征 `X_test`，输出为对应的预测值 `y_pred`。这与原文中‘训练学习X和Y的关系，预测时只需新输入X’的逻辑一致。"
+          }
+        ],
+        "limitations": [],
+        "model": "Qwen2.5-Coder-7B-Instruct-4bit",
+        "metrics": {
+          "latency_ms": 16936.0,
+          "input_tokens": 3107,
+          "output_tokens": 400,
+          "token_source": "PROVIDER_USAGE",
+          "input_truncated": true,
+          "truncation_reason": "按选区优先保留材料；长文本、源码或较早对话已裁剪。"
+        },
+        "sources": [
+          {
+            "repository_owner": "scikit-learn",
+            "repository_name": "scikit-learn",
+            "commit_sha": "3dfd2015bfec71e003c00dc870b1b6f9f6933650",
+            "file_path": "examples/linear_model/plot_ols_ridge.py",
+            "line_start": 33,
+            "line_end": 81,
+            "permalink": "https://github.com/scikit-learn/scikit-learn/blob/3dfd2015bfec71e003c00dc870b1b6f9f6933650/examples/linear_model/plot_ols_ridge.py#L33-L81",
+            "file_blob_sha": "d94d767de17360b8995ed3e7c599b252ba83feea",
+            "file_sha256": "e08ae367bbb3db28e1fbedcce3435deff4b54486e3b3b49b89454a254aed9f3e",
+            "excerpt_sha256": "0b613e4b3c29e3b772fbd0c8210dda6b6411971756b3cdc369e8a0e6b1011abd",
+            "verification_checks": {
+              "commit": "PASSED",
+              "excerpt_hash": "PASSED",
+              "file": "PASSED",
+              "license": "PASSED",
+              "line_range": "PASSED",
+              "public_repository": "PASSED",
+              "python_symbol": "NOT_APPLICABLE",
+              "scope": "PASSED"
+            },
+            "licenses": [
+              "BSD-3-Clause"
+            ]
+          }
+        ]
+      },
+      {
+        "case": "outside_old_vocabulary_shortest_path",
+        "question": "能结合一个实际代码库里的实现解释这段话吗？",
+        "status": "GROUNDED",
+        "first_preview_seconds": 7.553,
+        "total_seconds": 16.339,
+        "answer_sections": [
+          {
+            "title": "代码怎么实现",
+            "text": "在Dijkstra算法的实现中，`graph`是加权图，`startVertex`是起点。通过`PriorityQueue`按距离优先级选择节点。变量`distances`记录各节点最短距离，`previousVertices`记录路径前驱。当发现更短路径时，更新`distances`并调用`queue.changePriority`或`queue.add`维护队列。\n原文中的'图上的最短路径'与原文中的'加权图'和'Dijkstra算法'直接对应，代码实现了非负边权下的最短路径求解流程。\n与原文的联系在于，代码通过Dijkstra算法在加权图中找到从起点到其他所有节点的最短路径，与原文和原文中的概念完全一致。"
+          }
+        ],
+        "limitations": [],
+        "model": "Qwen2.5-Coder-7B-Instruct-4bit",
+        "metrics": {
+          "latency_ms": 16326.0,
+          "input_tokens": 3282,
+          "output_tokens": 372,
+          "token_source": "PROVIDER_USAGE",
+          "input_truncated": true,
+          "truncation_reason": "按选区优先保留材料；长文本、源码或较早对话已裁剪。"
+        },
+        "sources": [
+          {
+            "repository_owner": "trekhleb",
+            "repository_name": "javascript-algorithms",
+            "commit_sha": "85293e3e2b88f4d2ce330d956b139cf628aa1e82",
+            "file_path": "src/algorithms/graph/dijkstra/dijkstra.js",
+            "line_start": 1,
+            "line_end": 80,
+            "permalink": "https://github.com/trekhleb/javascript-algorithms/blob/85293e3e2b88f4d2ce330d956b139cf628aa1e82/src/algorithms/graph/dijkstra/dijkstra.js#L1-L80",
+            "file_blob_sha": "c5b47b08d3f2b0feb60fce7ee02a594e3e2e15bb",
+            "file_sha256": "3bd01aca24f51a681b9e59cd0ef4c2ee0b691c26a41049751449066ac8f0b7c2",
+            "excerpt_sha256": "da3eb292b4b901ea20e95d694c57ea78834eaf8ce45062762685f03e65519a0d",
+            "verification_checks": {
+              "commit": "PASSED",
+              "excerpt_hash": "PASSED",
+              "file": "PASSED",
+              "license": "PASSED",
+              "line_range": "PASSED",
+              "public_repository": "PASSED",
+              "python_symbol": "NOT_APPLICABLE",
+              "scope": "PASSED"
+            },
+            "licenses": [
+              "MIT"
+            ]
+          }
+        ]
+      }
+    ],
+    "fast": [
+      {
+        "case": "history_setup_document_only",
+        "question": "输入 X 与目标 Y 是什么关系？",
+        "status": "NO_VERIFIED_CODE",
+        "first_preview_seconds": 5.101,
+        "total_seconds": 8.461,
+        "answer_sections": [
+          {
+            "title": "核心意思",
+            "text": "输入 X 是模型接收到的原始信息，通常被称为特征输入，它代表了模型需要处理和分析的数据，例如图像像素、文本词元或数值指标。目标 Y 是模型需要预测的输出，即我们希望模型能够学习到的最终结果，比如分类标签或数值结果。在监督学习中，模型通过学习输入 X 与目标 Y 之间的映射关系，即在训练过程中不断调整参数以最小化预测值与真实值之间的误差，从而实现对新输入 X 的准确预测。这种学习过程本质上是通过大量已知的 (X, Y) 对来建立 X 到 Y 的函数关系，使模型能够对未知的 X 进行有效预测。"
+          }
+        ],
+        "limitations": [],
+        "model": "Qwen3-4B-Instruct-2507-4bit",
+        "metrics": {
+          "latency_ms": 8452.0,
+          "input_tokens": 1116,
+          "output_tokens": 321,
+          "token_source": "PROVIDER_USAGE",
+          "input_truncated": false,
+          "truncation_reason": null
+        },
+        "sources": []
+      },
+      {
+        "case": "generic_followup_after_partial_selection",
+        "question": "所以GitHub上面可以找到代码吗？给我看看例子？",
+        "status": "GROUNDED",
+        "first_preview_seconds": 4.786,
+        "total_seconds": 11.098,
+        "answer_sections": [
+          {
+            "title": "代码怎么实现",
+            "text": "可以，在GitHub上确实能找到相关代码示例。以 `scikit-learn/scikit-learn` 项目中的 `examples/linear_model/plot_ols_ridge.py` 文件为例，该代码中 `fit` 方法接收的是 `X_train`（输入特征）和 `y_train`（标签目标），用于训练线性回归模型。例如，代码中明确调用 `regressor = LinearRegression().fit(X_train, y_train)`，说明模型在训练阶段学习了输入 `X` 与输出 `y` 之间的关系。预测时，模型仅使用 `X_test` 调用 `regressor.predict(X_test)`，无需提供 `y_test`，因为预测是基于模型已学得的映射关系。这与原文中‘训练学习X和Y的关系，预测时只需新输入X’的描述完全一致。"
+          }
+        ],
+        "limitations": [],
+        "model": "Qwen3-4B-Instruct-2507-4bit",
+        "metrics": {
+          "latency_ms": 11086.0,
+          "input_tokens": 2678,
+          "output_tokens": 414,
+          "token_source": "PROVIDER_USAGE",
+          "input_truncated": true,
+          "truncation_reason": "按选区优先保留材料；长文本、源码或较早对话已裁剪。"
+        },
+        "sources": [
+          {
+            "repository_owner": "scikit-learn",
+            "repository_name": "scikit-learn",
+            "commit_sha": "3dfd2015bfec71e003c00dc870b1b6f9f6933650",
+            "file_path": "examples/linear_model/plot_ols_ridge.py",
+            "line_start": 33,
+            "line_end": 81,
+            "permalink": "https://github.com/scikit-learn/scikit-learn/blob/3dfd2015bfec71e003c00dc870b1b6f9f6933650/examples/linear_model/plot_ols_ridge.py#L33-L81",
+            "file_blob_sha": "d94d767de17360b8995ed3e7c599b252ba83feea",
+            "file_sha256": "e08ae367bbb3db28e1fbedcce3435deff4b54486e3b3b49b89454a254aed9f3e",
+            "excerpt_sha256": "0b613e4b3c29e3b772fbd0c8210dda6b6411971756b3cdc369e8a0e6b1011abd",
+            "verification_checks": {
+              "commit": "PASSED",
+              "excerpt_hash": "PASSED",
+              "file": "PASSED",
+              "license": "PASSED",
+              "line_range": "PASSED",
+              "public_repository": "PASSED",
+              "python_symbol": "NOT_APPLICABLE",
+              "scope": "PASSED"
+            },
+            "licenses": [
+              "BSD-3-Clause"
+            ]
+          }
+        ]
+      },
+      {
+        "case": "code_followup",
+        "question": "其中 fit 接收哪些数据，预测时为什么不需要 y？",
+        "status": "GROUNDED",
+        "first_preview_seconds": 5.718,
+        "total_seconds": 11.405,
+        "answer_sections": [
+          {
+            "title": "代码怎么实现",
+            "text": "在源码 `「plot_ols_ridge.py」` 中，`fit` 方法接收的数据是 `X_train`（输入特征）和 `y_train`（标签目标），例如代码中明确调用 `regressor = LinearRegression().fit(X_train, y_train)`。这表示模型在训练阶段学习输入特征 `X_train` 与输出标签 `y_train` 之间的映射关系。预测时不需要提供 `y`，因为模型已经通过训练掌握了 `X` 到 `y` 的映射，预测过程仅调用 `regressor.predict(X_test)`，输入为新的特征 `X_test`，输出为对应的预测值 `y_pred`。这与原文中‘训练学习X和Y的关系，预测时只需新输入X’的逻辑一致。"
+          }
+        ],
+        "limitations": [],
+        "model": "Qwen3-4B-Instruct-2507-4bit",
+        "metrics": {
+          "latency_ms": 11392.0,
+          "input_tokens": 2805,
+          "output_tokens": 429,
+          "token_source": "PROVIDER_USAGE",
+          "input_truncated": true,
+          "truncation_reason": "按选区优先保留材料；长文本、源码或较早对话已裁剪。"
+        },
+        "sources": [
+          {
+            "repository_owner": "scikit-learn",
+            "repository_name": "scikit-learn",
+            "commit_sha": "3dfd2015bfec71e003c00dc870b1b6f9f6933650",
+            "file_path": "examples/linear_model/plot_ols_ridge.py",
+            "line_start": 33,
+            "line_end": 81,
+            "permalink": "https://github.com/scikit-learn/scikit-learn/blob/3dfd2015bfec71e003c00dc870b1b6f9f6933650/examples/linear_model/plot_ols_ridge.py#L33-L81",
+            "file_blob_sha": "d94d767de17360b8995ed3e7c599b252ba83feea",
+            "file_sha256": "e08ae367bbb3db28e1fbedcce3435deff4b54486e3b3b49b89454a254aed9f3e",
+            "excerpt_sha256": "0b613e4b3c29e3b772fbd0c8210dda6b6411971756b3cdc369e8a0e6b1011abd",
+            "verification_checks": {
+              "commit": "PASSED",
+              "excerpt_hash": "PASSED",
+              "file": "PASSED",
+              "license": "PASSED",
+              "line_range": "PASSED",
+              "public_repository": "PASSED",
+              "python_symbol": "NOT_APPLICABLE",
+              "scope": "PASSED"
+            },
+            "licenses": [
+              "BSD-3-Clause"
+            ]
+          }
+        ]
+      },
+      {
+        "case": "outside_old_vocabulary_shortest_path",
+        "question": "能结合一个实际代码库里的实现解释这段话吗？",
+        "status": "GROUNDED",
+        "first_preview_seconds": 7.28,
+        "total_seconds": 15.441,
+        "answer_sections": [
+          {
+            "title": "代码怎么实现",
+            "text": "在Dijkstra算法实现中，`graph`是加权图，`startVertex`为起点，通过`PriorityQueue`按距离优先级选择节点。代码使用`distances`数组记录每个节点到起点的最短距离，初始值设为无穷大，起点距离设为0。当遍历当前节点的邻居时，若发现从起点经当前节点到邻居的路径更短，则更新`distances[neighbor.getKey()]`为新距离，并调用`queue.changePriority(neighbor, distances[neighbor.getKey()])`维护优先队列，确保队列中节点始终按当前最短距离排序。同时，`previousVertices`记录路径前驱，用于后续重构最短路径。整个流程在`while (!queue.isEmpty())`循环中持续进行，直到所有节点被访问，最终返回包含`distances`和`previousVertices`的`ShortestPaths`对象。这与原文中描述的'加权图'和'Dijkstra算法'完全对应，且符合非负边权条件。"
+          }
+        ],
+        "limitations": [],
+        "model": "Qwen3-4B-Instruct-2507-4bit",
+        "metrics": {
+          "latency_ms": 15426.0,
+          "input_tokens": 3099,
+          "output_tokens": 585,
+          "token_source": "PROVIDER_USAGE",
+          "input_truncated": false,
+          "truncation_reason": null
+        },
+        "sources": [
+          {
+            "repository_owner": "trekhleb",
+            "repository_name": "javascript-algorithms",
+            "commit_sha": "85293e3e2b88f4d2ce330d956b139cf628aa1e82",
+            "file_path": "src/algorithms/graph/dijkstra/dijkstra.js",
+            "line_start": 1,
+            "line_end": 80,
+            "permalink": "https://github.com/trekhleb/javascript-algorithms/blob/85293e3e2b88f4d2ce330d956b139cf628aa1e82/src/algorithms/graph/dijkstra/dijkstra.js#L1-L80",
+            "file_blob_sha": "c5b47b08d3f2b0feb60fce7ee02a594e3e2e15bb",
+            "file_sha256": "3bd01aca24f51a681b9e59cd0ef4c2ee0b691c26a41049751449066ac8f0b7c2",
+            "excerpt_sha256": "da3eb292b4b901ea20e95d694c57ea78834eaf8ce45062762685f03e65519a0d",
+            "verification_checks": {
+              "commit": "PASSED",
+              "excerpt_hash": "PASSED",
+              "file": "PASSED",
+              "license": "PASSED",
+              "line_range": "PASSED",
+              "public_repository": "PASSED",
+              "python_symbol": "NOT_APPLICABLE",
+              "scope": "PASSED"
+            },
+            "licenses": [
+              "MIT"
+            ]
+          }
+        ]
+      }
+    ],
+    "default_model": "Qwen2.5-Coder-7B-Instruct-4bit",
+    "semantic_review": {
+      "coder": "Four sampled answers correctly connect X/y, fit/predict and Dijkstra queue/distance/predecessor updates to the supplied source.",
+      "fast": "Fit/predict answers are correct in these samples. Dijkstra answer calls the distances object an array; not counted as a fully correct explanation."
+    }
+  },
+  "final_contextual_flow": {
+    "protocol": "AI resolves the learning goal; narrative prose with server-bound input citations",
+    "acquisition": "No manually supplied terms, source IDs or continuation in the generic partial-selection case. Workbench anonymous GitHub discovery; live public checks with pinned immutable cache reads when available. The fit follow-up resolves to the same verified file and commit; the planner may refresh its source ID.",
+    "source_ids_reused": false,
+    "records": [
+      {
+        "case": "history_setup_document_only",
+        "question": "输入 X 与目标 Y 是什么关系？",
+        "status": "NO_VERIFIED_CODE",
+        "first_preview_seconds": 5.742,
+        "total_seconds": 7.849,
+        "answer_sections": [
+          {
+            "title": "核心意思",
+            "text": "输入 X 是提供给模型的信息，目标 Y 是我们希望模型预测的信息。训练过程通过学习 X 和 Y 之间的关系，从而能够对新的输入 X 进行预测。"
+          }
+        ],
+        "model": "Qwen2.5-Coder-7B-Instruct-4bit",
+        "metrics": {
+          "latency_ms": 7839.0,
+          "input_tokens": 1159,
+          "output_tokens": 150,
+          "token_source": "PROVIDER_USAGE",
+          "input_truncated": false,
+          "truncation_reason": null
+        },
+        "code_source_ids": [],
+        "sources": [],
+        "query": null
+      },
+      {
+        "case": "generic_followup_after_partial_selection",
+        "question": "所以GitHub上面可以找到代码吗？给我看看例子？",
+        "status": "GROUNDED",
+        "first_preview_seconds": 9.65,
+        "total_seconds": 14.451,
+        "answer_sections": [
+          {
+            "title": "代码怎么实现",
+            "text": "输入 X 是提供给模型的信息，目标 Y 是我们希望模型预测的信息。训练过程通过学习 X 和 Y 之间的关系，从而能够对新的输入 X 进行预测。在给定的代码示例中，X 是糖尿病数据集的一个特征，Y 是对应的标签（即糖尿病患者的疾病进展）。训练过程使用线性回归模型，通过训练数据拟合模型参数。预测过程使用训练好的模型对新的输入 X 进行预测。"
+          }
+        ],
+        "model": "Qwen2.5-Coder-7B-Instruct-4bit",
+        "metrics": {
+          "latency_ms": 12158.0,
+          "input_tokens": 1945,
+          "output_tokens": 216,
+          "token_source": "PROVIDER_USAGE",
+          "input_truncated": false,
+          "truncation_reason": null
+        },
+        "code_source_ids": [
+          "74b5aa99-199d-4c0f-9aac-f0eac062665e"
+        ],
+        "sources": [
+          {
+            "source_id": "74b5aa99-199d-4c0f-9aac-f0eac062665e",
+            "repository_owner": "scikit-learn",
+            "repository_name": "scikit-learn",
+            "commit_sha": "e015b7a1cb9e3c053323c7e5cf6e847b3d672c93",
+            "file_path": "examples/linear_model/plot_ols_ridge.py",
+            "line_start": 33,
+            "line_end": 81,
+            "permalink": "https://github.com/scikit-learn/scikit-learn/blob/e015b7a1cb9e3c053323c7e5cf6e847b3d672c93/examples/linear_model/plot_ols_ridge.py#L33-L81",
+            "file_sha256": "e08ae367bbb3db28e1fbedcce3435deff4b54486e3b3b49b89454a254aed9f3e",
+            "excerpt_sha256": "0b613e4b3c29e3b772fbd0c8210dda6b6411971756b3cdc369e8a0e6b1011abd",
+            "verification_checks": {
+              "public_repository": "PASSED",
+              "commit": "PASSED",
+              "file": "PASSED",
+              "line_range": "PASSED",
+              "excerpt_hash": "PASSED",
+              "scope": "PASSED",
+              "license": "PASSED",
+              "python_symbol": "NOT_APPLICABLE"
+            }
+          }
+        ],
+        "query": {
+          "approved_query_terms": [
+            "Input",
+            "Target",
+            "Training",
+            "Prediction"
+          ],
+          "auto_public_search": true,
+          "concept_terms": [
+            "Input",
+            "Target",
+            "Training",
+            "Prediction"
+          ],
+          "contract_version": "full-delivery-v1",
+          "file_hints": [],
+          "language_hint": null,
+          "local_handle": null,
+          "max_sources": 1,
+          "mode": "LIVE",
+          "network_authorized": true,
+          "query_id": "a01d90b4-21bd-4c0b-910a-5f34f3a9a981",
+          "query_terms_approved": true,
+          "question": "Input Target Training Prediction",
+          "repository_allowlist": [],
+          "repository_hints": [],
+          "revision": 1,
+          "scope_limit": {
+            "files": 8,
+            "repositories": 3
+          },
+          "source_mode": "public_search",
+          "status": "AUTHORIZED"
+        }
+      },
+      {
+        "case": "code_followup",
+        "question": "其中 fit 接收哪些数据，预测时为什么不需要 y？",
+        "status": "GROUNDED",
+        "first_preview_seconds": 7.378,
+        "total_seconds": 13.68,
+        "answer_sections": [
+          {
+            "title": "代码怎么实现",
+            "text": "在机器学习中，`fit` 方法接收训练数据中的特征（`X`）和对应的标签（`y`）。`fit` 方法用于训练模型，通过学习特征和标签之间的关系来拟合模型参数。预测时不需要 `y`，因为预测的目标是根据训练好的模型对新的输入特征进行预测，而不是重新计算标签。在给定的代码示例中，`fit` 方法接收训练数据的特征 `X_train` 和对应的标签 `y_train`。预测时，模型使用训练好的参数对新的输入特征 `X_test` 进行预测，不需要 `y_test`。"
+          }
+        ],
+        "model": "Qwen2.5-Coder-7B-Instruct-4bit",
+        "metrics": {
+          "latency_ms": 13643.0,
+          "input_tokens": 2074,
+          "output_tokens": 258,
+          "token_source": "PROVIDER_USAGE",
+          "input_truncated": false,
+          "truncation_reason": null
+        },
+        "code_source_ids": [
+          "450c5585-7f85-447e-933f-8513ab411211"
+        ],
+        "sources": [
+          {
+            "source_id": "450c5585-7f85-447e-933f-8513ab411211",
+            "repository_owner": "scikit-learn",
+            "repository_name": "scikit-learn",
+            "commit_sha": "e015b7a1cb9e3c053323c7e5cf6e847b3d672c93",
+            "file_path": "examples/linear_model/plot_ols_ridge.py",
+            "line_start": 33,
+            "line_end": 81,
+            "permalink": "https://github.com/scikit-learn/scikit-learn/blob/e015b7a1cb9e3c053323c7e5cf6e847b3d672c93/examples/linear_model/plot_ols_ridge.py#L33-L81",
+            "file_sha256": "e08ae367bbb3db28e1fbedcce3435deff4b54486e3b3b49b89454a254aed9f3e",
+            "excerpt_sha256": "0b613e4b3c29e3b772fbd0c8210dda6b6411971756b3cdc369e8a0e6b1011abd",
+            "verification_checks": {
+              "public_repository": "PASSED",
+              "commit": "PASSED",
+              "file": "PASSED",
+              "line_range": "PASSED",
+              "excerpt_hash": "PASSED",
+              "scope": "PASSED",
+              "license": "PASSED",
+              "python_symbol": "NOT_APPLICABLE"
+            }
+          }
+        ],
+        "query": {
+          "approved_query_terms": [
+            "fit",
+            "predict",
+            "input",
+            "label"
+          ],
+          "auto_public_search": true,
+          "concept_terms": [
+            "fit",
+            "predict",
+            "input",
+            "label"
+          ],
+          "contract_version": "full-delivery-v1",
+          "file_hints": [],
+          "language_hint": null,
+          "local_handle": null,
+          "max_sources": 1,
+          "mode": "LIVE",
+          "network_authorized": true,
+          "query_id": "2aacd59d-bc42-4070-8de9-7bdb58cb4022",
+          "query_terms_approved": true,
+          "question": "fit predict input label",
+          "repository_allowlist": [],
+          "repository_hints": [],
+          "revision": 1,
+          "scope_limit": {
+            "files": 8,
+            "repositories": 3
+          },
+          "source_mode": "public_search",
+          "status": "AUTHORIZED"
+        }
+      },
+      {
+        "case": "outside_old_vocabulary_shortest_path",
+        "question": "能结合一个实际代码库里的实现解释这段话吗？",
+        "status": "GROUNDED",
+        "first_preview_seconds": 9.455,
+        "total_seconds": 19.189,
+        "answer_sections": [
+          {
+            "title": "代码怎么实现",
+            "text": "Dijkstra's algorithm 是一种用于在加权图中找到从起点到其他所有顶点的最短路径的算法。它使用优先队列来选择当前最接近未探索顶点的顶点。以下是对代码中关键部分的解释：\n\n1. `distances` 对象用于存储从起点到每个顶点的最短距离。初始时，所有顶点的距离设为无穷大，起点的距离设为 0。\n2. `queue` 是一个优先队列，用于存储待探索的顶点。每次从队列中取出距离最小的顶点进行处理。\n3. 在处理当前顶点时，遍历其所有未访问的邻居。如果通过当前顶点到达邻居的路径更短，则更新邻居的距离，并调整优先队列中邻居的优先级。\n4. 通过不断更新距离和调整优先队列，最终可以找到从起点到所有其他顶点的最短路径。"
+          }
+        ],
+        "model": "Qwen2.5-Coder-7B-Instruct-4bit",
+        "metrics": {
+          "latency_ms": 17319.0,
+          "input_tokens": 2082,
+          "output_tokens": 333,
+          "token_source": "PROVIDER_USAGE",
+          "input_truncated": false,
+          "truncation_reason": null
+        },
+        "code_source_ids": [
+          "4a78abff-4a5d-49f2-90cc-28e444a0823f"
+        ],
+        "sources": [
+          {
+            "source_id": "4a78abff-4a5d-49f2-90cc-28e444a0823f",
+            "repository_owner": "trekhleb",
+            "repository_name": "javascript-algorithms",
+            "commit_sha": "85293e3e2b88f4d2ce330d956b139cf628aa1e82",
+            "file_path": "src/algorithms/graph/dijkstra/dijkstra.js",
+            "line_start": 1,
+            "line_end": 80,
+            "permalink": "https://github.com/trekhleb/javascript-algorithms/blob/85293e3e2b88f4d2ce330d956b139cf628aa1e82/src/algorithms/graph/dijkstra/dijkstra.js#L1-L80",
+            "file_sha256": "3bd01aca24f51a681b9e59cd0ef4c2ee0b691c26a41049751449066ac8f0b7c2",
+            "excerpt_sha256": "da3eb292b4b901ea20e95d694c57ea78834eaf8ce45062762685f03e65519a0d",
+            "verification_checks": {
+              "public_repository": "PASSED",
+              "commit": "PASSED",
+              "file": "PASSED",
+              "line_range": "PASSED",
+              "excerpt_hash": "PASSED",
+              "scope": "PASSED",
+              "license": "PASSED",
+              "python_symbol": "NOT_APPLICABLE"
+            }
+          }
+        ],
+        "query": {
+          "approved_query_terms": [
+            "Dijkstra algorithm",
+            "weighted graph",
+            "priority queue"
+          ],
+          "auto_public_search": true,
+          "concept_terms": [
+            "Dijkstra algorithm",
+            "weighted graph",
+            "priority queue"
+          ],
+          "contract_version": "full-delivery-v1",
+          "file_hints": [],
+          "language_hint": null,
+          "local_handle": null,
+          "max_sources": 1,
+          "mode": "LIVE",
+          "network_authorized": true,
+          "query_id": "8f4928cc-4052-439f-a5ef-953acbbcd8ca",
+          "query_terms_approved": true,
+          "question": "Dijkstra algorithm weighted graph priority queue",
+          "repository_allowlist": [],
+          "repository_hints": [],
+          "revision": 1,
+          "scope_limit": {
+            "files": 8,
+            "repositories": 3
+          },
+          "source_mode": "public_search",
+          "status": "AUTHORIZED"
+        }
+      }
+    ],
+    "semantic_review": "Manual comparison with the included source; scoped samples only. See report for limits."
+  },
+  "final_browser_check": {
+    "interaction": "Actual browser controls, selected paragraph, model picker, new follow-up question, expanded real code",
+    "question": "结合这份源码，解释 fit(X_train, y_train) 和 predict(X_test) 的区别。",
+    "status": "COMPLETE",
+    "provider": {
+      "endpoint_kind": "loopback",
+      "mode": "LIVE",
+      "model_id": "mlx-community/Qwen2.5-Coder-7B-Instruct-4bit",
+      "provider_id": "local-openai-compatible",
+      "status": "AVAILABLE"
+    },
+    "source_permalinks": [
+      "https://github.com/scikit-learn/scikit-learn/blob/e015b7a1cb9e3c053323c7e5cf6e847b3d672c93/examples/linear_model/plot_ols_ridge.py#L33-L81"
+    ],
+    "screenshots": [
+      "workbench.png",
+      "answer.png"
+    ]
+  },
+  "final_fast_model_smoke": [
+    {
+      "case": "history_setup_document_only",
+      "question": "输入 X 与目标 Y 是什么关系？",
+      "status": "NO_VERIFIED_CODE",
+      "first_preview_seconds": 6.427,
+      "total_seconds": 9.518,
+      "answer_sections": [
+        {
+          "title": "核心意思",
+          "text": "输入 X 是模型接收的原始数据或特征，代表模型需要处理的输入信息；目标 Y 是模型需要预测的输出结果，即我们希望模型学习到的标签或结果。在监督学习中，模型通过学习输入 X 与目标 Y 之间的映射关系，来完成对新输入 X 的预测任务。这种关系是通过训练数据中成对出现的 (X, Y) 样本进行学习的，模型的目标是找到一个函数 f，使得 f(X) 尽可能接近 Y。"
+        }
+      ],
+      "model": "Qwen3-4B-Instruct-2507-4bit",
+      "metrics": {
+        "latency_ms": 9510.0,
+        "input_tokens": 1162,
+        "output_tokens": 277,
+        "token_source": "PROVIDER_USAGE",
+        "input_truncated": false,
+        "truncation_reason": null
+      },
+      "code_source_ids": [],
+      "sources": []
+    }
+  ],
+  "earlier_failures": [
+    "Finite topic allowlist rejected ordinary contextual requests before reaching GitHub.",
+    "Partial topic word matches admitted a graph-cloning implementation for a shortest-path question; fixed complete-term matching and hint-basename ranking.",
+    "Possessive eponym terms such as Dijkstra's algorithm were filtered; normalization now preserves the public technical name.",
+    "Earlier prose-only runs returned a repository overview or a wrong object/array description. Overview rejection now checks complete identifiers, retries include the actual reason, and the AI resolves a concrete learning goal before explaining.",
+    "Legacy model-generated citation IDs sometimes failed validation. Prose-only generation binds identities to its input; invalid legacy IDs still fail.",
+    "Anonymous GitHub quota was exhausted during repeated real checks; no gh credentials were injected into the product."
+  ]
+}

@@ -1,1 +1,1 @@
-"""runtime: reserved module boundary for later milestones; no pipeline implemented."""
+"""runtime: local model adapter and later runtime boundaries; no cloud fallback."""

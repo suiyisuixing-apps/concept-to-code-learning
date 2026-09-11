@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "candidate_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_.:-]+$",
+      "title": "Candidate Id",
+      "type": "string"
+    },
+    "contract_version": {
+      "const": "full-delivery-v1",
+      "default": "full-delivery-v1",
+      "title": "Contract Version",
+      "type": "string"
+    },
+    "discovery_method": {
+      "title": "Discovery Method",
+      "type": "string"
+    },
+    "discovery_status": {
+      "enum": [
+        "CANDIDATE",
+        "NEEDS_CONFIRMATION",
+        "REJECTED"
+      ],
+      "title": "Discovery Status",
+      "type": "string"
+    },
+    "file_hint": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "File Hint"
+    },
+    "local_handle": {
+      "anyOf": [
+        {
+          "maxLength": 200,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Local Handle"
+    },
+    "matched_terms": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Matched Terms",
+      "type": "array"
+    },
+    "mode": {
+      "enum": [
+        "LIVE",
+        "FIXTURE",
+        "UNAVAILABLE"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "query_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_.:-]+$",
+      "title": "Query Id",
+      "type": "string"
+    },
+    "ranking_reason": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Ranking Reason",
+      "type": "string"
+    },
+    "ref_hint": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Ref Hint"
+    },
+    "repository": {
+      "anyOf": [
+        {
+          "maxLength": 200,
+          "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Repository"
+    },
+    "retrieved_at": {
+      "format": "date-time",
+      "title": "Retrieved At",
+      "type": "string"
+    },
+    "revision": {
+      "default": 1,
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "source_mode": {
+      "enum": [
+        "specified_public",
+        "public_search",
+        "local_authorized"
+      ],
+      "title": "Source Mode",
+      "type": "string"
+    },
+    "symbol_hint": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Symbol Hint"
+    }
+  },
+  "required": [
+    "mode",
+    "candidate_id",
+    "query_id",
+    "source_mode",
+    "matched_terms",
+    "ranking_reason",
+    "discovery_method",
+    "discovery_status",
+    "retrieved_at"
+  ],
+  "title": "SearchCandidate",
+  "type": "object"
+}

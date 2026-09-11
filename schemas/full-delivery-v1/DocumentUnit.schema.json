@@ -1,0 +1,309 @@
+{
+  "$defs": {
+    "Block": {
+      "additionalProperties": false,
+      "properties": {
+        "bbox": {
+          "anyOf": [
+            {
+              "maxItems": 4,
+              "minItems": 4,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bbox"
+        },
+        "block_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Block Id",
+          "type": "string"
+        },
+        "image_asset_id": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Image Asset Id"
+        },
+        "kind": {
+          "enum": [
+            "paragraph",
+            "table",
+            "caption",
+            "code",
+            "formula",
+            "image",
+            "unsupported"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "source_locator": {
+          "$ref": "#/$defs/SourceLocator"
+        },
+        "table_rows": {
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "maxItems": 1000,
+          "title": "Table Rows",
+          "type": "array"
+        },
+        "text": {
+          "default": "",
+          "maxLength": 100000,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "block_id",
+        "kind",
+        "source_locator"
+      ],
+      "title": "Block",
+      "type": "object"
+    },
+    "Preview": {
+      "additionalProperties": false,
+      "properties": {
+        "asset_id": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Asset Id"
+        },
+        "fidelity": {
+          "enum": [
+            "original",
+            "extracted",
+            "partial",
+            "unavailable"
+          ],
+          "title": "Fidelity",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "native_pdf",
+            "learning_view",
+            "image",
+            "unavailable"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "limitations": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Limitations",
+          "type": "array"
+        }
+      },
+      "required": [
+        "kind",
+        "fidelity"
+      ],
+      "title": "Preview",
+      "type": "object"
+    },
+    "SourceLocator": {
+      "additionalProperties": false,
+      "properties": {
+        "block_id": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Block Id"
+        },
+        "heading_path": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 30,
+          "title": "Heading Path",
+          "type": "array"
+        },
+        "index": {
+          "minimum": 1,
+          "title": "Index",
+          "type": "integer"
+        },
+        "unit_type": {
+          "enum": [
+            "page",
+            "slide",
+            "section"
+          ],
+          "title": "Unit Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "unit_type",
+        "index"
+      ],
+      "title": "SourceLocator",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "blocks": {
+      "items": {
+        "$ref": "#/$defs/Block"
+      },
+      "maxItems": 2000,
+      "title": "Blocks",
+      "type": "array"
+    },
+    "contract_version": {
+      "const": "full-delivery-v1",
+      "default": "full-delivery-v1",
+      "title": "Contract Version",
+      "type": "string"
+    },
+    "document_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_.:-]+$",
+      "title": "Document Id",
+      "type": "string"
+    },
+    "document_revision": {
+      "minimum": 1,
+      "title": "Document Revision",
+      "type": "integer"
+    },
+    "extraction_status": {
+      "enum": [
+        "READY",
+        "PARTIAL",
+        "NO_EXTRACTABLE_TEXT",
+        "UNSUPPORTED"
+      ],
+      "title": "Extraction Status",
+      "type": "string"
+    },
+    "heading_path": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Heading Path",
+      "type": "array"
+    },
+    "index": {
+      "minimum": 1,
+      "title": "Index",
+      "type": "integer"
+    },
+    "mode": {
+      "enum": [
+        "LIVE",
+        "FIXTURE",
+        "UNAVAILABLE"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "preview": {
+      "$ref": "#/$defs/Preview"
+    },
+    "revision": {
+      "default": 1,
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "source_locator": {
+      "$ref": "#/$defs/SourceLocator"
+    },
+    "unit_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_.:-]+$",
+      "title": "Unit Id",
+      "type": "string"
+    },
+    "unit_type": {
+      "enum": [
+        "page",
+        "slide",
+        "section"
+      ],
+      "title": "Unit Type",
+      "type": "string"
+    },
+    "warnings": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "mode",
+    "document_id",
+    "document_revision",
+    "unit_id",
+    "unit_type",
+    "index",
+    "source_locator",
+    "preview",
+    "extraction_status"
+  ],
+  "title": "DocumentUnit",
+  "type": "object"
+}

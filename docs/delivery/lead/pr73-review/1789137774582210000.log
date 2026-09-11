@@ -1,0 +1,16 @@
+
+> concept-to-code-learning-web@0.2.0-dev.0 test
+> vitest run
+
+
+ RUN  v4.1.11 <repo>/apps/web
+
+ ✓ src/selection.test.js (4 tests) 5ms
+ ✓ src/PdfPreview.test.jsx (4 tests) 50ms
+ ✓ src/App.test.jsx (16 tests) 747ms
+ ✓ src/Annotations.test.jsx (6 tests) 855ms
+
+ Test Files  4 passed (4)
+      Tests  30 passed (30)
+   Start at  22:42:55
+   Duration  1.38s (transform 214ms, setup 424ms, import 254ms, tests 1.66s, environment 1.03s)

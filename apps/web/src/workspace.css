@@ -1,0 +1,131 @@
+.block-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.block-search input {
+  min-width: 0;
+  flex: 1;
+}
+
+.block-search span,
+.machine-status {
+  color: #637069;
+  font: 11px ui-monospace, monospace;
+  white-space: nowrap;
+}
+
+.search-results {
+  display: grid;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.search-results button {
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.example {
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid #ccd2ce;
+  background: #fff;
+}
+
+.example pre {
+  overflow: auto;
+  padding: 12px;
+  background: #17201d;
+  color: #eef5f1;
+}
+
+.pane-header h2, .topbar h1, .source-card strong { overflow-wrap: anywhere; }
+.assistant p, .blocks p { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.85; }
+.row, .doc-meta, .ask-row { flex-wrap: wrap; }
+.table-wrap { overflow-x: auto; }
+.table-wrap button { margin-top: 8px; }
+.source-card pre { max-height: 420px; }
+.source-card code { font-size: 12px; }
+.selection-summary { padding: 12px; background: #e6eee9; margin-top: 12px; }
+.selection-summary p { max-height: 100px; overflow: auto; margin-top: 0; }
+.answer-status, .metrics { color: #4b5d53; font-size: 13px; }
+.metrics, .citations { padding-block: 12px; }
+.citations blockquote { margin: 12px 0; padding: 12px; background: #edf2e9; }
+.boundary, .setup, .error { border-left-width: 1px; }
+.import { position: relative; }
+.import input { display: block; opacity: 0; position: absolute; inset: 0; width: 100%; cursor: pointer; }
+.import:focus-within { outline: 3px solid #317b61; outline-offset: 2px; }
+::selection { background: #c5dece; color: #15231f; }
+input, textarea { caret-color: #245f49; }
+a { text-underline-offset: 3px; }
+* { scrollbar-color: #92a59b #eef1ee; }
+@media (max-width: 680px) {
+  input, textarea, select, .blocks, .assistant { font-size: 16px; }
+  button, .import { min-height: 44px; }
+  .pane-header { flex-wrap: wrap; }
+  .topbar { gap: 10px; }
+}
+
+.document-heading { font-size: 1.2rem; font-weight: 700; margin-top: 0; }
+
+.pdf-canvas-preview { margin-block: 1rem; }
+.pdf-canvas-preview canvas { display: block; width: 100%; height: auto; border: 1px solid #d4d8d4; background: white; }
+.pdf-canvas-preview canvas[hidden] { display: none; }
+.pdf-canvas-preview a { display: inline-block; padding-block: .65rem; }
+
+.reading-hint, #question-help, .annotation-location, .annotations small { color: #4b5d53; font-size: 12px; line-height: 1.6; }
+.reading-hint { margin: 12px 0 8px; }
+.reading-block { position: relative; padding-bottom: 24px; }
+.reading-block p { margin-block: 10px; }
+.select-block { position: absolute; right: 0; bottom: 0; padding: 3px 7px; font-size: 12px; border: 0; color: #285f4b; background: transparent; opacity: 0; }
+.reading-block:hover .select-block, .reading-block:focus-within .select-block { opacity: 1; }
+.quoted-text { background: #dcece3; color: inherit; }
+.annotated-text { background: #fff0b0; color: inherit; text-decoration: underline; text-decoration-color: #9c7614; text-underline-offset: 4px; }
+mark[role="button"] { cursor: pointer; }
+mark:focus-visible { outline: 2px solid #317b61; outline-offset: 2px; }
+.blocks code .quoted-text, .blocks code .annotated-text { color: #17201d; }
+.selection-summary { border: 1px solid #c2d5c9; background: #eef4ef; }
+.selection-summary > strong { color: #285f4b; font-size: 12px; }
+.selection-summary blockquote { margin: 8px 0 12px; max-height: 160px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7; }
+.quote-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.quote-actions button { padding: 5px 8px; font-size: 12px; }
+.selection-toolbar { position: fixed; z-index: 20; display: flex; gap: 2px; padding: 4px; background: #15231f; color: #f5f7f5; border-radius: 6px; max-width: calc(100vw - 24px); }
+.selection-toolbar button { border: 0; color: inherit; background: transparent; font-size: 13px; padding: 8px 10px; }
+.selection-toolbar button:hover { background: #30483d; }
+.assistant textarea[aria-label="学习问题"] { min-height: 118px; line-height: 1.65; font-weight: 400; }
+.assistant #question-help { font-weight: 400; }
+.side nav { grid-template-columns: repeat(3, 1fr); }
+.side nav button { padding-inline: 6px; }
+.annotation-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.annotation-heading h3, .annotation-editor h3 { margin: 0; font-size: 15px; }
+.annotation-heading button { font-size: 12px; padding: 5px 7px; }
+.annotation-editor { margin-block: 18px; padding-bottom: 18px; border-bottom: 1px solid #c8d2cb; }
+.annotation-editor blockquote, .annotation-list blockquote { background: #fff5d0; padding: 10px 12px; margin: 10px 0; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 140px; overflow: auto; line-height: 1.65; }
+.annotation-editor label { display: grid; gap: 7px; font-size: 13px; }
+.annotation-editor textarea { min-height: 140px; line-height: 1.65; }
+.annotation-list { list-style: none; padding: 0; }
+.annotation-list li { border-bottom: 1px solid #d9dedb; padding-block: 10px; }
+.annotation-list p { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.75; }
+.annotation-list button { font-size: 12px; padding: 5px 8px; }
+.annotation-list small { margin-left: auto; }
+.annotation-empty { color: #4b5d53; line-height: 1.7; padding-block: 14px; }
+.pdf-page { position: relative; overflow: clip; background: white; }
+.pdf-page[hidden] { display: none; }
+.pdf-page canvas { border: 0; width: 100%; height: 100%; }
+/* PDF.js text geometry; its Apache-2.0 notice ships in pdfjs/THIRD_PARTY_NOTICES.txt. */
+.pdf-text-layer { position: absolute; inset: 0; overflow: clip; text-align: initial; line-height: 1; letter-spacing: normal; word-spacing: normal; text-size-adjust: none; forced-color-adjust: none; transform-origin: 0 0; caret-color: #17201d; --min-font-size: 1; --text-scale-factor: calc(var(--total-scale-factor) * var(--min-font-size)); --min-font-size-inv: calc(1 / var(--min-font-size)); --scale-round-x: 1px; --scale-round-y: 1px; }
+.pdf-text-layer :is(span, br) { color: transparent; position: absolute; white-space: pre; cursor: text; transform-origin: 0 0; user-select: text; -webkit-user-select: text; }
+.pdf-text-layer > :not(.markedContent), .pdf-text-layer .markedContent span:not(.markedContent) { z-index: 1; --font-height: 0; font-size: calc(var(--text-scale-factor) * var(--font-height)); --scale-x: 1; --rotate: 0deg; transform: rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv)); }
+.pdf-text-layer .markedContent { display: contents; }
+.pdf-text-layer[data-main-rotation="90"] { transform: rotate(90deg) translateY(-100%); }
+.pdf-text-layer[data-main-rotation="180"] { transform: rotate(180deg) translate(-100%, -100%); }
+.pdf-text-layer[data-main-rotation="270"] { transform: rotate(270deg) translateX(-100%); }
+.pdf-text-layer ::selection { color: transparent; background: rgb(75 135 104 / 35%); }
+@media (hover: none) { .select-block { opacity: 1; } }
+@media (max-width: 680px) { .selection-toolbar { left: 12px !important; top: auto !important; bottom: 12px; } }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }

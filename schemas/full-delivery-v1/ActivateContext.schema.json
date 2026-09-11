@@ -1,0 +1,127 @@
+{
+  "$defs": {
+    "SelectionLocator": {
+      "additionalProperties": false,
+      "properties": {
+        "normalization": {
+          "default": "exact",
+          "enum": [
+            "exact",
+            "whitespace-v1"
+          ],
+          "title": "Normalization",
+          "type": "string"
+        },
+        "spans": {
+          "items": {
+            "$ref": "#/$defs/SelectionSpan"
+          },
+          "maxItems": 50,
+          "minItems": 1,
+          "title": "Spans",
+          "type": "array"
+        }
+      },
+      "required": [
+        "spans"
+      ],
+      "title": "SelectionLocator",
+      "type": "object"
+    },
+    "SelectionSpan": {
+      "additionalProperties": false,
+      "properties": {
+        "block_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Block Id",
+          "type": "string"
+        },
+        "end": {
+          "minimum": 0,
+          "title": "End",
+          "type": "integer"
+        },
+        "start": {
+          "minimum": 0,
+          "title": "Start",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "block_id",
+        "start",
+        "end"
+      ],
+      "title": "SelectionSpan",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "document_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_.:-]+$",
+      "title": "Document Id",
+      "type": "string"
+    },
+    "document_revision": {
+      "minimum": 1,
+      "title": "Document Revision",
+      "type": "integer"
+    },
+    "expected_context_revision": {
+      "minimum": 0,
+      "title": "Expected Context Revision",
+      "type": "integer"
+    },
+    "selected_text": {
+      "default": "",
+      "maxLength": 10000,
+      "title": "Selected Text",
+      "type": "string"
+    },
+    "selected_text_hash": {
+      "anyOf": [
+        {
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Selected Text Hash"
+    },
+    "selection_locator": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SelectionLocator"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "unit_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_.:-]+$",
+      "title": "Unit Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "document_revision",
+    "unit_id",
+    "document_id",
+    "expected_context_revision"
+  ],
+  "title": "ActivateContext",
+  "type": "object"
+}

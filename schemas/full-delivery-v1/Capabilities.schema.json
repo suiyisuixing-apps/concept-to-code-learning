@@ -1,0 +1,182 @@
+{
+  "$defs": {
+    "ProviderCapability": {
+      "additionalProperties": false,
+      "properties": {
+        "available": {
+          "title": "Available",
+          "type": "boolean"
+        },
+        "data_flow": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Data Flow",
+          "type": "array"
+        },
+        "features": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Features",
+          "type": "array"
+        },
+        "implemented": {
+          "title": "Implemented",
+          "type": "boolean"
+        },
+        "mode": {
+          "enum": [
+            "LIVE",
+            "FIXTURE",
+            "UNAVAILABLE"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "needed_action": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Needed Action"
+        },
+        "provider_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Provider Id",
+          "type": "string"
+        },
+        "reason_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason Code"
+        },
+        "status": {
+          "enum": [
+            "AVAILABLE",
+            "UNAVAILABLE",
+            "FIXTURE"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider_id",
+        "implemented",
+        "available",
+        "mode",
+        "features",
+        "status"
+      ],
+      "title": "ProviderCapability",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "capability_id": {
+      "default": "learning-v1",
+      "maxLength": 200,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_.:-]+$",
+      "title": "Capability Id",
+      "type": "string"
+    },
+    "contract_version": {
+      "const": "full-delivery-v1",
+      "default": "full-delivery-v1",
+      "title": "Contract Version",
+      "type": "string"
+    },
+    "document": {
+      "$ref": "#/$defs/ProviderCapability"
+    },
+    "integrated_product": {
+      "enum": [
+        "UNAVAILABLE",
+        "FIXTURE",
+        "READY_FOR_LIVE_CHECK"
+      ],
+      "title": "Integrated Product",
+      "type": "string"
+    },
+    "lead_review": {
+      "const": "PENDING",
+      "default": "PENDING",
+      "title": "Lead Review",
+      "type": "string"
+    },
+    "legacy_readable": {
+      "default": true,
+      "title": "Legacy Readable",
+      "type": "boolean"
+    },
+    "mode": {
+      "enum": [
+        "LIVE",
+        "FIXTURE",
+        "UNAVAILABLE"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "persistent_notes": {
+      "default": true,
+      "title": "Persistent Notes",
+      "type": "boolean"
+    },
+    "revision": {
+      "default": 1,
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "sources": {
+      "$ref": "#/$defs/ProviderCapability"
+    },
+    "status": {
+      "enum": [
+        "PARTIAL",
+        "AVAILABLE",
+        "FIXTURE"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "target_hardware": {
+      "const": "NOT_TESTED",
+      "default": "NOT_TESTED",
+      "title": "Target Hardware",
+      "type": "string"
+    },
+    "tutor": {
+      "$ref": "#/$defs/ProviderCapability"
+    }
+  },
+  "required": [
+    "mode",
+    "document",
+    "sources",
+    "tutor",
+    "integrated_product",
+    "status"
+  ],
+  "title": "Capabilities",
+  "type": "object"
+}

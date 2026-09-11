@@ -1,179 +1,256 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, test, vi } from "vitest";
 import App from "./App.jsx";
-import document from "../../../demo/learning/document.json";
-import source from "../../../demo/learning/github-source.json";
+import { ApiError, api, explainStream, assetUrl, hashText, json, utf16ToCodePoint } from "./api.js";
 
-test("blank questions disable all explain actions with recovery guidance", async () => {
-  const user = userEvent.setup();
-  render(<App />);
-  await user.clear(await screen.findByLabelText("你想理解什么？"));
-  await user.type(screen.getByLabelText("选中文字"), "依赖注入");
-  for (const name of ["解释当前页", "解释选中文字", "结合代码讲解"]) {
-    expect(screen.getByRole("button", { name, exact: true })).toBeDisabled();
-  }
-  expect(screen.getByText("先在学习助手中输入问题，再开始讲解。")).toBeVisible();
-  await user.type(screen.getByLabelText("你想理解什么？"), "依赖注入是什么？");
-  expect(screen.getByRole("button", { name: "解释选中文字", exact: true })).toBeEnabled();
-});
-
-let saved;
-let lastRequest;
-let failExplain;
+let calls;
 beforeEach(() => {
-  saved = [];
-  lastRequest = null;
-  failExplain = false;
-  vi.stubGlobal(
-    "fetch",
-    vi.fn(async (path, options) => {
-      const body = options?.body ? JSON.parse(options.body) : undefined;
-      let value;
-      let ok = true;
-      if (path === "/health") value = { health: "ok", mode: "FIXTURE" };
-      if (path === "/api/demo/session")
-        value = {
-          mode: "FIXTURE",
-          status: "SCAFFOLD_DEMO",
-          document,
-          question: "依赖注入到底是什么？真实项目中怎么使用？",
-          explanation_levels: [
-            "Beginner",
-            "University",
-            "Engineering",
-            "Source-code level",
-          ],
-          document_context: {
-            document_id: document.document_id,
-            file_name: document.file_name,
-            source_type: "MARKDOWN_FIXTURE",
-            current_page: 1,
-            current_slide: null,
-            current_section: document.pages[0].section,
-            selected_text: "",
-            selected_text_hash: null,
-          },
-        };
-      if (path === "/api/learning/explain") {
-        lastRequest = body;
-        if (failExplain) {
-          ok = false;
-          value = { detail: "NEEDS_CONFIRMATION: 当前选区不在页面中" };
-        } else
-          value = {
-            ...body,
-            grounded_explanation_id: "explanation-one",
-            concept: { name: "依赖注入" },
-            explanation: "由框架提供依赖，函数使用注入的参数。",
-            github_sources: [source],
-            document_citations: [
-              {
-                file_name: document.file_name,
-                page: body.document_context.current_page,
-                quote:
-                  body.document_context.selected_text ||
-                  document.pages[0].paragraphs[0],
-                quote_hash: "one",
-              },
-            ],
-          };
-      }
-      if (path === "/api/notes" && !body) value = { notes: saved };
-      if (path === "/api/notes" && body) {
-        value = {
-          ...body,
-          note_id: String(saved.length + 1),
-          created_at: "2026-09-07T00:00:00Z",
-          document_sources: [],
-          github_sources: [source],
-          grounded_explanation: { explanation: "saved" },
-        };
-        saved = [value, ...saved];
-      }
-      return { ok, json: async () => value };
-    }),
+  calls = [];
+  vi.stubGlobal("fetch", vi.fn(async (url, options = {}) => {
+    calls.push([url, options]);
+    let body = {};
+    if (url.endsWith("/capabilities")) body = { integrated_product: "UNAVAILABLE", tutor: { available: false, needed_action: "配置本地模型" } };
+    else if (url.endsWith("/sessions")) body = { session_id: "session-1", context_revision: 0, status: "EMPTY" };
+    else if (url.endsWith("/documents")) body = { documents: [] };
+    else if (url.includes("/notes")) body = { notes: [] };
+    return { ok: true, status: 200, headers: { get: () => "application/json" }, json: async () => body };
+  }));
+});
+
+test("empty workspace keeps reading available and model settings discoverable", async () => {
+  const user = userEvent.setup(); render(<App />);
+  expect(await screen.findByText("导入学习材料")).toBeVisible();
+  expect(screen.queryByText("暂无代码来源")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "发送" })).toBeDisabled();
+  await user.click(screen.getByRole("button", { name: "模型设置" }));
+  expect(screen.getByLabelText("模型服务地址")).toBeVisible();
+});
+
+test("public code search needs no empty confirmation field and all levels are selectable", async () => {
+  const user = userEvent.setup(); render(<App />);
+  expect(screen.getByLabelText("来源模式")).toHaveValue("public_search");
+  expect(screen.queryByText("确认发送搜索词")).not.toBeInTheDocument();
+  await user.selectOptions(screen.getByLabelText("解释等级"), "Engineering");
+  expect(screen.getByLabelText("解释等级")).toHaveValue("Engineering");
+  await user.click(screen.getByRole("button", { name: "搜索设置" }));
+  expect(screen.getByText("比较两个仓库")).toBeVisible();
+});
+
+test("notes search is debounced", async () => {
+  const user = userEvent.setup(); render(<App />);
+  await user.click(await screen.findByRole("button", { name: "笔记 0" }));
+  await user.type(screen.getByLabelText("搜索笔记"), "中文");
+  await waitFor(() => expect(calls.some(([url]) => url.includes("notes?q=%E4%B8%AD%E6%96%87"))).toBe(true));
+});
+
+test("UTF-16 offsets convert to Python Unicode code points", () => {
+  expect(utf16ToCodePoint("A😀中文", 3)).toBe(2);
+  expect(utf16ToCodePoint("😀x", 2)).toBe(1);
+});
+
+test("structured backend errors preserve retry guidance", async () => {
+  vi.stubGlobal("fetch", vi.fn(async () => ({
+    ok: false,
+    status: 503,
+    headers: { get: () => "application/json" },
+    json: async () => ({ code: "MODEL_UNAVAILABLE", user_message: "模型暂不可用", retryable: true,
+      needed_action: "检查本地模型" }),
+  })));
+  await expect(api("/capabilities")).rejects.toMatchObject({
+    code: "MODEL_UNAVAILABLE", retryable: true, neededAction: "检查本地模型",
+  });
+  expect(new ApiError({}, 500).code).toBe("HTTP_500");
+});
+
+test("JSON requests and asset URLs preserve the public API boundary", () => {
+  expect(json("PATCH", { title: "中文" })).toEqual({
+    method: "PATCH", headers: { "Content-Type": "application/json" }, body: '{"title":"中文"}',
+  });
+  expect(assetUrl("doc-one", "image one")).toBe(
+    "/api/learning/v1/documents/doc-one/assets/image%20one",
   );
 });
 
-test("shows truthful fixture and all three functional panes", async () => {
-  render(<App />);
-  expect(
-    await screen.findByRole("heading", { name: "文档学习区" }),
-  ).toBeVisible();
-  expect(screen.getByRole("heading", { name: "AI 学习助手" })).toBeVisible();
-  expect(
-    screen.getByRole("heading", { name: "GitHub 代码证据" }),
-  ).toBeVisible();
-  expect(screen.getByText("SCAFFOLD_DEMO")).toBeVisible();
-  expect(screen.getByRole("button", { name: "上一页" })).toBeDisabled();
-  expect(screen.getByRole("button", { name: "解释选中文字" })).toBeDisabled();
-  expect(screen.getByText(/未接入 AI 模型/)).toBeVisible();
+test("SHA-256 hashes UTF-8 selection text", async () => {
+  await expect(hashText("😀")).resolves.toMatch(/^[a-f0-9]{64}$/);
+  await expect(hashText("")).resolves.toBeNull();
 });
 
-test("page and selected text with hash reach backend and source is shown", async () => {
-  const user = userEvent.setup();
-  render(<App />);
-  await user.click(await screen.findByRole("button", { name: "下一页" }));
-  await user.type(
-    screen.getByLabelText("选中文字"),
-    document.pages[1].paragraphs[0],
-  );
-  await user.selectOptions(screen.getByLabelText("解释难度"), "University");
-  await user.click(screen.getByRole("button", { name: "解释选中文字" }));
-  expect(await screen.findByText(source.commit_sha)).toBeVisible();
-  expect(lastRequest.document_context.current_page).toBe(2);
-  expect(lastRequest.document_context.selected_text).toBe(
-    document.pages[1].paragraphs[0],
-  );
-  expect(lastRequest.document_context.selected_text_hash).toMatch(
-    /^[a-f0-9]{64}$/,
-  );
-  expect(lastRequest.explanation_level).toBe("University");
-  expect(screen.getByRole("link", { name: "打开源码" })).toHaveAttribute(
-    "href",
-    expect.stringContaining("#L12-L14"),
-  );
-  await user.click(screen.getByRole("button", { name: "下一页" }));
-  expect(screen.getByLabelText("选中文字")).toHaveValue("");
+test("blank questions remain disabled without losing source settings", async () => {
+  const user = userEvent.setup(); render(<App />); await screen.findByText("导入学习材料");
+  await user.selectOptions(screen.getByLabelText("来源模式"), "specified_public");
+  await user.type(screen.getByLabelText("公开仓库"), "owner/repo");
+  expect(screen.getByRole("button", { name: "发送" })).toBeDisabled();
+  expect(screen.getByLabelText("公开仓库")).toHaveValue("owner/repo");
 });
 
-test("saving is explicit, reload reads persisted notes, asking preserves user text", async () => {
-  const user = userEvent.setup();
-  const first = render(<App />);
-  await user.click(await screen.findByRole("button", { name: "结合代码讲解" }));
-  await user.type(
-    await screen.findByLabelText("我的补充"),
-    "我的理解不会被 AI 覆盖",
-  );
-  expect(saved).toHaveLength(0);
-  await user.click(screen.getByRole("button", { name: "结合代码讲解" }));
-  await waitFor(() =>
-    expect(
-      screen.getByRole("button", { name: "保存为学习笔记" }),
-    ).toBeEnabled(),
-  );
-  expect(screen.getByLabelText("我的补充")).toHaveValue(
-    "我的理解不会被 AI 覆盖",
-  );
-  await user.click(screen.getByRole("button", { name: "保存为学习笔记" }));
-  expect(await screen.findByText(/笔记已保存到本地/)).toBeVisible();
-  expect(saved[0].save_requested_by_user).toBe(true);
-  expect(saved[0].user_text).toBe("我的理解不会被 AI 覆盖");
-  first.unmount();
-  render(<App />);
-  await user.click(await screen.findByRole("button", { name: "我的笔记 (1)" }));
-  expect(screen.getByText("我的理解不会被 AI 覆盖")).toBeVisible();
+test("search selects a complete emoji block with code-point offsets", async () => {
+  const record = { document_id: "doc-abc", file_name: "emoji.md", source_type: "MARKDOWN", unit_count: 1, revision: 1 };
+  const unit = { unit_id: "section-1", unit_type: "section", index: 1, heading_path: ["标题"],
+    extraction_status: "READY", preview: { kind: "learning_view", limitations: [] },
+    blocks: [{ block_id: "section-1-block-1", kind: "paragraph", text: "A😀中文", table_rows: [], image_asset_id: null }] };
+  const requests = [];
+  vi.stubGlobal("fetch", vi.fn(async (url, options = {}) => {
+    requests.push([url, options]); let value;
+    if (url.endsWith("/capabilities")) value = { integrated_product: "UNAVAILABLE", tutor: { available: false } };
+    else if (url.endsWith("/sessions")) value = { session_id: "session-1", context_revision: 0, status: "EMPTY" };
+    else if (url.endsWith("/documents")) value = { documents: [record] };
+    else if (url.endsWith("/units")) value = { units: [unit] };
+    else if (url.includes("/context")) value = { session_id: "session-1", context_revision: requests.filter(([x]) => x.includes("/context")).length, status: "READY" };
+    else if (url.includes("/annotations")) value = { annotations: [], total: 0 };
+    else if (url.includes("/notes")) value = { notes: [] };
+    return { ok: true, status: 200, headers: { get: () => "application/json" }, json: async () => value };
+  }));
+  const user = userEvent.setup(); render(<App />);
+  await user.type(await screen.findByLabelText("搜索当前单元"), "😀");
+  await user.click(screen.getByRole("button", { name: "选择：A😀中文" }));
+  await waitFor(() => expect(requests.filter(([url]) => url.includes("/context"))).toHaveLength(2));
+  const selectionBody = JSON.parse(requests.filter(([url]) => url.includes("/context"))[1][1].body);
+  expect(selectionBody.selection_locator.spans[0]).toEqual({
+    block_id: "section-1-block-1", start: 0, end: 4,
+  });
+  expect(selectionBody.selected_text).toBe("A😀中文");
 });
 
-test("failed answer is visible and cannot create a note", async () => {
-  failExplain = true;
-  const user = userEvent.setup();
-  render(<App />);
-  await user.click(await screen.findByRole("button", { name: "结合代码讲解" }));
-  expect(await screen.findByRole("alert")).toHaveTextContent(
-    "NEEDS_CONFIRMATION",
-  );
-  expect(screen.queryByRole("button", { name: "保存为学习笔记" })).toBeNull();
-  expect(saved).toHaveLength(0);
+
+function deferred() { let resolve; const promise = new Promise((done) => { resolve = done; }); return { promise, resolve }; }
+function readyWorkspace(hook = () => undefined) {
+  const record = { document_id: "doc-live", file_name: "学习.md", source_type: "MARKDOWN", unit_count: 3, revision: 1 };
+  const units = [1, 2, 3].map((i) => ({ unit_id: `section-${i}`, index: i, unit_type: "section", heading_path: [`章节${i}`],
+    extraction_status: "READY", preview: { kind: "learning_view", limitations: [] },
+    blocks: [{ block_id: `block-${i}`, kind: "paragraph", text: `单元内容${i}` }] }));
+  let revision = 0;
+  const requests = [];
+  vi.stubGlobal("fetch", vi.fn(async (url, options = {}) => {
+    requests.push([url, options]); let value = await hook(url, options, requests);
+    if (value === undefined) {
+      if (url.endsWith("/capabilities")) value = { tutor: { available: true } };
+      else if (url.endsWith("/sessions")) value = { session_id: "s1", context_revision: 0 };
+      else if (url.endsWith("/documents")) value = { documents: [record] };
+      else if (url.endsWith("/units")) value = { units };
+      else if (url.includes("/units/")) value = units.find((unit) => url.endsWith(unit.unit_id));
+      else if (url.endsWith("/context")) value = { session_id: "s1", context_revision: ++revision };
+      else if (url.endsWith("/local-handles")) value = { handles: [] };
+      else if (url.includes("/annotations")) value = { annotations: [], total: 0 };
+    else if (url.includes("/notes")) value = { notes: [], total: 0 };
+      else value = {};
+    }
+    return { ok: true, status: 200, headers: { get: () => "application/json" }, json: async () => value };
+  }));
+  return requests;
+}
+function answer(question = "最初的问题") {
+  return { status: "COMPLETE", sources: [], explanation: {
+    explanation_id: "explanation-1", question, status: "NO_VERIFIED_CODE", level: "Beginner",
+    answer_sections: [{ title: "解释结果", text: "只属于当前请求的回答" }], document_citations: [],
+    concept_code_links: [], example_blocks: [], limitations: [], provider_info: { model_id: "local-model" },
+    metrics: { latency_ms: 100, token_source: "PROVIDER_USAGE", input_tokens: 10, output_tokens: 20 },
+  } };
+}
+
+test("navigation cancels an in-flight answer and late results cannot replace the new unit", async () => {
+  const late = deferred();
+  const requests = readyWorkspace((url) => url.endsWith("/explanations/stream") ? late.promise : undefined);
+  const user = userEvent.setup(); render(<App />);
+  await user.type(await screen.findByLabelText("学习问题"), "最初的问题");
+  await waitFor(() => expect(screen.getByRole("button", { name: "发送" })).toBeEnabled());
+  await user.click(screen.getByRole("button", { name: "发送" }));
+  await screen.findByRole("button", { name: "停止" });
+  await user.click(screen.getByRole("button", { name: "下一单元" }));
+  await waitFor(() => expect(screen.getByLabelText("当前页或章节")).toHaveValue("section-2"));
+  await act(async () => late.resolve(answer()));
+  expect(screen.queryByText("只属于当前请求的回答")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "发送" })).toBeEnabled();
+  expect(requests.some(([url, options]) => url.includes("/requests/") && options.method === "DELETE")).toBe(true);
+  expect(requests.find(([url]) => url.endsWith("/explanations/stream"))[1].signal.aborted).toBe(true);
+});
+
+test("rapid context changes serialize revisions and retain the last selected unit", async () => {
+  const second = deferred(); let count = 0;
+  const requests = readyWorkspace((url) => {
+    if (url.endsWith("/context")) { count++; if (count === 2) return second.promise; if (count === 3) return { session_id: "s1", context_revision: 3 }; }
+  });
+  const user = userEvent.setup(); render(<App />);
+  await screen.findByText("单元内容1");
+  await user.selectOptions(screen.getByLabelText("当前页或章节"), "section-2");
+  await waitFor(() => expect(count).toBe(2));
+  await user.selectOptions(screen.getByLabelText("当前页或章节"), "section-3");
+  await act(async () => second.resolve({ session_id: "s1", context_revision: 2 }));
+  await screen.findByText("单元内容3");
+  const contexts = requests.filter(([url]) => url.endsWith("/context"));
+  expect(JSON.parse(contexts[2][1].body)).toMatchObject({ unit_id: "section-3", expected_context_revision: 2 });
+});
+
+test("saving retains the answered question and duplicate clicks create one note", async () => {
+  const saved = deferred();
+  const requests = readyWorkspace((url, options) => {
+    if (url.endsWith("/explanations/stream")) return answer();
+    if (url.endsWith("/notes") && options.method === "POST") return saved.promise;
+  });
+  const user = userEvent.setup(); render(<App />);
+  await user.type(await screen.findByLabelText("学习问题"), "最初的问题");
+  await waitFor(() => expect(screen.getByRole("button", { name: "发送" })).toBeEnabled());
+  await user.click(screen.getByRole("button", { name: "发送" }));
+  await screen.findByText("只属于当前请求的回答");
+  await user.clear(screen.getByLabelText("学习问题"));
+  await user.type(screen.getByLabelText("学习问题"), "下一条尚未回答的问题");
+  await user.click(screen.getByText("保存为笔记"));
+  await user.dblClick(screen.getByRole("button", { name: "保存笔记" }));
+  const saves = requests.filter(([url, options]) => url.endsWith("/notes") && options.method === "POST");
+  expect(saves).toHaveLength(1);
+  expect(JSON.parse(saves[0][1].body).title).toBe("最初的问题");
+  await act(async () => saved.resolve({ note_id: "note-1", title: "最初的问题", revision: 1 }));
+  await screen.findByText("笔记已保存");
+});
+
+test("selected model reaches the request and automatic public search accepts an empty optional keyword", async () => {
+  const requests = readyWorkspace((url) => {
+    if (url.endsWith("/models")) return { base_url: "http://127.0.0.1:12345/v1", default_model: "small",
+      models: [{ id: "small", name: "Small" }, { id: "large", name: "Large" }] };
+    if (url.endsWith("/explanations/stream")) return answer("解释标签和预测");
+  });
+  const user = userEvent.setup(); render(<App />);
+  await screen.findByRole("option", { name: "Large" });
+  await user.selectOptions(screen.getByLabelText("选择模型"), "large");
+  await user.type(screen.getByLabelText("学习问题"), "解释标签和预测");
+  await user.click(screen.getByRole("button", { name: "发送" }));
+  await screen.findByText("只属于当前请求的回答");
+  const request = JSON.parse(requests.find(([url]) => url.endsWith("/explanations/stream"))[1].body);
+  expect(request.model_id).toBe("large");
+  expect(request.scope).toMatchObject({ auto_public_search: true, network_authorized: true, approved_query_terms: [] });
+  expect(screen.getByLabelText("学习问题")).toHaveValue("");
+});
+
+test("refresh restores the draft and conversation without replacing the active context", async () => {
+  const requests = readyWorkspace((url) => {
+    if (url.endsWith("/sessions/s1")) return { session_id: "s1", context_revision: 1,
+      context: { document_id: "doc-live", unit_id: "section-1", selected_text: "" } };
+    if (url.endsWith("/history")) return [{ ...answer(), context_revision: 1 }];
+  });
+  const user = userEvent.setup(); const first = render(<App />);
+  await screen.findByText("单元内容1");
+  await user.type(screen.getByLabelText("学习问题"), "还没发送的追问");
+  first.unmount(); render(<App />);
+  await screen.findByText("只属于当前请求的回答");
+  expect(screen.getByLabelText("学习问题")).toHaveValue("还没发送的追问");
+  expect(requests.filter(([url]) => url.endsWith("/context"))).toHaveLength(1);
+});
+
+test("streamed prose arrives before completion and split UTF-8 chunks preserve Chinese", async () => {
+  const events = [{ type: "progress", stage: "answering" }, { type: "preview", sections: [{ title: "理解", text: "中文😀" }] },
+    { type: "result", value: { status: "COMPLETE" } }];
+  const bytes = new TextEncoder().encode(events.map((item) => JSON.stringify(item) + "\n").join(""));
+  const chunks = new ReadableStream({ start(controller) { for (let i = 0; i < bytes.length; i += 5) controller.enqueue(bytes.slice(i, i + 5)); controller.close(); } });
+  vi.stubGlobal("fetch", vi.fn(async () => new Response(chunks, { headers: { "Content-Type": "application/x-ndjson" } })));
+  const progress = vi.fn();
+  await expect(explainStream({}, new AbortController().signal, progress)).resolves.toEqual({ status: "COMPLETE" });
+  expect(progress.mock.calls).toEqual([["answering"], [events[1]]]);
+});
+
+test("a stream error never returns the provisional prose as a complete answer", async () => {
+  const events = [{ type: "preview", sections: [{ title: "未完成", text: "草稿" }] },
+    { type: "error", value: { code: "MODEL_OUTPUT_INVALID", user_message: "请重试", retryable: true } }];
+  vi.stubGlobal("fetch", vi.fn(async () => new Response(events.map((x) => JSON.stringify(x) + "\n").join(""), { headers: { "Content-Type": "application/x-ndjson" } })));
+  await expect(explainStream({}, new AbortController().signal, vi.fn())).rejects.toMatchObject({ code: "MODEL_OUTPUT_INVALID", retryable: true });
 });

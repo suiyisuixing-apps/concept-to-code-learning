@@ -1,0 +1,923 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Sprint 1 saved-note",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "note_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "user_text": {
+      "type": "string",
+      "maxLength": 20000
+    },
+    "grounded_explanation_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "document_sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/document-citation"
+      }
+    },
+    "github_sources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/github-code-source"
+      }
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "authored_by_user": {
+      "const": true
+    },
+    "grounded_explanation": {
+      "$ref": "#/$defs/grounded-explanation"
+    },
+    "mode": {
+      "enum": [
+        "FIXTURE",
+        "LIVE"
+      ]
+    },
+    "status": {
+      "enum": [
+        "SCAFFOLD_DEMO",
+        "GROUNDED_ANSWER"
+      ]
+    },
+    "contract_version": {
+      "const": "sprint-1"
+    },
+    "explanation_snapshot": {
+      "$ref": "#/$defs/grounded-explanation"
+    }
+  },
+  "required": [
+    "note_id",
+    "title",
+    "user_text",
+    "grounded_explanation_id",
+    "document_sources",
+    "github_sources",
+    "created_at",
+    "updated_at",
+    "authored_by_user",
+    "grounded_explanation",
+    "mode",
+    "status",
+    "contract_version",
+    "explanation_snapshot"
+  ],
+  "$defs": {
+    "document-context": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "document_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "file_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_type": {
+          "enum": [
+            "PPTX",
+            "MARKDOWN_FIXTURE"
+          ]
+        },
+        "current_page": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "current_slide": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "current_section": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "selected_text": {
+          "type": "string",
+          "maxLength": 10000
+        },
+        "selected_text_hash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "contract_version": {
+          "const": "sprint-1"
+        },
+        "file_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "visible_text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100000
+        },
+        "mode": {
+          "enum": [
+            "FIXTURE",
+            "LIVE"
+          ]
+        }
+      },
+      "required": [
+        "document_id",
+        "file_name",
+        "source_type",
+        "current_page",
+        "current_slide",
+        "current_section",
+        "selected_text",
+        "selected_text_hash",
+        "contract_version",
+        "file_hash",
+        "visible_text",
+        "mode"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "source_type": {
+                "const": "PDF"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "current_page": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "source_type": {
+                "const": "PPTX"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "current_slide": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "source_type": {
+                "enum": [
+                  "DOCX",
+                  "MARKDOWN",
+                  "MARKDOWN_FIXTURE"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "current_section": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "selected_text": {
+                "minLength": 1
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "selected_text_hash": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "selected_text_hash": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "source_type": {
+                "const": "PPTX"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "mode": {
+                "const": "LIVE"
+              },
+              "current_page": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "source_type": {
+                "const": "MARKDOWN_FIXTURE"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "mode": {
+                "const": "FIXTURE"
+              },
+              "current_slide": {
+                "type": "null"
+              },
+              "current_page": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "github-code-source": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "repository_owner": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "repository_name": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "repository_url": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uri"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "visibility": {
+          "enum": [
+            "public",
+            "private",
+            "local",
+            "unknown"
+          ]
+        },
+        "commit_sha": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{40}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "branch_or_tag": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "file_path": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "symbol": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "symbol_type": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "line_start": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "line_end": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "code_excerpt": {
+          "type": "string",
+          "maxLength": 6000
+        },
+        "excerpt_hash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "license_name": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "license_url": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uri"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "retrieved_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "verification_status": {
+          "enum": [
+            "GITHUB_SOURCE_VERIFIED",
+            "GITHUB_SOURCE_UNVERIFIED",
+            "LOCAL_REPOSITORY_VERIFIED",
+            "NEEDS_CONFIRMATION",
+            "REJECTED"
+          ]
+        },
+        "source_status": {
+          "enum": [
+            "GITHUB_SOURCE_VERIFIED",
+            "GITHUB_SOURCE_UNVERIFIED",
+            "LOCAL_REPOSITORY_VERIFIED",
+            "ADAPTED_FROM_SOURCE",
+            "AI_GENERATED",
+            "NOT_RUN",
+            "NEEDS_CONFIRMATION",
+            "REJECTED"
+          ]
+        },
+        "relevance_reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "verification_method": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "mode": {
+          "enum": [
+            "FIXTURE",
+            "LIVE"
+          ]
+        },
+        "contract_version": {
+          "const": "sprint-1"
+        }
+      },
+      "required": [
+        "source_id",
+        "repository_owner",
+        "repository_name",
+        "repository_url",
+        "visibility",
+        "commit_sha",
+        "branch_or_tag",
+        "file_path",
+        "symbol",
+        "symbol_type",
+        "line_start",
+        "line_end",
+        "code_excerpt",
+        "excerpt_hash",
+        "license_name",
+        "license_url",
+        "retrieved_at",
+        "verification_status",
+        "source_status",
+        "relevance_reason",
+        "verification_method",
+        "mode",
+        "contract_version"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "verification_status": {
+                "const": "GITHUB_SOURCE_VERIFIED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "repository_owner": {
+                "type": "string",
+                "minLength": 1
+              },
+              "repository_name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "repository_url": {
+                "type": "string",
+                "format": "uri"
+              },
+              "commit_sha": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{40}$"
+              },
+              "file_path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "symbol": {
+                "type": "string",
+                "minLength": 1
+              },
+              "symbol_type": {
+                "type": "string",
+                "minLength": 1
+              },
+              "line_start": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "line_end": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "excerpt_hash": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "license_name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "license_url": {
+                "type": "string",
+                "format": "uri"
+              },
+              "retrieved_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "verification_method": {
+                "type": "string",
+                "minLength": 1
+              },
+              "source_status": {
+                "const": "GITHUB_SOURCE_VERIFIED"
+              },
+              "visibility": {
+                "const": "public"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "source_status": {
+                "const": "GITHUB_SOURCE_VERIFIED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "verification_status": {
+                "const": "GITHUB_SOURCE_VERIFIED"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "learning-concept": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "concept_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "keywords": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "document_context": {
+          "$ref": "#/$defs/document-context"
+        },
+        "status": {
+          "enum": [
+            "AI_GENERATED",
+            "NEEDS_CONFIRMATION",
+            "REJECTED"
+          ]
+        }
+      },
+      "required": [
+        "concept_id",
+        "name",
+        "description",
+        "keywords",
+        "document_context",
+        "status"
+      ]
+    },
+    "document-citation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "document_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "file_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_type": {
+          "enum": [
+            "PPTX",
+            "MARKDOWN_FIXTURE"
+          ]
+        },
+        "page": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "slide": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "section": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "quote": {
+          "type": "string",
+          "minLength": 1
+        },
+        "quote_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "file_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "document_id",
+        "file_name",
+        "source_type",
+        "page",
+        "slide",
+        "section",
+        "quote",
+        "quote_hash",
+        "file_hash"
+      ]
+    },
+    "grounded-explanation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "grounded_explanation_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mode": {
+          "enum": [
+            "FIXTURE",
+            "LIVE"
+          ]
+        },
+        "status": {
+          "enum": [
+            "SCAFFOLD_DEMO",
+            "GROUNDED_ANSWER"
+          ]
+        },
+        "question": {
+          "type": "string",
+          "minLength": 1
+        },
+        "document_context": {
+          "$ref": "#/$defs/document-context"
+        },
+        "concept": {
+          "$ref": "#/$defs/learning-concept"
+        },
+        "explanation_level": {
+          "enum": [
+            "Beginner",
+            "University"
+          ]
+        },
+        "explanation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "document_citations": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/document-citation"
+          }
+        },
+        "github_sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/github-code-source"
+          },
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "code_comparison": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "source_ids": {
+                "type": "array",
+                "minItems": 2,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "explanation": {
+                "type": "string",
+                "minLength": 1
+              },
+              "status": {
+                "enum": [
+                  "AI_GENERATED",
+                  "NEEDS_CONFIRMATION"
+                ]
+              }
+            },
+            "required": [
+              "source_ids",
+              "explanation",
+              "status"
+            ]
+          },
+          "maxItems": 0
+        },
+        "runnable_example_status": {
+          "const": "NOT_RUN"
+        },
+        "unresolved_items": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "contract_version": {
+          "const": "sprint-1"
+        },
+        "provider_mode": {
+          "enum": [
+            "fixture",
+            "openai_compatible"
+          ]
+        },
+        "unsupported_claims": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": [
+        "grounded_explanation_id",
+        "mode",
+        "status",
+        "question",
+        "document_context",
+        "concept",
+        "explanation_level",
+        "explanation",
+        "document_citations",
+        "github_sources",
+        "code_comparison",
+        "runnable_example_status",
+        "unresolved_items",
+        "contract_version",
+        "provider_mode",
+        "unsupported_claims"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "provider_mode": {
+                "const": "fixture"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "mode": {
+                "const": "FIXTURE"
+              },
+              "status": {
+                "const": "SCAFFOLD_DEMO"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,111 @@
+{
+  "date": "2026-09-11",
+  "base_head": "a885a86d48cb722f54d06fa04dc03fd71987eb00",
+  "candidate": "feat/full-learning-integration / Draft PR 69",
+  "real_provider": "Qwen3-4B-Instruct-2507-4bit (existing local MLX)",
+  "synthetic_documents_only": true,
+  "real_github": true,
+  "new_model_downloads": false,
+  "runs": [
+    {
+      "question": "有没有相关代码库，直接体现输入 X、标签 Y 和预测之间的关系？请结合代码讲解。",
+      "first_prose_seconds": 4.829,
+      "complete_seconds": 12.227,
+      "status": "GROUNDED",
+      "answer_sections": [
+        {
+          "title": "输入 X 与目标 Y 的关系",
+          "text": "源码中明确展示了输入 X 和目标 Y 的数据流。通过 `X, y = load_diabetes(return_X_y=True)` 加载数据，其中 X 为特征矩阵，y 为标签（目标）。训练时使用 `regressor.fit(X_train, y_train)`，模型基于 X 的特征和 y 的目标进行学习，体现输入与目标的映射关系。"
+        },
+        {
+          "title": "预测过程中的 X 与 Y 对应",
+          "text": "预测阶段通过 `y_pred = regressor.predict(X_test)` 实现，模型接收新输入 X_test 并输出预测值 y_pred。该操作直接体现 X 与预测结果之间的关系，且预测值与真实标签 y_test 对比，用于评估模型性能，如均方误差和 R² 分数。"
+        }
+      ],
+      "metrics": {
+        "latency_ms": 8338.0,
+        "input_tokens": 1163,
+        "output_tokens": 332,
+        "token_source": "PROVIDER_USAGE",
+        "input_truncated": false,
+        "truncation_reason": null
+      },
+      "sources": [
+        {
+          "repository_owner": "scikit-learn",
+          "repository_name": "scikit-learn",
+          "commit_sha": "8c54c136cac4982a0dac7bee8b8fbcada411fe10",
+          "file_path": "examples/linear_model/plot_ols_ridge.py",
+          "line_start": 33,
+          "line_end": 81,
+          "symbol": null,
+          "permalink": "https://github.com/scikit-learn/scikit-learn/blob/8c54c136cac4982a0dac7bee8b8fbcada411fe10/examples/linear_model/plot_ols_ridge.py#L33-L81",
+          "execution_status": "NOT_RUN",
+          "verification_status": "VERIFIED"
+        }
+      ]
+    },
+    {
+      "question": "这段代码里的 fit 和 predict 各自接收什么，为什么预测时不用传 y？",
+      "first_prose_seconds": 0.726,
+      "complete_seconds": 6.558,
+      "status": "GROUNDED",
+      "answer_sections": [
+        {
+          "title": "fit 方法的输入参数",
+          "text": "fit 方法接收两个参数：输入特征 X（如 X_train）和目标标签 y（如 y_train）。模型在训练时通过学习 X 与 y 之间的映射关系，建立预测函数。源码中明确调用 `regressor.fit(X_train, y_train)`，说明训练过程依赖于特征和目标的联合输入。"
+        },
+        {
+          "title": "predict 方法的输入与预测逻辑",
+          "text": "predict 方法仅接收输入特征 X（如 X_test），不接收目标 y。因为预测是基于已学习的模型对新样本的特征进行推断，无需已知真实标签。源码中 `y_pred = regressor.predict(X_test)` 体现模型仅根据输入 X 生成预测值，符合预测阶段无标签输入的逻辑。"
+        }
+      ],
+      "metrics": {
+        "latency_ms": 6536.0,
+        "input_tokens": 1339,
+        "output_tokens": 263,
+        "token_source": "PROVIDER_USAGE",
+        "input_truncated": false,
+        "truncation_reason": null
+      },
+      "sources": [
+        {
+          "repository_owner": "scikit-learn",
+          "repository_name": "scikit-learn",
+          "commit_sha": "8c54c136cac4982a0dac7bee8b8fbcada411fe10",
+          "file_path": "examples/linear_model/plot_ols_ridge.py",
+          "line_start": 33,
+          "line_end": 81,
+          "symbol": null,
+          "permalink": "https://github.com/scikit-learn/scikit-learn/blob/8c54c136cac4982a0dac7bee8b8fbcada411fe10/examples/linear_model/plot_ols_ridge.py#L33-L81",
+          "execution_status": "NOT_RUN",
+          "verification_status": "VERIFIED"
+        }
+      ]
+    }
+  ],
+  "validation": {
+    "python_passed": 390,
+    "frontend_passed": 30,
+    "ruff": "passed",
+    "schema_check": "passed",
+    "web_build": "passed",
+    "doctor": "passed",
+    "demo": "FIXTURE / SCAFFOLD_DEMO"
+  },
+  "ui": {
+    "desktop": "1280 x 720",
+    "narrow": "390 x 844, no horizontal overflow",
+    "pdf_native_drag": "passed",
+    "annotation_save_and_return": "passed",
+    "stop": "CANCELLED with no completed body",
+    "refresh": "document, question, quote and history restored"
+  },
+  "limits": [
+    "Only one installed model; two-model routing exercised with controlled transport and UI tests.",
+    "Automatic public vocabulary is bounded; other concepts can use explicit generic search terms or a specified repository.",
+    "Example code was not executed.",
+    "Windows UI and DGX hardware were not tested in this increment.",
+    "CI and installed SHA are recorded in the delivery manifest; no human approval or main merge."
+  ]
+}

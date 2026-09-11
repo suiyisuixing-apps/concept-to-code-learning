@@ -1,0 +1,250 @@
+{
+  "$defs": {
+    "ScopeLimit": {
+      "additionalProperties": false,
+      "properties": {
+        "files": {
+          "default": 10,
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Files",
+          "type": "integer"
+        },
+        "repositories": {
+          "default": 5,
+          "maximum": 20,
+          "minimum": 1,
+          "title": "Repositories",
+          "type": "integer"
+        }
+      },
+      "title": "ScopeLimit",
+      "type": "object"
+    },
+    "SourceScope": {
+      "additionalProperties": false,
+      "properties": {
+        "approved_query_terms": {
+          "items": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 20,
+          "title": "Approved Query Terms",
+          "type": "array"
+        },
+        "auto_public_search": {
+          "default": false,
+          "title": "Auto Public Search",
+          "type": "boolean"
+        },
+        "language_hint": {
+          "anyOf": [
+            {
+              "maxLength": 50,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Language Hint"
+        },
+        "local_handle": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Local Handle"
+        },
+        "max_sources": {
+          "default": 3,
+          "maximum": 3,
+          "minimum": 1,
+          "title": "Max Sources",
+          "type": "integer"
+        },
+        "network_authorized": {
+          "default": false,
+          "title": "Network Authorized",
+          "type": "boolean"
+        },
+        "query_terms_approved": {
+          "default": false,
+          "title": "Query Terms Approved",
+          "type": "boolean"
+        },
+        "repository_allowlist": {
+          "items": {
+            "maxLength": 200,
+            "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$",
+            "type": "string"
+          },
+          "maxItems": 20,
+          "title": "Repository Allowlist",
+          "type": "array"
+        },
+        "scope_limit": {
+          "$ref": "#/$defs/ScopeLimit"
+        },
+        "source_mode": {
+          "default": "specified_public",
+          "enum": [
+            "specified_public",
+            "public_search",
+            "local_authorized"
+          ],
+          "title": "Source Mode",
+          "type": "string"
+        }
+      },
+      "title": "SourceScope",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "candidate_ids": {
+      "items": {
+        "maxLength": 200,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9_.:-]+$",
+        "type": "string"
+      },
+      "maxItems": 10,
+      "title": "Candidate Ids",
+      "type": "array"
+    },
+    "compare": {
+      "default": false,
+      "title": "Compare",
+      "type": "boolean"
+    },
+    "context_revision": {
+      "minimum": 1,
+      "title": "Context Revision",
+      "type": "integer"
+    },
+    "continue_from": {
+      "anyOf": [
+        {
+          "maxLength": 200,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Continue From"
+    },
+    "level": {
+      "default": "Beginner",
+      "enum": [
+        "Beginner",
+        "University",
+        "Engineering",
+        "Source-code"
+      ],
+      "title": "Level",
+      "type": "string"
+    },
+    "model_base_url": {
+      "anyOf": [
+        {
+          "maxLength": 500,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Model Base Url"
+    },
+    "model_id": {
+      "anyOf": [
+        {
+          "maxLength": 1000,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Model Id"
+    },
+    "query_id": {
+      "anyOf": [
+        {
+          "maxLength": 200,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Query Id"
+    },
+    "question": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Question",
+      "type": "string"
+    },
+    "request_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_.:-]+$",
+      "title": "Request Id",
+      "type": "string"
+    },
+    "scope": {
+      "$ref": "#/$defs/SourceScope"
+    },
+    "session_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_.:-]+$",
+      "title": "Session Id",
+      "type": "string"
+    },
+    "source_ids": {
+      "items": {
+        "maxLength": 200,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9_.:-]+$",
+        "type": "string"
+      },
+      "maxItems": 3,
+      "title": "Source Ids",
+      "type": "array"
+    }
+  },
+  "required": [
+    "session_id",
+    "context_revision",
+    "question"
+  ],
+  "title": "ExplanationRequest",
+  "type": "object"
+}

@@ -24,12 +24,12 @@ def test_demo_runs_real_example_and_test_without_changing_inputs(project):
     result = cli(project, "demo")
     assert result.returncode == 0, result.stderr
     output = project / "reports/demo"
-    mapping = json.loads((output / "concept-code-map.json").read_text())
-    evidence = json.loads((output / "learning-evidence.json").read_text())
+    mapping = json.loads((output / "concept-code-map.json").read_text(encoding="utf-8"))
+    evidence = json.loads((output / "learning-evidence.json").read_text(encoding="utf-8"))
     for report in (mapping, evidence, json.loads(result.stdout)):
         assert report["mode"] == "FIXTURE"
         assert report["status"] == "SCAFFOLD_DEMO"
-    assert (output / "guided-lesson.md").read_text().startswith(
+    assert (output / "guided-lesson.md").read_text(encoding="utf-8").startswith(
         "---\nmode: FIXTURE\nstatus: SCAFFOLD_DEMO\n---"
     )
     assert mapping["mappings"][0]["code_locations"][0] == ast_location(
@@ -46,7 +46,7 @@ def test_demo_runs_real_example_and_test_without_changing_inputs(project):
 def test_failed_execution_removes_previous_success_report(project):
     assert cli(project, "demo").returncode == 0
     app = project / "demo/mini-fastapi-repo/app.py"
-    app.write_text(app.read_text().replace("return is_active", "return True"))
+    app.write_text(app.read_text(encoding="utf-8").replace("return is_active", "return True"), encoding="utf-8")
     result = cli(project, "demo")
     assert result.returncode == 1
     assert "EXECUTION_FAILED" in result.stderr
@@ -56,7 +56,7 @@ def test_failed_execution_removes_previous_success_report(project):
 
 def test_changed_document_cannot_reuse_old_quote_hash(project):
     source = project / "demo/training-materials/onboarding.md"
-    source.write_text(source.read_text().replace("Only an active", "Any"))
+    source.write_text(source.read_text(encoding="utf-8").replace("Only an active", "Any"), encoding="utf-8")
     result = cli(project, "demo")
     assert result.returncode == 1
     assert "NEEDS_CONFIRMATION" in result.stderr
@@ -65,7 +65,7 @@ def test_changed_document_cannot_reuse_old_quote_hash(project):
 
 def test_nonexistent_symbol_is_not_verified(project):
     app = project / "demo/mini-fastapi-repo/app.py"
-    app.write_text(app.read_text().replace("can_view_profile", "different_function"))
+    app.write_text(app.read_text(encoding="utf-8").replace("can_view_profile", "different_function"), encoding="utf-8")
     result = cli(project, "demo")
     assert result.returncode == 1
     assert "expected one top-level function" in result.stderr

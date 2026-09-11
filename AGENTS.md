@@ -19,16 +19,22 @@ Governance decision: 2026-09-09 by @suiyisuixing. This policy replaces mandatory
 - No automatic cloud fallback.
 - No force push or history rewriting; do not delete main or move existing tags.
 - Do not commit secrets, models, private documents or external repositories. Preserve licenses and minimize excerpts.
-- Keep the repository private and zero new paid services; no purchases, trials, paid runners or model downloads.
+- Keep the repository private and zero new paid services; no purchases, trials or paid runners. New model downloads require explicit user authorization.
 
 Codex can assist review; the final decision belongs to @suiyisuixing. Review labels and CI results do not constitute that decision. Member PRs start with lead-review:pending; Lead maintains the decision labels. See docs/governance/lead-controlled-merge-policy.md for live verification and rollback.
 
 ## Scope and validation
 
-Sprint 1 targets authorized PPTX, one explicitly selected public GitHub repository, verified Python source, grounded explanations and explicit source-backed notes. No PDF/DOCX/OCR, global search, private-source retrieval, multi-repository comparison, exercises, drift, DGX deployment or fine-tuning in this sprint. The application remains Fixture until corresponding real providers have implementation and execution evidence. PR #58 owns versioned contracts; do not assume an unmerged PR is available on main.
+Current authorization: FULL-DELIVERY-PLAN-1 (2026-09-09), not the old PPTX-only slice. Support PDF/PPTX/DOCX/Markdown, document-aware teaching, specified/public-search/authorized-local sources, four explanation levels, follow-up/comparison, source-backed personal notes, local inference and a deployment package. OCR, third-party execution, assessment, model training and paid services are not required.
 
-Use the role branch and main issue in docs/codex-prompts/. Lead owns contracts, API integration and NoteStore; Document owns PPTX and frontend; GitHub owns source verification; Tutor owns explanation/providers/evaluation. Do not complete another member's entire module or automatically start their tasks.
+Read the complete role task in docs/codex-prompts/full-delivery/ before implementation. The common additive contract is full-delivery-v1; preserve schemas/sprint-1, /api/sprint-1, legacy APIs and old note snapshots. See docs/full-delivery/BASELINE.json and INTERFACES.md. An unmerged candidate is not main.
+
+2026-09-11 takeover authorization: the user directed Lead to review, patch and complete all member modules in the integration branch, then integrate the product. The user also authorized Lead to arrange the missing model; the initial installation used one pinned free local Qwen model. The subsequent context-search repair adds one pinned free local Coder model under that authorization and retains the original model as a selectable alternative. Keep final human review and merge claims separate.
+
+Ownership for member development: inogi owns apps/web and documents; zch owns github_intelligence; fqf owns tutor/runtime/teaching/evaluation/DGX. Lead owns full_contracts, full_learning, root API, NoteStore, global configuration/dependencies/CI and Skill. Implement your complete module continuously; do not rewrite another member's entire module. Missing upstream modules permit labelled test doubles, never false live acceptance. Backend dependency requests belong in deps/<role>.txt until Lead integration.
 
 Python 3.12: python -m pip install -e ".[dev]"; ruff check .; pytest -q; python scripts/tutor.py doctor; python scripts/tutor.py demo.
-Node 20: npm --prefix apps/web ci; npm --prefix apps/web test; npm --prefix apps/web run build.
-Add meaningful positive and failure-path tests for behavior changes. Use temporary data directories; record commands, exit codes and actual counts. Offline Fixture tests cannot establish live document/network/model completion. Save immutable source snapshots only on explicit user action. Existing personal notes must remain unchanged.
+Node 22: npm --prefix apps/web ci; npm --prefix apps/web test; npm --prefix apps/web run build.
+Use temporary data roots; all text I/O is explicit UTF-8. Test success/failure/cancellation, snapshots, and meaningful compatibility. Report implementation, module_tests, live_external_check, integrated_product, target_hardware and lead_review separately. Save docs/delivery/<role>/HANDOFF.md and CONTINUATION.md when interrupted. No background continuation promise or automatic final approval.
+
+2026-09-11 integration dependency decision: PDF.js 6.3.289 replaces browser PDF plug-in dependence. PDF.js 5.6 is affected by GHSA-hq66-cqwq-w95j; use the fixed current release and Node 22.13+ for builds/CI. This scoped toolchain change leaves system installations and Python 3.12 unchanged. CI keeps the required Linux job and adds one bounded standard Windows job, each at most 10 minutes, no matrix or schedule.
