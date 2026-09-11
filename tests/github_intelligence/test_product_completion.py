@@ -192,8 +192,9 @@ def test_local_discovery_verify_dirty_change_and_opaque_handle(tmp_path):
     root = tmp_path / "中文 repo"
     root.mkdir()
     subprocess.run(["git", "init", str(root)], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(root), "config", "core.autocrlf", "false"], check=True)
     (root / "main.py").write_text(
-        "def dependency(value):\n    return value + 1\n", encoding="utf-8"
+        "def dependency(value):\n    return value + 1\n", encoding="utf-8", newline="\n"
     )
     (root / "LICENSE").write_text(FROZEN_LICENSE_TEXT, encoding="utf-8")
     subprocess.run(["git", "-C", str(root), "add", "."], check=True)
@@ -235,6 +236,18 @@ def test_local_discovery_verify_dirty_change_and_opaque_handle(tmp_path):
         assert found.candidates[0].symbol_hint == "dependency"
         first = await provider.verify(q, found.candidates[0], "a" * 64)
         assert not first.evidence.dirty and first.evidence.permalink is None
+        # Git can consider CRLF equivalent to the committed LF text. Evidence
+        # still binds actual file bytes, so this must remain a dirty snapshot.
+        subprocess.run(["git", "-C", str(root), "config", "core.autocrlf", "true"], check=True)
+        (root / "main.py").write_bytes((root / "main.py").read_bytes().replace(b"\n", b"\r\n"))
+        committed = subprocess.run(["git", "-C", str(root), "show", "HEAD:main.py"],
+                                   capture_output=True, check=True).stdout
+        raw_crlf = (root / "main.py").read_bytes()
+        assert raw_crlf != committed and raw_crlf.replace(b"\r\n", b"\n") == committed
+        crlf = await provider.search(q)
+        crlf_receipt = await provider.verify(q, crlf.candidates[0], "a" * 64)
+        assert crlf_receipt.evidence.dirty
+        assert crlf_receipt.evidence.file_sha256 == hashlib.sha256((root / "main.py").read_bytes()).hexdigest()
         (root / "main.py").write_text(
             "def dependency(value):\n    return value + 2\n", encoding="utf-8"
         )

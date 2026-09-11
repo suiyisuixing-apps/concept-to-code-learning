@@ -56,7 +56,10 @@ def service(tmp_path):
 
 @pytest.fixture
 def client(tmp_path):
-    return TestClient(create_app(tmp_path, provider_config=ProviderConfig()))
+    # Start the event loop before a test blocks application network calls.
+    # Windows uses a loopback socket pair to wake its event loop internally.
+    with TestClient(create_app(tmp_path, provider_config=ProviderConfig())) as client:
+        yield client
 
 
 @pytest.fixture(scope="module")
@@ -257,16 +260,17 @@ def test_real_switches_fail_explicitly_without_network(tmp_path, monkeypatch, co
                                                        authorized, code, status):
     def forbidden(*args, **kwargs):
         pytest.fail("An unavailable provider attempted a network connection")
-    monkeypatch.setattr(socket.socket, "connect", forbidden)
-    client = TestClient(create_app(tmp_path, provider_config=config))
     body = fixture_request(ROOT)
     body["source"]["network_authorized"] = authorized
-    response = client.post(f"{PREFIX}/learning/explain", json=body)
-    assert response.status_code == status
-    assert response.json()["code"] == code
-    assert response.json()["status"] == "FAILED"
-    assert client.get(f"{PREFIX}/notes").json()["notes"] == []
-    assert client.get(f"{PREFIX}/session").json()["status"] == "PROVIDERS_UNAVAILABLE"
+    with TestClient(create_app(tmp_path, provider_config=config)) as client:
+        with monkeypatch.context() as guard:
+            guard.setattr(socket.socket, "connect", forbidden)
+            response = client.post(f"{PREFIX}/learning/explain", json=body)
+            assert response.status_code == status
+            assert response.json()["code"] == code
+            assert response.json()["status"] == "FAILED"
+            assert client.get(f"{PREFIX}/notes").json()["notes"] == []
+            assert client.get(f"{PREFIX}/session").json()["status"] == "PROVIDERS_UNAVAILABLE"
 
 
 def test_save_requires_explicit_boolean_and_server_handle(client):

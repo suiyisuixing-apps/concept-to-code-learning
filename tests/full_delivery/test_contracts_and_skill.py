@@ -132,6 +132,9 @@ def test_portable_skill_package_runs_complete_controlled_http_workflow(app, tmp_
         assert server.started
         # No GitHub/model credentials, proxies or user data directory are inherited.
         env = {"PATH": os.defpath, "HOME": str(tmp_path), "PYTHONIOENCODING": "gbk"}
+        # Windows needs its system directory to initialize Winsock in a child.
+        # Retain only OS runtime paths, never provider credentials or proxy settings.
+        env.update({k: os.environ[k] for k in ("SYSTEMROOT", "WINDIR") if k in os.environ})
         def run(*args, success=True):
             result = subprocess.run([sys.executable, str(skill / "scripts/learning_client.py"),
                 "--base-url", f"http://127.0.0.1:{port}", *args], cwd=tmp_path, env=env,

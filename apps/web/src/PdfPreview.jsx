@@ -24,6 +24,7 @@ export default function PdfPreview({ url, pageIndex }) {
       task = pdfjs.getDocument({
         url, isEvalSupported: false, enableXfa: false,
         cMapUrl: "/pdfjs/cmaps/", cMapPacked: true,
+        iccUrl: "/pdfjs/iccs/",
         standardFontDataUrl: "/pdfjs/standard_fonts/", wasmUrl: "/pdfjs/wasm/",
       });
       const document = await task.promise;

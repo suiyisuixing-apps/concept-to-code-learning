@@ -69,6 +69,8 @@ Python 保持 3.12，合并 httpx 0.28.1、pypdf 6.18.0、python-pptx 1.0.2、py
 
 检查命令：`ruff check .`；`pytest -q`；`python scripts/tutor.py doctor`；`python scripts/tutor.py demo`；`python scripts/export_full_contracts.py --check`；`npm --prefix apps/web test`；`npm --prefix apps/web run build`；`npm --prefix apps/web audit --json`。均为退出码 0。pytest 的两个第三方弃用提示没有被压制。CI 保留强制 phase0-checks，并增加一个最多 10 分钟的标准 Windows job；无矩阵扩张、定时运行或付费 runner。
 
+首轮 Windows CI 暴露三处测试环境差异：事件循环的内部 socket pair 被离线断言拦截、隔离子进程缺少 SystemRoot、合成仓库受自动换行转换影响。已修正测试生命周期和必要系统环境，固定合成基线并增加 CRLF 原始字节核验断言；没有跳过网络或来源完整性检查。最终 CI 结果以交付清单绑定的 Head 为准。分发构建同时携带 PDF 色彩配置与 React/PDF.js 完整许可文本。
+
 ## 五分钟人工检查
 
 1. 启动软件，导入示例 PPTX，确认当前幻灯片和模型状态。
