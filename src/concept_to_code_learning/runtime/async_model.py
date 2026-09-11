@@ -21,8 +21,9 @@ class AsyncLocalModelAdapter(LocalModelAdapter):
     def __init__(self, config=None, *, transport=None):
         super().__init__(config)
         self._transport = transport
+        self._client = None
 
-    async def _fetch(self, path, body=None):
+    async def _fetch(self, path, body=None, *, on_text=None):
         url = self._prepare(path)
         if isinstance(url, AdapterResult):
             return b"", url
@@ -31,48 +32,97 @@ class AsyncLocalModelAdapter(LocalModelAdapter):
             headers["Authorization"] = f"Bearer {self._config.api_key}"
         started = time.monotonic()
         try:
-            # Closing each logical call makes cancellation release the socket too.
             async with asyncio.timeout(self._config.timeout_seconds):
-                async with httpx.AsyncClient(
-                    trust_env=False,
-                    follow_redirects=False,
-                    transport=self._transport,
-                    timeout=self._config.timeout_seconds,
-                ) as client:
-                    async with client.stream(
-                        "POST" if body else "GET", url, headers=headers, json=body
-                    ) as response:
-                        if response.status_code != 200:
-                            code = {
-                                401: "MODEL_AUTH_REQUIRED",
-                                403: "MODEL_AUTH_REQUIRED",
-                                429: "MODEL_RATE_LIMITED",
-                            }.get(response.status_code, "MODEL_HTTP_ERROR")
-                            return b"", _failure(code, f"Provider HTTP {response.status_code}.")
-                        chunks, size = [], 0
-                        async for chunk in response.aiter_bytes(chunk_size=16384):
-                            size += len(chunk)
-                            if size > 1024 * 1024:
-                                return b"", _failure(
-                                    "MODEL_MALFORMED_RESPONSE", "Response exceeded byte limit."
-                                )
-                            chunks.append(chunk)
-                        return b"".join(chunks), self._result(started, 1)
+                if self._client is None or self._client.is_closed:
+                    self._client = httpx.AsyncClient(
+                        trust_env=False,
+                        follow_redirects=False,
+                        transport=self._transport,
+                        timeout=self._config.timeout_seconds,
+                        limits=httpx.Limits(max_connections=4, max_keepalive_connections=2),
+                    )
+                async with self._client.stream(
+                    "POST" if body else "GET", url, headers=headers, json=body
+                ) as response:
+                    if response.status_code != 200:
+                        code = {
+                            401: "MODEL_AUTH_REQUIRED",
+                            403: "MODEL_AUTH_REQUIRED",
+                            429: "MODEL_RATE_LIMITED",
+                        }.get(response.status_code, "MODEL_HTTP_ERROR")
+                        return b"", _failure(code, f"Provider HTTP {response.status_code}.")
+                    if on_text and "text/event-stream" in response.headers.get("content-type", ""):
+                        return await self._read_stream(response, on_text), self._result(started, 1)
+                    chunks, size = [], 0
+                    async for chunk in response.aiter_bytes(chunk_size=16384):
+                        size += len(chunk)
+                        if size > 1024 * 1024:
+                            return b"", _failure(
+                                "MODEL_MALFORMED_RESPONSE", "Response exceeded byte limit."
+                            )
+                        chunks.append(chunk)
+                    return b"".join(chunks), self._result(started, 1)
         except (TimeoutError, httpx.TimeoutException):
             return b"", _failure("MODEL_TIMEOUT", "The configured model timed out.")
         except httpx.TransportError:
             return b"", _failure("MODEL_OFFLINE", "The configured model could not be reached.")
+        except (ValueError, KeyError, TypeError):
+            return b"", _failure("MODEL_MALFORMED_RESPONSE", "The model stream was incomplete or invalid.")
 
-    async def health(self):
+    async def _read_stream(self, response, on_text):
+        text, identity, finish, usage, size = "", None, None, None, 0
+        async for line in response.aiter_lines():
+            size += len(line.encode("utf-8"))
+            if size > 1024 * 1024:
+                raise ValueError("Stream exceeded byte limit")
+            if not line.startswith("data:"):
+                continue
+            data = line[5:].strip()
+            if data == "[DONE]":
+                break
+            value = json.loads(data)
+            if value.get("model") is not None:
+                identity = value["model"]
+                if identity != self._config.model:
+                    raise ValueError("Stream model identity mismatch")
+            if value.get("usage"):
+                usage = value["usage"]
+            choices = value.get("choices", [])
+            if choices:
+                choice = choices[0]
+                if choice.get("index", 0) != 0 or len(choices) != 1:
+                    raise ValueError("Unexpected stream choice")
+                delta = choice.get("delta", {})
+                if delta.get("refusal") or delta.get("tool_calls"):
+                    raise ValueError("Unexpected model action")
+                chunk = delta.get("content") or ""
+                if not isinstance(chunk, str):
+                    raise ValueError("Invalid delta")
+                text += chunk
+                if chunk:
+                    on_text(text)
+                finish = choice.get("finish_reason") or finish
+        if finish is None:
+            raise ValueError("Model stream ended before completion")
+        value = {"model": identity or self._config.model, "choices": [{
+            "message": {"content": text}, "finish_reason": finish}]}
+        if usage is not None:
+            value["usage"] = usage
+        return json.dumps(value).encode("utf-8")
+
+    async def models(self):
         payload, result = await self._fetch("/v1/models")
         if not result.ok:
             return result
-        result = _checked(result, lambda: _parse_model_ids(payload))
+        return _checked(result, lambda: _parse_model_ids(payload))
+
+    async def health(self):
+        result = await self.models()
         if result.ok and self._config.model not in result.usage["served_models"]:
             return _failure("MODEL_NOT_FOUND", "The configured model is not served here.")
         return result
 
-    async def generate(self, messages):
+    async def generate(self, messages, *, max_tokens=None, on_text=None):
         prepared = self._prepare("/v1/chat/completions")
         if isinstance(prepared, AdapterResult):
             return prepared
@@ -86,9 +136,13 @@ class AsyncLocalModelAdapter(LocalModelAdapter):
                 "model": self._config.model,
                 "messages": messages,
                 "temperature": 0,
-                "max_tokens": self._config.max_output_tokens,
-                "stream": False,
+                "max_tokens": min(
+                    max_tokens or self._config.max_output_tokens, self._config.max_output_tokens
+                ),
+                "stream": bool(on_text),
+                **({"stream_options": {"include_usage": True}} if on_text else {}),
             },
+            on_text=on_text,
         )
         if not result.ok:
             return result
@@ -110,4 +164,5 @@ class AsyncLocalModelAdapter(LocalModelAdapter):
         return result
 
     async def close(self):
-        return None
+        if self._client is not None:
+            await self._client.aclose()

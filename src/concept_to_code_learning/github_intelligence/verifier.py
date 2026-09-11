@@ -1,5 +1,6 @@
 """Verify immutable file bytes, real line ranges and observed license files."""
 
+import ast
 import hashlib
 import re
 from pathlib import PurePosixPath
@@ -52,7 +53,20 @@ def excerpt(text, path, symbol, terms):
         _, kind, start, end = found[0]
     else:
         index = next((i for i, line in enumerate(lines) if matched(line, terms)), 0)
-        start, end = max(1, index - 12), min(len(lines), index + 48)
+        if PurePosixPath(path).suffix.lower() == ".py":
+            try:
+                # Center teaching examples on executable statements, not the opening
+                # gallery docstring. This is static parsing, never execution.
+                nodes = ast.parse(text).body
+                positions = [node.lineno - 1 for node in nodes
+                             if isinstance(node, (ast.Assign, ast.AnnAssign, ast.Expr))
+                             and not (isinstance(node, ast.Expr) and isinstance(node.value, ast.Constant))
+                             and matched("\n".join(lines[node.lineno - 1:node.end_lineno]), terms)]
+                if positions:
+                    index = positions[0]
+            except (SyntaxError, ValueError, RecursionError):
+                pass
+        start, end = max(1, index - 12), min(len(lines), index + 36)
     code = "\n".join(lines[start - 1 : end])
     if len(code) > 20000:
         raise SourceError(

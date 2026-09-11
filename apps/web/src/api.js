@@ -27,6 +27,42 @@ export function json(method, body) {
   return { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
 }
 
+export async function explainStream(body, signal, progress) {
+  let response;
+  try { response = await fetch(`${BASE}/explanations/stream`, { ...json("POST", body), signal }); }
+  catch (error) {
+    if (error.name === "AbortError") throw error;
+    throw new ApiError({ code: "CONNECTION_LOST", user_message: "连接中断，请重试。", retryable: true }, 0);
+  }
+  if (response.headers.get("content-type")?.includes("json") && !response.headers.get("content-type")?.includes("ndjson")) {
+    const value = await response.json();
+    if (!response.ok) throw new ApiError(value, response.status);
+    return value;
+  }
+  if (!response.ok || !response.body) throw new ApiError({ user_message: "连接中断，请重试。", retryable: true }, response.status);
+  const reader = response.body.getReader(), decoder = new TextDecoder();
+  let buffer = "";
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      buffer += decoder.decode(value, { stream: !done });
+      let newline;
+      while ((newline = buffer.indexOf("\n")) !== -1) {
+        const line = buffer.slice(0, newline); buffer = buffer.slice(newline + 1);
+        if (!line.trim()) continue;
+        const event = JSON.parse(line);
+        if (event.type === "progress") progress(event.stage);
+        if (event.type === "preview") progress(event);
+        if (event.type === "error") throw new ApiError(event.value, 502);
+        if (event.type === "result") return event.value;
+      }
+      if (done) break;
+      if (buffer.length > 4 * 1024 * 1024) throw new Error("回答过长，请缩小问题范围后重试。");
+    }
+    throw new ApiError({ code: "CONNECTION_LOST", user_message: "回答途中连接中断，请重试。", retryable: true }, 0);
+  } finally { await reader.cancel(); reader.releaseLock(); }
+}
+
 export function id(prefix = "request") { return `${prefix}-${crypto.randomUUID()}`; }
 
 export async function hashText(text) {

@@ -179,6 +179,7 @@ class SourceScope(Value):
     scope_limit: ScopeLimit = Field(default_factory=ScopeLimit)
     network_authorized: Annotated[bool, Field(strict=True)] = False
     query_terms_approved: Annotated[bool, Field(strict=True)] = False
+    auto_public_search: Annotated[bool, Field(strict=True)] = False
     approved_query_terms: list[Annotated[str, Field(min_length=1, max_length=100)]] = Field(
         default_factory=list, max_length=20)
     max_sources: Annotated[int, Field(ge=1, le=3, strict=True)] = 3
@@ -419,6 +420,8 @@ class ExplanationRequest(Value):
     query_id: ID | None = None
     compare: Annotated[bool, Field(strict=True)] = False
     continue_from: ID | None = None
+    model_id: Annotated[str, Field(min_length=1, max_length=1000)] | None = None
+    model_base_url: Annotated[str, Field(min_length=1, max_length=500)] | None = None
 
 
 class ExplanationResult(Record):

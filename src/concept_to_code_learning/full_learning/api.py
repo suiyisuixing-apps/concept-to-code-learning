@@ -1,11 +1,13 @@
 """Additive learning API. Browser inputs contain IDs, never verification receipts."""
 
+import asyncio
 import hashlib
+import json
 from urllib.parse import urlsplit
 
 from fastapi import APIRouter, FastAPI, Query, Request
 from fastapi.exceptions import RequestValidationError, ResponseValidationError
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 from pydantic import ValidationError
 
 from concept_to_code_learning.full_contracts import annotations as a
@@ -14,6 +16,7 @@ from concept_to_code_learning.full_learning.annotations import AnnotationStore
 from concept_to_code_learning.full_learning.errors import LearningError, require
 from concept_to_code_learning.full_learning.export import export_note
 from concept_to_code_learning.full_learning.ports import DocumentUpload
+from concept_to_code_learning.tutor.catalog import ModelEndpoint, ModelList
 
 PREFIX = "/api/learning/v1"
 ERROR_RESPONSES = {status: {"model": m.LearningErrorResponse} for status in (400, 403, 404, 409, 413, 422, 502, 503, 504)}
@@ -27,9 +30,25 @@ def create_router(service, legacy_store, sprint_store) -> APIRouter:
     async def capabilities():
         return await service.capabilities()
 
+    @router.get("/models", response_model=ModelList)
+    async def models():
+        return await service.models.discover()
+
+    @router.post("/models/discover", response_model=ModelList)
+    async def discover_models(body: ModelEndpoint):
+        return await service.models.discover(body.base_url)
+
     @router.post("/sessions", response_model=m.SessionRecord, status_code=201)
     async def session_create():
         return service.store.create_session()
+
+    @router.get("/sessions/recent", response_model=m.SessionRecord | None)
+    async def session_recent():
+        return service.store.recent_session()
+
+    @router.get("/sessions/{session_id}/history", response_model=list[m.ExplanationResult])
+    async def session_history(session_id: m.ID):
+        return service.store.history(session_id)
 
     @router.get("/sessions/{session_id}", response_model=m.SessionRecord)
     async def session_get(session_id: m.ID):
@@ -129,6 +148,42 @@ def create_router(service, legacy_store, sprint_store) -> APIRouter:
     async def explain(body: m.ExplanationRequest, request: Request):
         request.state.learning_request_id = body.request_id
         return await service.explain(body)
+
+    @router.post("/explanations/stream", response_class=StreamingResponse)
+    async def stream_explanation(body: m.ExplanationRequest):
+        async def events():
+            queue = asyncio.Queue(maxsize=16)
+
+            def progress(stage):
+                if not queue.full():
+                    queue.put_nowait(stage if isinstance(stage, dict) else {"type": "progress", "stage": stage})
+
+            async def run():
+                try:
+                    result = await service.explain(body, progress=progress)
+                    await queue.put({"type": "result", "value": result.model_dump(mode="json")})
+                except LearningError as exc:
+                    await queue.put({"type": "error", "value": exc.payload(body.request_id)})
+                except asyncio.CancelledError:
+                    raise
+                except Exception:
+                    await queue.put({"type": "error", "value": LearningError(
+                        "REQUEST_FAILED", "request", "这次回答未能完成，请重试。", 500,
+                        retryable=True).payload(body.request_id)})
+
+            task = asyncio.create_task(run())
+            try:
+                while True:
+                    event = await queue.get()
+                    yield json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n"
+                    if event["type"] in {"result", "error"}:
+                        break
+            finally:
+                if not task.done():
+                    task.cancel()
+                await asyncio.gather(task, return_exceptions=True)
+        return StreamingResponse(events(), media_type="application/x-ndjson",
+                                 headers={"X-Accel-Buffering": "no"})
 
     @router.delete("/requests/{request_id}", status_code=204)
     async def cancel(request_id: m.ID, session_id: m.ID):

@@ -33,7 +33,9 @@ npm --prefix apps/web run build
 
 Apple Silicon Mac，使用已安装的 MLX 环境与已下载模型，按 `config/desktop-mlx.example.json` 填写实际路径。`model_python` 指向该虚拟环境的 Python；模型文件留在 Git 之外。本次本机验收采用 Qwen3-4B-Instruct-2507 的 MLX 4bit 版本，约 2.3 GB，固定版本和校验记录见审核材料。启动时关闭在线模型下载与遥测，只监听 127.0.0.1。
 
-连接已有服务（Windows、Linux 或 Mac）使用 `config/desktop-endpoint.example.json`。服务需要 `/v1/models` 和 `/v1/chat/completions`，支持非流式文本返回，模型名必须准确。远程服务需 HTTPS，并且已获授权发送所选文档片段与来源代码，才可设置 `model_network_authorized: true`。SSH 转发到本机的已授权 DGX 可采用 loopback 地址；主机部署见 `deploy/dgx/`。
+连接已有服务（Windows、Linux 或 Mac）使用 `config/desktop-endpoint.example.json`。服务需要 `/v1/models` 和 `/v1/chat/completions`，支持 Chat Completions 流式请求；接受该请求而返回完整 JSON 的服务也可使用，正文会在完成后显示。模型名必须准确。远程服务需 HTTPS，并且已获授权发送所选文档片段与来源代码，才可设置 `model_network_authorized: true`。SSH 转发到本机的已授权 DGX 可采用 loopback 地址；主机部署见 `deploy/dgx/`。
+
+网页对话顶部可以选择服务实际提供的模型。点击“模型设置”，填写已有的本机兼容服务地址，再点击“连接”；列表来自服务的 `/v1/models`，不会下载模型。当前安装只有 Qwen3-4B-Instruct-2507-4bit，连接提供其他模型的服务后才会出现其他选项。新地址只允许 loopback；已在主机配置中授权的远程服务继续适用原有配置。模型选择保存在当前浏览器，每次请求单独绑定模型，不修改其他页面的默认配置。
 
 秘钥仅通过 `C2C_MODEL_API_KEY` / `C2C_GITHUB_TOKEN` 环境变量传入，不写到设置文件或网页。未提供 GitHub token 时仍可读取公开仓库，但受匿名配额限制；限流会明确显示。产品不读取 gh 的管理员凭据。
 
@@ -60,6 +62,10 @@ Apple Silicon Mac，使用已安装的 MLX 环境与已下载模型，按 `confi
 desktop 入口默认在上述应用目录的 `data/` 保存文档副本与 `learning-v1.sqlite3`。可在 desktop.json 中指定 `data_dir`。旧 `fixture-notes.sqlite3` 和旧接口继续兼容，本轮没有迁移或覆盖旧表。
 
 笔记通过用户保存动作创建。修改个人文字会生成新修订，原讲解和来源冻结不变；单条可导出 Markdown/JSON。完整备份前正常停止应用，再复制整个数据目录。恢复时保留当前目录副本，用备份的独立目录启动确认；不要在应用写入中只复制一个 SQLite 文件。
+
+对话、批注、笔记在右侧切换。划选原文后可编辑问题或写批注；PDF 默认显示原版，提取文字按需展开。完成的对话从本地数据库恢复，问题草稿保存在当前标签页；关闭标签页可能清除未发送草稿。Enter 发送、Shift+Enter 换行；停止生成保留问题，临时正文不会成为已保存的回答。
+
+“GitHub 找代码”允许使用通用知识点检索公开代码。常见机器学习和编程知识点有检索指引，仓库、路径、版本与代码仍逐次核验。指引未覆盖的主题可在“搜索设置”填写通用关键词，或指定自己的公开仓库。私有课件原文不发送给 GitHub。选择“仅文档”不检索代码。
 
 ## 常见情况
 

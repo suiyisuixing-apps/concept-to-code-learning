@@ -30,6 +30,7 @@ export default function Reader({ record, units, unit, navigate, select, selectio
   annotations, openAnnotation, annotate, editQuestion, report }) {
   const nodes = useRef(new Map()), dragging = useRef(false);
   const [search, setSearch] = useState(""), [toolbar, setToolbar] = useState(null);
+  const [textOpen, setTextOpen] = useState(false);
   const latest = useRef(null);
   const location = `${record?.document_id}:${unit?.unit_id}`;
   const matches = unit?.blocks.filter((item) => search.trim() && item.text.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())) || [];
@@ -46,7 +47,7 @@ export default function Reader({ record, units, unit, navigate, select, selectio
   function capture() { if (unit) accept(captureBlocks(unit, nodes.current)); }
   latest.current = capture;
   useEffect(() => {
-    setToolbar(null); setSearch("");
+    setToolbar(null); setSearch(""); setTextOpen(false);
   }, [location]);
   useEffect(() => {
     // Capture a user gesture once. Rendering marks can itself change the native
@@ -60,23 +61,26 @@ export default function Reader({ record, units, unit, navigate, select, selectio
   }, []);
   useEffect(() => {
     const span = selection?.spans?.[0];
-    if (selection?.reveal && span) nodes.current.get(span.block_id)?.scrollIntoView({ block: "center", behavior: "smooth" });
-  }, [selection]);
+    if (selection?.reveal && span) {
+      setTextOpen(true);
+      if (textOpen || unit?.preview.kind !== "native_pdf") nodes.current.get(span.block_id)?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+  }, [selection, textOpen]);
   const whole = (item) => accept({ text: item.text, spans: [{ block_id: item.block_id, start: 0, end: Array.from(item.text).length }] }, false);
   return <section className="reader pane" onScroll={() => setToolbar(null)}>
     <div className="pane-header"><h2>{record?.file_name || "导入学习材料"}</h2><label className="import">
       <input aria-label="导入文件" disabled={importing} type="file" accept=".pdf,.pptx,.docx,.md,.markdown" onChange={(e) => { const file = e.target.files[0]; if (file) importFile(file); e.target.value = ""; }}/>{importing ? "导入中…" : "导入文件"}</label></div>
     {!record ? <div className="empty"><h3>选择 PDF、PPTX、DOCX 或 Markdown</h3><p>文件副本与提取结果只保存在本地数据目录。</p></div> : <>
-      <div className="doc-meta"><span>{record.source_type}</span><span>{record.unit_count} 个单元</span><span>修订 {record.revision}</span></div>
+      <div className="doc-meta"><span>{record.unit_count} {record.source_type === "PDF" ? "页" : "个单元"}</span></div>
       <nav className="unit-nav" aria-label="文档导航"><button aria-label="上一单元" disabled={!unit || unit.index === 1} onClick={() => navigate(unit.index - 2)}>←</button>
         <select aria-label="当前页或章节" value={unit?.unit_id || ""} onChange={(e) => navigate(units.findIndex((x) => x.unit_id === e.target.value))}>{units.map((x) => <option key={x.unit_id} value={x.unit_id}>{x.index}. {x.heading_path.at(-1) || x.unit_type}</option>)}</select>
         <button aria-label="下一单元" disabled={!unit || unit.index === units.length} onClick={() => navigate(unit.index)}>→</button></nav>
       <div className="block-search"><input aria-label="搜索当前单元" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="搜索当前页或章节"/>{search && <span>{matches.length} 个匹配块</span>}</div>
       {matches.length > 0 && <div className="search-results">{matches.map((item) => <button key={item.block_id} onClick={() => whole(item)}>选择：{item.text.slice(0, 48)}</button>)}</div>}
-      <p className="reading-hint">按住鼠标左键划选文字，即可引用提问或写批注。</p>
-      {unit?.preview.kind === "native_pdf" && <PdfPreview url={assetUrl(record.document_id, unit.preview.asset_id)} pageIndex={unit.index} unit={unit} onSelect={accept} report={report}/>}
-      {record.source_type !== "MARKDOWN" && unit?.preview.limitations?.length > 0 && <p className="boundary">{unit.preview.limitations.join(" ")}</p>}
-      <article className="blocks" tabIndex="0" onMouseDown={(e) => { if (e.button === 0) dragging.current = true; }} onKeyUp={capture} aria-label="当前文档单元">
+      {unit?.preview.kind === "native_pdf" && <PdfPreview url={assetUrl(record.document_id, unit.preview.asset_id)} pageIndex={unit.index} unit={unit} onSelect={accept} report={(e) => { setTextOpen(true); report(e); }}/>}
+      {record.source_type !== "MARKDOWN" && unit?.preview.limitations?.length > 0 && <details className="document-info"><summary>文档信息</summary><p>{unit.preview.limitations.join(" ")}</p></details>}
+      {unit?.preview.kind === "native_pdf" && <button className="text-toggle" aria-expanded={textOpen} onClick={() => setTextOpen(!textOpen)}>{textOpen ? "收起文字" : "查看文字与批注"}</button>}
+      <article hidden={unit?.preview.kind === "native_pdf" && !textOpen} className="blocks" tabIndex="0" onMouseDown={(e) => { if (e.button === 0) dragging.current = true; }} onKeyUp={capture} aria-label="当前文档单元">
         {unit?.heading_path.length > 0 && unit.blocks[0]?.text !== unit.heading_path.at(-1) && <h3>{unit.heading_path.join(" / ")}</h3>}
         {unit?.blocks.map((item, i) => <div className="reading-block" key={item.block_id}>
           {item.kind === "table" ? <div className="table-wrap"><table><tbody>{item.table_rows.map((row, i) => <tr key={i}>{row.map((cell, j) => <td key={j}>{cell}</td>)}</tr>)}</tbody></table><button onClick={() => whole(item)}>选中表格</button></div>

@@ -9,8 +9,10 @@ from pydantic import Field, ValidationError
 
 from concept_to_code_learning.full_contracts import models as m
 from concept_to_code_learning.full_learning.errors import LearningError, require
+from concept_to_code_learning.learning_concepts import guide_for
 from concept_to_code_learning.runtime.async_model import AsyncLocalModelAdapter
 from concept_to_code_learning.runtime.local_model import LocalModelConfig, is_loopback_host
+from concept_to_code_learning.tutor.preview import preview_sections
 
 LEVELS = {
     "Beginner": "面向初学者，用中文生活类比，先解释术语，每节短小。",
@@ -140,7 +142,7 @@ class GroundedTutorProvider:
             for e in conversation[-3:]
         ]
 
-    async def _json(self, prompt, data, schema):
+    async def _json(self, prompt, data, schema, *, on_text=None):
         messages = [
             {"role": "system", "content": SYSTEM + "\n" + prompt},
             {
@@ -148,7 +150,11 @@ class GroundedTutorProvider:
                 "content": json.dumps(data, ensure_ascii=False, separators=(",", ":")),
             },
         ]
-        result = await self.adapter.generate(messages)
+        if isinstance(self.adapter, AsyncLocalModelAdapter):
+            result = await self.adapter.generate(messages, max_tokens=350 if schema is PlanOutput else 1600,
+                                                 on_text=on_text)
+        else:
+            result = await self.adapter.generate(messages)
         if not result.ok:
             self._health_time = 0
             raise LearningError(
@@ -176,6 +182,16 @@ class GroundedTutorProvider:
         return output, result
 
     async def plan(self, context, question, level, conversation):
+        # A small deterministic vocabulary removes an entire generation for common
+        # course concepts. It suggests retrieval only; it never fabricates evidence.
+        guide = (guide_for(question)
+                 or (guide_for(conversation[-1].question) if conversation else None)
+                 or guide_for(context.selected_text or ""))
+        if guide:
+            return m.TeachingPlan(mode="LIVE", plan_id=m.uid(), question=question, level=level,
+                concepts=[guide.concept], needs_code=True, status="READY",
+                source_query=m.SourceQuery(mode="LIVE", query_id=m.uid(), question=question,
+                    concept_terms=list(guide.terms), status="PLANNED"))
         blocks, truncated = self.pack_context(context, 4500)
         prompt = """规划这次教学。输出字段 concepts(1-5个中文概念字符串), query_terms(1-3个精简英文源码检索词或符号),
 prerequisites(字符串数组), needs_code(布尔值), uncertainties(字符串数组)。
@@ -223,8 +239,18 @@ query_terms 必须只包含公开通用技术概念，不带用户身份、课�
             self._plans.popitem(last=False)
         return plan
 
-    async def explain(self, context, verified_sources, plan, conversation, *, compare=False):
-        blocks, truncated = self.pack_context(context, 5000)
+    async def explain(self, context, verified_sources, plan, conversation, *, compare=False, progress=None):
+        last_preview = 0
+
+        def preview(raw):
+            nonlocal last_preview
+            if progress and time.monotonic() - last_preview > 0.1:
+                sections = preview_sections(raw)
+                if sections:
+                    progress({"type": "preview", "sections": sections})
+                    last_preview = time.monotonic()
+
+        blocks, truncated = self.pack_context(context, 2200 if context.selected_text else 4500)
         block_aliases = {f"B{i + 1}": b["block_id"] for i, b in enumerate(blocks)}
         blocks = [
             {"block_id": alias, "text": blocks[i]["text"]} for i, alias in enumerate(block_aliases)
@@ -244,12 +270,13 @@ query_terms 必须只包含公开通用技术概念，不带用户身份、课�
         ]
         truncated |= any(s["code_truncated"] for s in source_data) or len(conversation) > 3
         prompt = """根据材料作答，用中文。输出以下 JSON 字段：
-answer_sections: [{"title":"核心意思","text":"具体讲解"},...]，约3-5节，每节不超过180字。
+answer_sections: [{"title":"核心意思","text":"具体讲解"},...]，约2-3节，每节不超过180字；直接回答，不复述问题。
 document_citations: [{"block_id":"B1"}]，必须至少一条；只选本次提供的材料编号，不要输出 quote 字段。服务端将附上原文。
-concept_code_links: [{"concept":"概念","source_id":"给定ID","symbol":null,"reason":"源码对应及局限"}]。
+concept_code_links: [{"concept":"概念","source_id":"给定ID","reason":"源码对应及局限"}]，不要输出 symbol 字段。
 comparison: null，或比较时 {"source_ids":["id1","id2"],"summary":"异同","tradeoffs":["权衡"]}。
 limitations: ["局限"]。
-有代码时解释输入输出和关键调用、联系文档概念；source_id 必须来自给定片段。无代码时 links为空，明确未核验源码。
+有代码时必须结合片段中的变量和调用讲解，并在 concept_code_links 引用至少一个给定 source_id。
+围绕用户选择的概念，例如 X、y、fit、predict 的数据流，说明原文在源码中怎样体现。不要用泛泛的算法介绍代替代码讲解。无代码时 links为空。
 比较时只比较给定的两份代码；不猜测其他文件。只选择你实际看到的材料编号。
 仅说明源码实际出现的操作，不能根据函数名推断算法。类型转换、过滤与数值缩放是不同操作；没有对应计算就不能声称做了归一化。推导出的影响明确标为推断。
 如存在代码片段，不要重新输出代码，界面会展示原始版本。"""
@@ -271,6 +298,7 @@ limitations: ["局限"]。
                 "history": self.history(conversation),
             },
             TeachingOutput,
+            on_text=preview if progress else None,
         )
         # Validate citations against exactly what the model saw as well as the full frozen document.
         seen_blocks = {b["block_id"]: b["text"] for b in blocks}
@@ -313,13 +341,9 @@ limitations: ["局限"]。
                 "模型引用了不存在的代码来源。",
                 502,
             )
-            require(
-                link.symbol is None or link.symbol == source_map[link.source_id].symbol,
-                "CITATION_INVALID",
-                "tutor",
-                "模型引用了未核验的符号。",
-                502,
-            )
+            # The selected evidence ID is validated above. Symbol metadata belongs
+            # to that verified source, never to a model-generated spelling of it.
+            link.symbol = source_map[link.source_id].symbol
         if output.comparison:
             require(
                 set(output.comparison.source_ids) <= set(source_aliases),
@@ -332,6 +356,9 @@ limitations: ["局限"]。
                 source_aliases[sid] for sid in output.comparison.source_ids
             ]
         used = list(dict.fromkeys(link.source_id for link in output.concept_code_links))
+        if verified_sources and not used:
+            raise LearningError("CITATION_INVALID", "tutor", "模型没有解释找到的代码，请重试。", 502,
+                                retryable=True)
         if compare:
             require(
                 output.comparison is not None,

@@ -22,7 +22,7 @@ beforeEach(() => {
     else if (url.endsWith("/documents")) value = { documents: [record] };
     else if (url.endsWith("/units")) value = { units };
     else if (url.endsWith("/context")) value = { session_id: "reading-session", context_revision: ++revision };
-    else if (url.endsWith("/explanations")) value = { status: "COMPLETE", explanation: null, sources: [] };
+    else if (url.endsWith("/explanations/stream")) value = { status: "COMPLETE", explanation: null, sources: [] };
     else if (url.includes("/annotations") && options.method === "POST") {
       value = { annotation_id: body.annotation_id, revision: 1, comment: body.comment,
         anchor: { document_id: record.document_id, document_revision: 1, original_sha256: record.original_sha256,
@@ -54,7 +54,7 @@ function drag(first, start, last, end) {
 }
 async function chooseWhole(user, n = 1) {
   await user.click(await screen.findByRole("button", { name: `选择整段 ${n}` }));
-  await screen.findByText("引用原文");
+  await screen.findByRole("button", { name: "清除引用" });
 }
 
 test("dragging cross-paragraph text fills an editable question while preserving exact source offsets", async () => {
@@ -67,9 +67,9 @@ test("dragging cross-paragraph text fills an editable question while preserving 
   expect(original.selected_text).toBe("😀保留零值\n第二");
   expect(original.selection_locator.spans).toEqual([{ block_id: "first-1", start: 1, end: 6 }, { block_id: "second-1", start: 0, end: 2 }]);
   await user.clear(input); await user.type(input, "这段中的零值为什么不能丢弃？");
-  await user.click(screen.getByRole("button", { name: "开始讲解" }));
-  await waitFor(() => expect(calls.some(([url]) => url.endsWith("/explanations"))).toBe(true));
-  expect(JSON.parse(calls.find(([url]) => url.endsWith("/explanations"))[1].body).question).toBe("这段中的零值为什么不能丢弃？");
+  await user.click(screen.getByRole("button", { name: "发送" }));
+  await waitFor(() => expect(calls.some(([url]) => url.endsWith("/explanations/stream"))).toBe(true));
+  expect(JSON.parse(calls.find(([url]) => url.endsWith("/explanations/stream"))[1].body).question).toBe("这段中的零值为什么不能丢弃？");
   expect(JSON.parse(calls.filter(([url]) => url.endsWith("/context")).at(-1)[1].body).selected_text).toBe(original.selected_text);
 });
 
@@ -115,7 +115,7 @@ test("annotations save without AI, survive reopening, and edit only personal com
   await screen.findByText(/批注已保存/);
   expect(saved).toHaveLength(1);
   expect(calls.filter(([url, options]) => url.includes("/annotations") && options.method === "POST")).toHaveLength(1);
-  expect(calls.some(([url]) => url.endsWith("/explanations"))).toBe(false);
+  expect(calls.some(([url]) => url.endsWith("/explanations/stream"))).toBe(false);
   const anchor = saved[0].anchor;
   view.unmount(); render(<App />);
   await waitFor(() => expect(screen.getByRole("button", { name: "批注 1" })).toBeVisible());
@@ -126,7 +126,8 @@ test("annotations save without AI, survive reopening, and edit only personal com
   await screen.findByText("修订后的个人理解");
   expect(saved[0].revision).toBe(2); expect(saved[0].anchor).toEqual(anchor);
   await user.click(screen.getByRole("button", { name: "回到原文" }));
-  await screen.findByText("引用原文");
+  await user.click(screen.getByRole("button", { name: "对话" }));
+  await screen.findByRole("button", { name: "清除引用" });
   expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
 });
 

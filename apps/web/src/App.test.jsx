@@ -2,7 +2,7 @@ import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, test, vi } from "vitest";
 import App from "./App.jsx";
-import { ApiError, api, assetUrl, hashText, json, utf16ToCodePoint } from "./api.js";
+import { ApiError, api, explainStream, assetUrl, hashText, json, utf16ToCodePoint } from "./api.js";
 
 let calls;
 beforeEach(() => {
@@ -18,22 +18,22 @@ beforeEach(() => {
   }));
 });
 
-test("shows a usable workspace and truthful unavailable model state", async () => {
-  render(<App />);
-  expect(await screen.findByText("模型尚未配置")).toBeVisible();
-  expect(screen.getByText("配置本地模型")).toBeVisible();
-  expect(screen.getByText("导入学习材料")).toBeVisible();
-  expect(screen.getByText("暂无代码来源")).toBeVisible();
-  expect(screen.getByRole("button", { name: "开始讲解" })).toBeDisabled();
+test("empty workspace keeps reading available and model settings discoverable", async () => {
+  const user = userEvent.setup(); render(<App />);
+  expect(await screen.findByText("导入学习材料")).toBeVisible();
+  expect(screen.queryByText("暂无代码来源")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "发送" })).toBeDisabled();
+  await user.click(screen.getByRole("button", { name: "模型设置" }));
+  expect(screen.getByLabelText("模型服务地址")).toBeVisible();
 });
 
-test("authorization and all four levels are operable", async () => {
-  const user = userEvent.setup(); render(<App />); await screen.findByText("模型尚未配置");
-  await user.selectOptions(screen.getByLabelText("来源模式"), "public_search");
-  expect(screen.getByText("确认发送搜索词")).toBeVisible();
-  await user.click(screen.getByRole("button", { name: "Engineering" }));
-  expect(screen.getByRole("button", { name: "Engineering" })).toHaveAttribute("aria-pressed", "true");
-  await user.click(screen.getByRole("button", { name: "高级选项" }));
+test("public code search needs no empty confirmation field and all levels are selectable", async () => {
+  const user = userEvent.setup(); render(<App />);
+  expect(screen.getByLabelText("来源模式")).toHaveValue("public_search");
+  expect(screen.queryByText("确认发送搜索词")).not.toBeInTheDocument();
+  await user.selectOptions(screen.getByLabelText("解释等级"), "Engineering");
+  expect(screen.getByLabelText("解释等级")).toHaveValue("Engineering");
+  await user.click(screen.getByRole("button", { name: "搜索设置" }));
   expect(screen.getByText("比较两个仓库")).toBeVisible();
 });
 
@@ -78,9 +78,10 @@ test("SHA-256 hashes UTF-8 selection text", async () => {
 });
 
 test("blank questions remain disabled without losing source settings", async () => {
-  const user = userEvent.setup(); render(<App />); await screen.findByText("模型尚未配置");
+  const user = userEvent.setup(); render(<App />); await screen.findByText("导入学习材料");
+  await user.selectOptions(screen.getByLabelText("来源模式"), "specified_public");
   await user.type(screen.getByLabelText("公开仓库"), "owner/repo");
-  expect(screen.getByRole("button", { name: "开始讲解" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "发送" })).toBeDisabled();
   expect(screen.getByLabelText("公开仓库")).toHaveValue("owner/repo");
 });
 
@@ -128,6 +129,7 @@ function readyWorkspace(hook = () => undefined) {
       else if (url.endsWith("/sessions")) value = { session_id: "s1", context_revision: 0 };
       else if (url.endsWith("/documents")) value = { documents: [record] };
       else if (url.endsWith("/units")) value = { units };
+      else if (url.includes("/units/")) value = units.find((unit) => url.endsWith(unit.unit_id));
       else if (url.endsWith("/context")) value = { session_id: "s1", context_revision: ++revision };
       else if (url.endsWith("/local-handles")) value = { handles: [] };
       else if (url.includes("/annotations")) value = { annotations: [], total: 0 };
@@ -149,19 +151,19 @@ function answer(question = "最初的问题") {
 
 test("navigation cancels an in-flight answer and late results cannot replace the new unit", async () => {
   const late = deferred();
-  const requests = readyWorkspace((url) => url.endsWith("/explanations") ? late.promise : undefined);
+  const requests = readyWorkspace((url) => url.endsWith("/explanations/stream") ? late.promise : undefined);
   const user = userEvent.setup(); render(<App />);
   await user.type(await screen.findByLabelText("学习问题"), "最初的问题");
-  await waitFor(() => expect(screen.getByRole("button", { name: "开始讲解" })).toBeEnabled());
-  await user.click(screen.getByRole("button", { name: "开始讲解" }));
-  await screen.findByRole("button", { name: "取消" });
+  await waitFor(() => expect(screen.getByRole("button", { name: "发送" })).toBeEnabled());
+  await user.click(screen.getByRole("button", { name: "发送" }));
+  await screen.findByRole("button", { name: "停止" });
   await user.click(screen.getByRole("button", { name: "下一单元" }));
   await waitFor(() => expect(screen.getByLabelText("当前页或章节")).toHaveValue("section-2"));
   await act(async () => late.resolve(answer()));
   expect(screen.queryByText("只属于当前请求的回答")).not.toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "开始讲解" })).toBeEnabled();
+  expect(screen.getByRole("button", { name: "发送" })).toBeEnabled();
   expect(requests.some(([url, options]) => url.includes("/requests/") && options.method === "DELETE")).toBe(true);
-  expect(requests.find(([url]) => url.endsWith("/explanations"))[1].signal.aborted).toBe(true);
+  expect(requests.find(([url]) => url.endsWith("/explanations/stream"))[1].signal.aborted).toBe(true);
 });
 
 test("rapid context changes serialize revisions and retain the last selected unit", async () => {
@@ -183,20 +185,72 @@ test("rapid context changes serialize revisions and retain the last selected uni
 test("saving retains the answered question and duplicate clicks create one note", async () => {
   const saved = deferred();
   const requests = readyWorkspace((url, options) => {
-    if (url.endsWith("/explanations")) return answer();
+    if (url.endsWith("/explanations/stream")) return answer();
     if (url.endsWith("/notes") && options.method === "POST") return saved.promise;
   });
   const user = userEvent.setup(); render(<App />);
   await user.type(await screen.findByLabelText("学习问题"), "最初的问题");
-  await waitFor(() => expect(screen.getByRole("button", { name: "开始讲解" })).toBeEnabled());
-  await user.click(screen.getByRole("button", { name: "开始讲解" }));
+  await waitFor(() => expect(screen.getByRole("button", { name: "发送" })).toBeEnabled());
+  await user.click(screen.getByRole("button", { name: "发送" }));
   await screen.findByText("只属于当前请求的回答");
   await user.clear(screen.getByLabelText("学习问题"));
   await user.type(screen.getByLabelText("学习问题"), "下一条尚未回答的问题");
-  await user.dblClick(screen.getByRole("button", { name: "保存为笔记" }));
+  await user.click(screen.getByText("保存为笔记"));
+  await user.dblClick(screen.getByRole("button", { name: "保存笔记" }));
   const saves = requests.filter(([url, options]) => url.endsWith("/notes") && options.method === "POST");
   expect(saves).toHaveLength(1);
   expect(JSON.parse(saves[0][1].body).title).toBe("最初的问题");
   await act(async () => saved.resolve({ note_id: "note-1", title: "最初的问题", revision: 1 }));
-  await screen.findByText("笔记已保存。后续修改可在右侧「笔记」中编辑。");
+  await screen.findByText("笔记已保存");
+});
+
+test("selected model reaches the request and automatic public search accepts an empty optional keyword", async () => {
+  const requests = readyWorkspace((url) => {
+    if (url.endsWith("/models")) return { base_url: "http://127.0.0.1:12345/v1", default_model: "small",
+      models: [{ id: "small", name: "Small" }, { id: "large", name: "Large" }] };
+    if (url.endsWith("/explanations/stream")) return answer("解释标签和预测");
+  });
+  const user = userEvent.setup(); render(<App />);
+  await screen.findByRole("option", { name: "Large" });
+  await user.selectOptions(screen.getByLabelText("选择模型"), "large");
+  await user.type(screen.getByLabelText("学习问题"), "解释标签和预测");
+  await user.click(screen.getByRole("button", { name: "发送" }));
+  await screen.findByText("只属于当前请求的回答");
+  const request = JSON.parse(requests.find(([url]) => url.endsWith("/explanations/stream"))[1].body);
+  expect(request.model_id).toBe("large");
+  expect(request.scope).toMatchObject({ auto_public_search: true, network_authorized: true, approved_query_terms: [] });
+  expect(screen.getByLabelText("学习问题")).toHaveValue("");
+});
+
+test("refresh restores the draft and conversation without replacing the active context", async () => {
+  const requests = readyWorkspace((url) => {
+    if (url.endsWith("/sessions/s1")) return { session_id: "s1", context_revision: 1,
+      context: { document_id: "doc-live", unit_id: "section-1", selected_text: "" } };
+    if (url.endsWith("/history")) return [{ ...answer(), context_revision: 1 }];
+  });
+  const user = userEvent.setup(); const first = render(<App />);
+  await screen.findByText("单元内容1");
+  await user.type(screen.getByLabelText("学习问题"), "还没发送的追问");
+  first.unmount(); render(<App />);
+  await screen.findByText("只属于当前请求的回答");
+  expect(screen.getByLabelText("学习问题")).toHaveValue("还没发送的追问");
+  expect(requests.filter(([url]) => url.endsWith("/context"))).toHaveLength(1);
+});
+
+test("streamed prose arrives before completion and split UTF-8 chunks preserve Chinese", async () => {
+  const events = [{ type: "progress", stage: "answering" }, { type: "preview", sections: [{ title: "理解", text: "中文😀" }] },
+    { type: "result", value: { status: "COMPLETE" } }];
+  const bytes = new TextEncoder().encode(events.map((item) => JSON.stringify(item) + "\n").join(""));
+  const chunks = new ReadableStream({ start(controller) { for (let i = 0; i < bytes.length; i += 5) controller.enqueue(bytes.slice(i, i + 5)); controller.close(); } });
+  vi.stubGlobal("fetch", vi.fn(async () => new Response(chunks, { headers: { "Content-Type": "application/x-ndjson" } })));
+  const progress = vi.fn();
+  await expect(explainStream({}, new AbortController().signal, progress)).resolves.toEqual({ status: "COMPLETE" });
+  expect(progress.mock.calls).toEqual([["answering"], [events[1]]]);
+});
+
+test("a stream error never returns the provisional prose as a complete answer", async () => {
+  const events = [{ type: "preview", sections: [{ title: "未完成", text: "草稿" }] },
+    { type: "error", value: { code: "MODEL_OUTPUT_INVALID", user_message: "请重试", retryable: true } }];
+  vi.stubGlobal("fetch", vi.fn(async () => new Response(events.map((x) => JSON.stringify(x) + "\n").join(""), { headers: { "Content-Type": "application/x-ndjson" } })));
+  await expect(explainStream({}, new AbortController().signal, vi.fn())).rejects.toMatchObject({ code: "MODEL_OUTPUT_INVALID", retryable: true });
 });

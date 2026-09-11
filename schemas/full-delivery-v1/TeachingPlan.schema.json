@@ -34,6 +34,11 @@
           "title": "Approved Query Terms",
           "type": "array"
         },
+        "auto_public_search": {
+          "default": false,
+          "title": "Auto Public Search",
+          "type": "boolean"
+        },
         "concept_terms": {
           "items": {
             "maxLength": 100,

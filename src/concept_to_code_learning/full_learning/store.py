@@ -186,6 +186,19 @@ class LearningStore:
             require(row is not None, "EXPLANATION_NOT_FOUND", "session", "当前会话没有此讲解。", 404)
             return ExplanationResult.model_validate_json(row["body"])
 
+    def recent_session(self) -> SessionRecord | None:
+        with self.transaction(write=False) as db:
+            rows = db.execute("SELECT body FROM fd_sessions ORDER BY rowid DESC LIMIT 50").fetchall()
+            return next((item for row in rows if (item := SessionRecord.model_validate_json(row["body"]))
+                         .context is not None), None)
+
+    def history(self, session_id: str) -> list[ExplanationResult]:
+        with self.transaction(write=False) as db:
+            self._session(db, session_id)
+            rows = db.execute("SELECT body FROM fd_explanations WHERE session_id=? "
+                              "ORDER BY rowid DESC LIMIT 20", (session_id,)).fetchall()
+            return [ExplanationResult.model_validate_json(row["body"]) for row in reversed(rows)]
+
     def put_query(self, session_id: str, epoch: int, query: SourceQuery,
                   scope_hash: str, result: SearchResult) -> None:
         with self.transaction() as db:

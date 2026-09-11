@@ -83,10 +83,10 @@ scope_sha256 是 canonical JSON SourceScope 的 UTF-8 SHA256，由 Lead 传入�
 四档：Beginner / University / Engineering / Source-code，大小写固定。
 上下文、问题、等级不得被 Provider 改写。输出用 block_id/source_id；任意网址由服务端拒绝，地址由来源元数据渲染。
 文档 quote 必须属于相应块并符合 quote_sha256。原码和改编/生成示例必须分开；源码未执行不能声明实际运行成功。
-unsupported_claims 非空、引用不存在、符号改变、原码被改写不会被悄悄删除后标成功。
+unsupported_claims 非空、引用不存在、原码被改写不会被悄悄删除后标成功。最终链接中的 symbol 由服务端已核验来源填写，模型只负责选择已有 source_id，不负责复制可信元数据。
 
 追问传 continue_from=当前context下已有explanation_id；最多最近六次对话传入Tutor。
-默认复用之前的核验来源版本，不自动刷新到最新 commit。显式 source_ids 必须属于当前 registry 和相同授权范围。
+同主题、同授权范围默认复用之前的核验来源版本，不自动刷新到最新 commit；识别出主题切换或范围变化时重新检索。显式 source_ids 必须属于当前 registry 和相同授权范围。
 compare=true 需要两个不同仓库的独立证据，Comparison.source_ids 必须属于本次 code_source_ids。
 无相关代码可返回只有文档依据的讲解，warnings=NO_VERIFIED_CODE；真实 Tutor 的 status=NO_VERIFIED_CODE。
 授权错误、网络失败和引用完整性失败不静默降级；错误保持可见。
@@ -124,6 +124,19 @@ GET /notes/{id}/export?format=markdown|json 使用冻结快照，网络/原文�
 批注和学习笔记分别保存；改写问题或批注不会写回导入文件。现有 Host/Origin 校验与统一错误处理继续覆盖这些接口。功能与兼容性验证见 [划选与批注](../delivery/lead/SELECTION_ANNOTATIONS.md)。
 
 ## 错误与状态
+
+### 2026-09-11 对话修复的兼容增量
+
+本轮用户要求修复搜索失败、选择模型并简化对话，Lead 在原集成分支增加以下默认可省略字段；旧 Sprint 1 合同、原 `/explanations` JSON 路由和数据库结构保留。
+
+- `SourceScope.auto_public_search=false`：显式启用且没有手动搜索词时，只采用有限公共概念词表中的检索词。仍要求 `network_authorized=true`；未知主题不把任意文档文字发送到 GitHub。关闭此字段时，scope hash 沿用旧序列化方式，旧来源可继续核对。手动批准的空数组返回 `QUERY_TERMS_NOT_APPROVED`，不再误报模型输出错误。
+- `ExplanationRequest.model_id`、`model_base_url` 默认为 null。`GET /models` 和 `POST /models/discover` 返回服务实际提供的模型；新增地址仅限本机，无用户凭据传输给新服务。每次请求绑定同一个 Tutor 做计划和回答，并在最终响应核对模型身份。
+- `POST /explanations/stream` 输出 NDJSON：`progress`、`preview`、`result`、`error`。preview 只含暂时的回答正文，不构成已核验来源、已保存回答或笔记；完整 JSON 和所有引用通过校验后才输出 result。错误和断开连接取消临时生成。请求和完成结果与原 JSON 接口相同。
+- `GET /sessions/recent` 返回最近有文档上下文的会话；`GET /sessions/{id}/history` 返回该本地会话最近 20 条完成讲解。不会把失败/取消请求呈现为完成回答，也不改写旧记录。
+
+已知知识点省去一次串行模型规划；来源仍经实时文件树、固定 commit、原文片段、许可与服务端 registry 核验。HTTP 连接复用、受限并发文件读取、缩小相关上下文和正文流式显示减少等待。未知主题、模型能力、网络延迟仍影响结果；不是通用检索成功保证。
+
+本轮验证：390 项 Python、30 项前端，真实 Qwen + GitHub 首问和追问、原生 PDF 划选、批注和停止恢复。详见 [对话修复验收](../delivery/lead/CONVERSATION_REPAIR.md)。
 
 统一错误：request_id、stage、code、user_message、retryable、needed_action；不回显请求输入、Token、私密路径或原始异常。
 成员必须按公共 B8 提供 INVALID_FILE / FILE_TOO_LARGE / UNSUPPORTED_FORMAT / NO_EXTRACTABLE_TEXT /

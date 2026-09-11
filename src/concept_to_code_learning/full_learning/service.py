@@ -11,6 +11,9 @@ from concept_to_code_learning.full_learning.context import resolve_context
 from concept_to_code_learning.full_learning.errors import LearningError, require
 from concept_to_code_learning.full_learning.ports import ProviderBundle, VerificationReceipt
 from concept_to_code_learning.full_learning.store import LearningStore, canonical
+from concept_to_code_learning.learning_concepts import guide_for, public_terms
+from concept_to_code_learning.tutor.catalog import TutorCatalog
+from concept_to_code_learning.tutor.full import GroundedTutorProvider
 
 
 class LearningService:
@@ -18,6 +21,7 @@ class LearningService:
         self.providers, self.store = providers, store
         self.timeout_seconds = timeout_seconds
         self.active: dict[str, asyncio.Task] = {}
+        self.models = TutorCatalog(providers.tutor)
 
     async def call(self, stage, action, *args, **kwargs):
         try:
@@ -96,6 +100,7 @@ class LearningService:
 
     @staticmethod
     def make_query(scope: m.SourceScope, terms: list[str], mode: m.Mode) -> m.SourceQuery:
+        scope = scope.model_copy(deep=True)
         terms = list(dict.fromkeys(term.strip() for term in terms if term.strip()))
         require(bool(terms), "NO_RELEVANT_SOURCE", "sources", "没有可用于检索的概念词。")
         if scope.source_mode == "local_authorized":
@@ -110,18 +115,27 @@ class LearningService:
                 require(bool(scope.repository_allowlist), "NO_RELEVANT_SOURCE", "sources",
                         "未选择公开仓库；可先阅读文档讲解。")
             else:
+                if scope.auto_public_search and not scope.approved_query_terms:
+                    terms = public_terms(terms)
+                    require(bool(terms), "QUERY_TERMS_NOT_APPROVED", "sources",
+                            "请在搜索设置里补充一个通用知识点，再找相关代码。")
+                    scope.query_terms_approved = True
+                    scope.approved_query_terms = terms
                 allowed = {term.casefold() for term in scope.approved_query_terms}
                 if not scope.query_terms_approved or not all(term.casefold() in allowed for term in terms):
                     raise LearningError("QUERY_TERMS_NOT_APPROVED", "sources",
-                                        "公开搜索词尚未逐项得到授权；未发送课件或问题原文。",
-                                        needed_action="确认本次必要概念词 approved_query_terms 后重试。")
+                                        "请填写要搜索的知识点，再找相关代码。")
         # Source clients receive only necessary concept terms, never the full document/question.
         return m.SourceQuery(**scope.model_dump(), mode=mode, query_id=m.uid(),
                              question=" ".join(terms), concept_terms=terms, status="AUTHORIZED")
 
     @staticmethod
     def scope_hash(scope: m.SourceScope) -> str:
-        return m.digest(canonical(scope))
+        # Preserve scope hashes attached to sources saved before this additive option.
+        value = scope.model_dump(mode="json")
+        if not value["auto_public_search"]:
+            value.pop("auto_public_search")
+        return m.digest(canonical(value))
 
     async def search(self, request: m.SearchRequest) -> m.SearchResult:
         session = self.store.session(request.session_id)
@@ -297,7 +311,7 @@ class LearningService:
         else:
             require(answer.status == "FIXTURE", "MODEL_OUTPUT_INVALID", "tutor", "替身回答必须明确标注。", 502)
 
-    async def explain(self, request: m.ExplanationRequest) -> m.ExplanationResult:
+    async def explain(self, request: m.ExplanationRequest, *, progress=None) -> m.ExplanationResult:
         require(bool(request.question.strip()), "INVALID_QUESTION", "request", "请输入问题。")
         previous = self.store.begin(request)
         if previous:
@@ -305,7 +319,7 @@ class LearningService:
         self.active[request.request_id] = asyncio.current_task()
         try:
             async with asyncio.timeout(self.timeout_seconds):
-                result = await self._explain(request)
+                result = await self._explain(request, progress=progress)
                 self.store.complete(result)
                 return result
         except asyncio.CancelledError as exc:
@@ -317,14 +331,18 @@ class LearningService:
                                 retryable=True) from exc
         except ValidationError as exc:
             self.store.fail(request.request_id)
-            raise LearningError("MODEL_OUTPUT_INVALID", "request", "返回内容不符合公共协议。", 502) from exc
+            raise LearningError("INVALID_PROVIDER_RESPONSE", "request", "这次回答未能完成，请重试。", 502,
+                                retryable=True) from exc
         except Exception:
             self.store.fail(request.request_id)
             raise
         finally:
             self.active.pop(request.request_id, None)
 
-    async def _explain(self, request: m.ExplanationRequest) -> m.ExplanationResult:
+    async def _explain(self, request: m.ExplanationRequest, *, progress=None) -> m.ExplanationResult:
+        progress = progress or (lambda stage: None)
+        progress("planning")
+        tutor = await self.models.resolve(request.model_id, request.model_base_url)
         session = self.store.session(request.session_id)
         context = session.context.model_copy(deep=True)
         current = await self.context(context.document_id, m.ContextRequest(
@@ -348,11 +366,21 @@ class LearningService:
                 conversation.append(previous.explanation)
             if not request.source_ids:
                 previous = self.store.explanation(request.session_id, request.continue_from)
-                sources = await self.existing_sources(request.session_id,
-                                                      previous.explanation.code_source_ids, request.scope)
-        capability = await self.provider_capability(self.providers.tutor, "tutor")
+                previous_ids = previous.explanation.code_source_ids
+                prior_guide = (guide_for(previous.explanation.question)
+                               or guide_for(context.selected_text or ""))
+                current_guide = guide_for(request.question)
+                changed_topic = current_guide and prior_guide and current_guide != prior_guide
+                # Keep the conversation, but search afresh if its scope or concept
+                # changes. Stored evidence integrity is checked before considering reuse.
+                compatible_scope = len(previous_ids) <= request.scope.max_sources and all(
+                    self.store.source(request.session_id, sid)[2] == self.scope_hash(request.scope)
+                    for sid in previous_ids)
+                if compatible_scope and not changed_topic:
+                    sources = await self.existing_sources(request.session_id, previous_ids, request.scope)
+        capability = await self.provider_capability(tutor, "tutor")
         plan = m.TeachingPlan.model_validate(await self.call(
-            "tutor", self.providers.tutor.plan, context.model_copy(deep=True), request.question.strip(),
+            "tutor", tutor.plan, context.model_copy(deep=True), request.question.strip(),
             request.level, deepcopy(conversation)))
         self.store.check_request(request.request_id)
         require(plan.question == request.question.strip() and plan.level == request.level
@@ -381,8 +409,12 @@ class LearningService:
               or request.scope.source_mode == "public_search") and not sources:
             terms = plan.source_query.concept_terms if plan.source_query else plan.concepts
             if request.scope.source_mode == "public_search" and request.scope.query_terms_approved:
-                terms = request.scope.approved_query_terms
+                if request.scope.approved_query_terms:
+                    terms = request.scope.approved_query_terms
+                elif not request.scope.auto_public_search:
+                    raise LearningError("QUERY_TERMS_NOT_APPROVED", "sources", "请填写要搜索的知识点，再找相关代码。")
             try:
+                progress("searching")
                 result = await self.search(m.SearchRequest(session_id=request.session_id,
                     context_revision=request.context_revision, question=request.question,
                     concept_terms=terms, scope=request.scope))
@@ -395,6 +427,7 @@ class LearningService:
                     if len(sources) >= request.scope.max_sources:
                         break
                     try:
+                        progress("verifying")
                         source = await self.verify(m.VerifyRequest(session_id=request.session_id,
                             query_id=result.query_id, candidate_id=candidate.candidate_id))
                     except LearningError as exc:
@@ -422,9 +455,11 @@ class LearningService:
         if not sources:
             warnings.append("NO_VERIFIED_CODE")
         plan.uncertainties = plan.uncertainties + list(dict.fromkeys(warnings))
+        progress("answering")
         answer = m.GroundedExplanation.model_validate(await self.call(
-            "tutor", self.providers.tutor.explain, context.model_copy(deep=True), deepcopy(sources),
-            plan.model_copy(deep=True), deepcopy(conversation), compare=request.compare))
+            "tutor", tutor.explain, context.model_copy(deep=True), deepcopy(sources),
+            plan.model_copy(deep=True), deepcopy(conversation), compare=request.compare,
+            **({"progress": progress} if isinstance(tutor, GroundedTutorProvider) else {})))
         self.store.check_request(request.request_id)
         self.validate_answer(answer, context, sources, plan, request.compare, capability.mode)
         used = [source for source in sources if source.source_id in answer.code_source_ids]
@@ -439,5 +474,6 @@ class LearningService:
             task.cancel()
         if tasks:
             await asyncio.gather(*tasks, return_exceptions=True)
+        await self.models.close()
         await asyncio.gather(*(provider.close() for provider in (
             self.providers.document, self.providers.sources, self.providers.tutor)), return_exceptions=True)

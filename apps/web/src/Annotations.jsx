@@ -61,7 +61,7 @@ export function useAnnotations(record, unit, report, notice) {
         setItems((old) => [saved, ...old.filter((a) => a.annotation_id !== saved.annotation_id)]);
         if (!value.annotation) setTotal((n) => n + 1);
       }
-      setEditor(null); notice(`批注已保存 · ${value.record.file_name} · 第 ${value.unit.index} 单元。`);
+      setEditor(null); notice("批注已保存");
     } catch (e) { report(e); }
     finally { writing.current = false; setPending(false); }
   }
@@ -99,10 +99,9 @@ export default function Annotations({ state, unit, locate }) {
       <label>批注内容<textarea ref={input} aria-label="批注内容" value={state.editor.comment} disabled={state.pending} maxLength={20000} onChange={(e) => state.update(e.target.value)} placeholder="写下疑问、理解，或对这段话的改写…"/></label>
       <div className="row"><button className="primary" disabled={state.pending || !state.editor.comment.trim()} onClick={state.save}>{state.pending ? "正在保存批注…" : "保存批注"}</button>
         <button disabled={state.pending} onClick={state.close}>取消编辑</button>{state.editor.annotation && <button className="danger" disabled={state.pending} onClick={state.remove}>删除批注</button>}</div>
-      <small>原文作为引用保留，批注只存于本地。</small>
     </section>}
     {state.loading && !state.items.length && <p role="status">正在读取批注…</p>}
-    {!state.loading && !state.items.length && <p className="annotation-empty">划选一段文字，点击「写批注」。保存后原文会高亮，重新打开也能找到。</p>}
+    {!state.loading && !state.items.length && <p className="annotation-empty">还没有批注。</p>}
     <ol className="annotation-list">{state.items.map((item) => <li key={item.annotation_id}>
       <blockquote>{item.anchor.selected_text}</blockquote><p>{item.comment}</p>
       <div className="row"><button disabled={state.pending} onClick={() => locate(item)}>回到原文</button><button disabled={state.pending} onClick={() => state.open(item)}>编辑批注</button><small>修订 {item.revision}</small></div>
