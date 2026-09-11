@@ -1,0 +1,181 @@
+{
+  "date": "2026-09-11",
+  "implementation_head": "1d3593832b4f7b98ca2b981622918c2e53c7de62",
+  "main_sha": "369acd673d2ae0d1ae3bc8f591a2c7e51e4dc459",
+  "member_prs": [
+    {
+      "number": 70,
+      "head": "32c43beb4fb4c26144ef2ca2ed2ca9deba14d4aa",
+      "base": "369acd673d2ae0d1ae3bc8f591a2c7e51e4dc459",
+      "author": "fqf060420",
+      "branch": "feat/12-local-model-adapter"
+    },
+    {
+      "number": 71,
+      "head": "04f9e03c417200e51509f0080231ae1ca9bb0f87",
+      "base": "90fb42f3bdb7b88a1a6d3ddea27de88a260b9ea1",
+      "author": "inogi-sama",
+      "branch": "feat/inogi-full-document-workbench"
+    },
+    {
+      "number": 72,
+      "head": "93a02e4e247696e8ae89e271c645027ce1a97998",
+      "base": "90fb42f3bdb7b88a1a6d3ddea27de88a260b9ea1",
+      "author": "zchzbjklg",
+      "branch": "feat/github-source-verification"
+    }
+  ],
+  "python_tests": 360,
+  "frontend_tests": 14,
+  "npm_audit": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0,
+    "total": 0
+  },
+  "checks": {
+    "pytest -q tests/documents tests/github_intelligence tests/full_delivery/test_boundaries.py": {
+      "exit_code": 0,
+      "seconds": 11.72,
+      "log_sha256": "1ae6abef19597ed07fbc99e4875f4d3f068288bd48372e0ec1c35437e69ecfec"
+    },
+    "npm --prefix apps/web test": {
+      "exit_code": 0,
+      "seconds": 1.27,
+      "log_sha256": "58a50c37e85ace407303a95ddb13305f5ac61fccd82130255c4eee2c699701b2"
+    },
+    "pytest -q tests/github_intelligence/test_product_completion.py": {
+      "exit_code": 0,
+      "seconds": 1.01,
+      "log_sha256": "7a4eefa216d376a35ba42c7afc3e4fbc3fb06373de7bceef4cb80f27fbbc441b"
+    },
+    "npm --prefix apps/web run build": {
+      "exit_code": 0,
+      "seconds": 0.84,
+      "log_sha256": "f55f040328478de653e40cb1ab92cd29fcbadbe4baac087d253a00a126189917"
+    },
+    "pytest -q": {
+      "exit_code": 0,
+      "seconds": 38.3,
+      "log_sha256": "d77b95fd718081394684794906e04051aa42674526d79cf73692d89f755cdfb1"
+    },
+    "pytest -q tests/github_intelligence/test_product_completion.py tests/full_delivery": {
+      "exit_code": 0,
+      "seconds": 10.67,
+      "log_sha256": "d1e63716e1f66d2fea899a32036c09ecfe3859aee10ee612949196fdbdcab706"
+    },
+    "npm --prefix apps/web install --package-lock-only --ignore-scripts": {
+      "exit_code": 0,
+      "seconds": 0.21,
+      "log_sha256": "65f53f76daa16d27ce4d42b2695bd93429fb0e3524731419c3b29c774ac9b9a6"
+    },
+    "ruff check .": {
+      "exit_code": 0,
+      "seconds": 0.08,
+      "log_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "pytest -q tests/github_intelligence tests/full_delivery tests/test_local_model_adapter.py": {
+      "exit_code": 0,
+      "seconds": 22.61,
+      "log_sha256": "ca8b8d1c76276fbe225c5ad51f9e81b901a5ade952d0bcecf311a4a42d206743"
+    },
+    "python scripts/tutor.py demo": {
+      "exit_code": 0,
+      "seconds": 0.3,
+      "log_sha256": "23c62d3ec14ad110f34e5d3ed62b4d9452a5855bdf9a23ead5320618156b3421"
+    },
+    "python scripts/tutor.py doctor": {
+      "exit_code": 0,
+      "seconds": 0.15,
+      "log_sha256": "8964289675b72c63863c4a2af74f01b17046e189de876e809e2fc35bd1676b94"
+    },
+    "pytest -q tests/test_repository_structure.py tests/github_intelligence/test_product_completion.py tests/full_delivery": {
+      "exit_code": 0,
+      "seconds": 10.76,
+      "log_sha256": "241c986ddecfa456444521ad778a8c00e297a98088dbea066bf741c28f0391ea"
+    },
+    "python scripts/export_full_contracts.py --check": {
+      "exit_code": 0,
+      "seconds": 0.51,
+      "log_sha256": "491a8622837db27f33381885ed161c2733a0c7e3066967782ded723dad6538d2"
+    }
+  },
+  "live_matrix": {
+    "PDF_machine_learning_real_code": {
+      "status": "PASS"
+    },
+    "PPTX_web_followup_permalink": {
+      "status": "PASS"
+    },
+    "DOCX_permission_gap_document_explanation": {
+      "status": "FAIL",
+      "error": "{'contract_version': 'full-delivery-v1', 'request_id': '3f10072f-3fc0-4362-acac-a92a8515c48a', 'stage': 'sources', 'code': 'NETWORK_NOT_AUTHORIZED', 'user_message': '当前未授权 GitHub 联网。', 'retryable': False, 'needed_action': '明确选择仓库或公开搜索，并确认联网范围。'}"
+    },
+    "Markdown_local_dirty_note": {
+      "status": "FAIL",
+      "error": "'list' object has no attribute 'get'"
+    },
+    "two_independent_repositories": {
+      "status": "FAIL",
+      "error": "{'contract_version': 'full-delivery-v1', 'request_id': '15dee5a5-d896-44fc-81f1-78ecb21fb613', 'stage': 'sources', 'code': 'NO_RELEVANT_SOURCE', 'user_message': '尚无两个不同仓库的核验证据，无法进行真实比较。', 'retryable': False, 'needed_action': None}"
+    },
+    "approved_public_search": {
+      "status": "FAIL",
+      "error": ""
+    }
+  },
+  "corrected_live_matrix": {
+    "DOCX_permission_gap_document_explanation": {
+      "status": "PASS"
+    },
+    "Markdown_local_dirty_note": {
+      "status": "PASS"
+    },
+    "two_independent_repositories": {
+      "status": "PASS"
+    },
+    "approved_public_search": {
+      "status": "PASS"
+    }
+  },
+  "boundaries": {
+    "note_restart_revision_exports": "PASS",
+    "forged_selection_source": "PASS",
+    "actual_model_request_cancellation": "PASS",
+    "indirect_instruction_no_tools_no_fabricated_receipt": "PASS",
+    "real_skill_direct_transport_pair": {
+      "status": "PASS",
+      "skill_seconds": 14.78,
+      "same_model": true,
+      "same_input_scope_frozen_sources": true,
+      "direct_metrics": {
+        "latency_ms": 14529.0,
+        "input_tokens": 973,
+        "output_tokens": 645,
+        "token_source": "PROVIDER_USAGE",
+        "input_truncated": false,
+        "truncation_reason": null
+      },
+      "skill_metrics": {
+        "latency_ms": 14732.0,
+        "input_tokens": 973,
+        "output_tokens": 645,
+        "token_source": "PROVIDER_USAGE",
+        "input_truncated": false,
+        "truncation_reason": null
+      },
+      "teaching_quality_improvement": "NOT_CLAIMED"
+    }
+  },
+  "model": {
+    "repository": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+    "revision": "50d427756c6b1b2fe0c0a10f67fbda1fc8e82c1b",
+    "weights_bytes": 2263022417,
+    "license": "Apache-2.0",
+    "backend": "mlx-lm 0.31.3"
+  },
+  "human_lead_review": "PENDING",
+  "DGX": "NOT_TESTED"
+}
