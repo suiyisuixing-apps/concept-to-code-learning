@@ -1,5 +1,5 @@
 {
-  "checked_at": "2026-09-11T11:52:31.669621+00:00",
+  "checked_at": "2026-09-11T11:56:22.817863+00:00",
   "base_head": "511b24f4be9a519911fb7724008df854e9c0b4d2",
   "public_retrieval": {
     "status": "VERIFIED_EARLIER_IN_THIS_REPAIR",
@@ -491,17 +491,17 @@
         ],
         "query": {
           "approved_query_terms": [
-            "fit",
-            "predict",
-            "input",
-            "label"
+            "Input",
+            "Target",
+            "Training",
+            "Prediction"
           ],
           "auto_public_search": true,
           "concept_terms": [
-            "fit",
-            "predict",
-            "input",
-            "label"
+            "Input",
+            "Target",
+            "Training",
+            "Prediction"
           ],
           "contract_version": "full-delivery-v1",
           "file_hints": [],
@@ -510,9 +510,9 @@
           "max_sources": 1,
           "mode": "LIVE",
           "network_authorized": true,
-          "query_id": "2aacd59d-bc42-4070-8de9-7bdb58cb4022",
+          "query_id": "a01d90b4-21bd-4c0b-910a-5f34f3a9a981",
           "query_terms_approved": true,
-          "question": "fit predict input label",
+          "question": "Input Target Training Prediction",
           "repository_allowlist": [],
           "repository_hints": [],
           "revision": 1,
