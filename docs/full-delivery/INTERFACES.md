@@ -1,7 +1,7 @@
 # full-delivery-v1 · 已发布接缝
 
 本分支是基于未合并合同的集成候选，不能称为 main。共享字段由
-`src/concept_to_code_learning/full_contracts/models.py` 唯一定义；生成物在
+`src/concept_to_code_learning/full_contracts/models.py` 定义，独立批注合同在同目录 `annotations.py`；生成物在
 `schemas/full-delivery-v1/` 和本目录 `openapi.json`。运行时 `/openapi.json` 是实际路由说明。
 `python scripts/export_full_contracts.py --check` 检测声明漂移。
 
@@ -106,6 +106,22 @@ GET /notes?q=...&offset=0&limit=50 搜索当前用户标题/文字；最大100�
 DELETE /notes/{id} 要求 confirmed_by_user=true 和 expected_revision，只删本应用笔记/修订副本。
 GET /notes/{id}/export?format=markdown|json 使用冻结快照，网络/原文件缺失仍可读。
 删除笔记不会删除原文件、来源仓库或别的会话记录；应用备份含历史讲解，应按个人数据保管。
+
+## 本地原文批注（2026-09-11 增量）
+
+用户要求划选原文、引用提问并保存批注；本增量增加五个独立 Schema，不改现有 ContextRequest、Note 或 Sprint 1 字段。
+批注存于与 learning-v1.sqlite3 同目录的 `annotations-v1.sqlite3`，不迁移旧数据库。备份整个数据目录时一并保留此文件。
+
+- `POST /documents/{id}/annotations`：CreateAnnotationRequest = ContextRequest + annotation_id + comment。服务端重新读取文档与单元，核对版本、选区位置、原文和 hash；从真实 DocumentContext 冻结 AnnotationAnchor。无 AI、来源检索或讲解会话依赖。
+- `GET /documents/{id}/annotations?unit_id=...&offset=0&limit=50`：返回 AnnotationList，limit 最大 100；不传 unit_id 可读取整份文档批注。原文不可用时仍可读取已保存的引用。
+- `PATCH /annotations/{id}`：EditAnnotationRequest 只接受 expected_revision 和 comment；原文锚点不可编辑，成功递增 revision，旧版本更新返回 409。
+- `DELETE /annotations/{id}`：沿用 DeleteNoteRequest 的 expected_revision、confirmed_by_user，只删除该条批注。保留不含原文和评论的 ID 墓碑，迟到重试不会复活已删除内容。
+
+同 annotation_id、同创建请求的重试返回已保存记录；不同内容返回 409。注释正文非空且最多 20,000 字符，原文选区最多 10,000 字符、50 个 span。编辑和删除均在 SQLite 事务内核对修订。
+
+前端选区位置统一转为 Unicode code point。PDF.js 文字层只是选择入口；归一化仅用于找到唯一原文位置，最终提交仍为服务端块的 exact 字节文本。模糊或无法定位的 PDF 选区要求在提取文字中选择，不猜测重复文本位置。表格提供整体选择，扫描页不新增 OCR。
+
+批注和学习笔记分别保存；改写问题或批注不会写回导入文件。现有 Host/Origin 校验与统一错误处理继续覆盖这些接口。功能与兼容性验证见 [划选与批注](../delivery/lead/SELECTION_ANNOTATIONS.md)。
 
 ## 错误与状态
 

@@ -21,11 +21,12 @@ python scripts/desktop.py
 
 ## 学习流程
 
-1. 导入 PDF、PPTX、DOCX 或 Markdown，切换页面/章节，也可以选中文字或搜索文本块。
-2. 输入问题，选择 Beginner、University、Engineering 或 Source-code。
-3. 公开仓库留空时只学习文档。填写 `owner/repo` 并允许联网，可自动寻找代码；公开搜索需单独确认通用搜索词。本地模式只展示预先授权的仓库。
-4. 点击「开始讲解」，核对来源卡上的固定 Commit、文件、行号、许可与原始代码。继续追问沿用冻结来源；高级选项可以比较两个仓库。
-5. 填写「我的理解」并保存。笔记支持搜索、修订、Markdown/JSON 导出及重启恢复。
+1. 导入 PDF、PPTX、DOCX 或 Markdown，切换页面/章节。按住鼠标左键划选原文，或用「选整段」快速引用。
+2. 选中的原句自动进入对话框，可直接改写问题；已有的自定义问题会保留。点击「写批注」可保存自己的理解，不需要启动模型。详见[划选与批注](docs/delivery/lead/SELECTION_ANNOTATIONS.md)。
+3. 选择 Beginner、University、Engineering 或 Source-code。
+4. 公开仓库留空时只学习文档。填写 `owner/repo` 并允许联网，可自动寻找代码；公开搜索需单独确认通用搜索词。本地模式只展示预先授权的仓库。
+5. 点击「开始讲解」，核对来源卡上的固定 Commit、文件、行号、许可与原始代码。继续追问沿用冻结来源；高级选项可以比较两个仓库。
+6. 填写「我的理解」并保存。笔记支持搜索、修订、Markdown/JSON 导出及重启恢复。
 
 PDF 保留原始页面；Office 提供结构化学习视图，保留可提取的段落、表格与内嵌图片，并显示无法呈现的对象。DOCX 以章节定位；扫描 PDF 需要额外 OCR，本版没有自动 OCR。
 

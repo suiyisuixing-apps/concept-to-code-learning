@@ -1,0 +1,303 @@
+{
+  "$defs": {
+    "Annotation": {
+      "additionalProperties": false,
+      "properties": {
+        "anchor": {
+          "$ref": "#/$defs/AnnotationAnchor"
+        },
+        "annotation_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Annotation Id",
+          "type": "string"
+        },
+        "comment": {
+          "maxLength": 20000,
+          "minLength": 1,
+          "title": "Comment",
+          "type": "string"
+        },
+        "contract_version": {
+          "const": "full-delivery-v1",
+          "default": "full-delivery-v1",
+          "title": "Contract Version",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "mode": {
+          "enum": [
+            "LIVE",
+            "FIXTURE",
+            "UNAVAILABLE"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "revision": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "mode",
+        "annotation_id",
+        "anchor",
+        "comment",
+        "created_at",
+        "updated_at"
+      ],
+      "title": "Annotation",
+      "type": "object"
+    },
+    "AnnotationAnchor": {
+      "additionalProperties": false,
+      "properties": {
+        "document_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Document Id",
+          "type": "string"
+        },
+        "document_revision": {
+          "minimum": 1,
+          "title": "Document Revision",
+          "type": "integer"
+        },
+        "file_name": {
+          "title": "File Name",
+          "type": "string"
+        },
+        "original_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Original Sha256",
+          "type": "string"
+        },
+        "selected_text": {
+          "maxLength": 10000,
+          "minLength": 1,
+          "title": "Selected Text",
+          "type": "string"
+        },
+        "selected_text_hash": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Selected Text Hash",
+          "type": "string"
+        },
+        "selection_locator": {
+          "$ref": "#/$defs/SelectionLocator"
+        },
+        "source_type": {
+          "enum": [
+            "PDF",
+            "PPTX",
+            "DOCX",
+            "MARKDOWN"
+          ],
+          "title": "Source Type",
+          "type": "string"
+        },
+        "unit_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Unit Id",
+          "type": "string"
+        },
+        "unit_locator": {
+          "$ref": "#/$defs/SourceLocator"
+        }
+      },
+      "required": [
+        "document_id",
+        "document_revision",
+        "original_sha256",
+        "file_name",
+        "source_type",
+        "unit_id",
+        "unit_locator",
+        "selected_text",
+        "selected_text_hash",
+        "selection_locator"
+      ],
+      "title": "AnnotationAnchor",
+      "type": "object"
+    },
+    "SelectionLocator": {
+      "additionalProperties": false,
+      "properties": {
+        "normalization": {
+          "default": "exact",
+          "enum": [
+            "exact",
+            "whitespace-v1"
+          ],
+          "title": "Normalization",
+          "type": "string"
+        },
+        "spans": {
+          "items": {
+            "$ref": "#/$defs/SelectionSpan"
+          },
+          "maxItems": 50,
+          "minItems": 1,
+          "title": "Spans",
+          "type": "array"
+        }
+      },
+      "required": [
+        "spans"
+      ],
+      "title": "SelectionLocator",
+      "type": "object"
+    },
+    "SelectionSpan": {
+      "additionalProperties": false,
+      "properties": {
+        "block_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Block Id",
+          "type": "string"
+        },
+        "end": {
+          "minimum": 0,
+          "title": "End",
+          "type": "integer"
+        },
+        "start": {
+          "minimum": 0,
+          "title": "Start",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "block_id",
+        "start",
+        "end"
+      ],
+      "title": "SelectionSpan",
+      "type": "object"
+    },
+    "SourceLocator": {
+      "additionalProperties": false,
+      "properties": {
+        "block_id": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Block Id"
+        },
+        "heading_path": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 30,
+          "title": "Heading Path",
+          "type": "array"
+        },
+        "index": {
+          "minimum": 1,
+          "title": "Index",
+          "type": "integer"
+        },
+        "unit_type": {
+          "enum": [
+            "page",
+            "slide",
+            "section"
+          ],
+          "title": "Unit Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "unit_type",
+        "index"
+      ],
+      "title": "SourceLocator",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "annotations": {
+      "items": {
+        "$ref": "#/$defs/Annotation"
+      },
+      "title": "Annotations",
+      "type": "array"
+    },
+    "contract_version": {
+      "const": "full-delivery-v1",
+      "default": "full-delivery-v1",
+      "title": "Contract Version",
+      "type": "string"
+    },
+    "document_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_.:-]+$",
+      "title": "Document Id",
+      "type": "string"
+    },
+    "mode": {
+      "enum": [
+        "LIVE",
+        "FIXTURE",
+        "UNAVAILABLE"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "offset": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Offset",
+      "type": "integer"
+    },
+    "revision": {
+      "default": 1,
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "total": {
+      "minimum": 0,
+      "title": "Total",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "mode",
+    "document_id",
+    "annotations",
+    "total"
+  ],
+  "title": "AnnotationList",
+  "type": "object"
+}

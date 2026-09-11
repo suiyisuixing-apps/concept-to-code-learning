@@ -97,6 +97,7 @@ test("search selects a complete emoji block with code-point offsets", async () =
     else if (url.endsWith("/documents")) value = { documents: [record] };
     else if (url.endsWith("/units")) value = { units: [unit] };
     else if (url.includes("/context")) value = { session_id: "session-1", context_revision: requests.filter(([x]) => x.includes("/context")).length, status: "READY" };
+    else if (url.includes("/annotations")) value = { annotations: [], total: 0 };
     else if (url.includes("/notes")) value = { notes: [] };
     return { ok: true, status: 200, headers: { get: () => "application/json" }, json: async () => value };
   }));
@@ -129,7 +130,8 @@ function readyWorkspace(hook = () => undefined) {
       else if (url.endsWith("/units")) value = { units };
       else if (url.endsWith("/context")) value = { session_id: "s1", context_revision: ++revision };
       else if (url.endsWith("/local-handles")) value = { handles: [] };
-      else if (url.includes("/notes")) value = { notes: [], total: 0 };
+      else if (url.includes("/annotations")) value = { annotations: [], total: 0 };
+    else if (url.includes("/notes")) value = { notes: [], total: 0 };
       else value = {};
     }
     return { ok: true, status: 200, headers: { get: () => "application/json" }, json: async () => value };

@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { api, assetUrl, hashText, id, json, utf16ToCodePoint } from "./api.js";
-import PdfPreview from "./PdfPreview.jsx";
+import { api, hashText, id, json } from "./api.js";
+import Reader from "./Reader.jsx";
+import Annotations, { useAnnotations } from "./Annotations.jsx";
+import { questionForSelection, selectionKey } from "./selection.js";
 
 const levels = ["Beginner", "University", "Engineering", "Source-code"];
 
@@ -16,37 +18,6 @@ function SourceCard({ source }) {
     <dl><dt>位置</dt><dd>{source.file_path}:{source.line_start}-{source.line_end}</dd><dt>{source.dirty ? "未提交版本" : "版本"}</dt><dd><code>{source.dirty ? source.file_sha256 : source.commit_sha || source.file_sha256 || "本地内容"}</code>{source.dirty && <small>当前文件 SHA-256；正文包含未提交修改。</small>}</dd><dt>许可</dt><dd>{source.license_observation.status}{source.license_observation.files?.map((file) => <div key={file.path}>{file.permalink ? <a href={file.permalink} target="_blank" rel="noreferrer">{file.identifier || "未识别"} · {file.path}</a> : <span>{file.identifier || "未识别"} · {file.path}</span>}</div>)}</dd><dt>运行</dt><dd>{source.execution_status === "NOT_RUN" ? "未运行" : source.execution_status}</dd></dl>
     {source.code_excerpt ? <pre aria-label="已核验原始代码"><code>{source.code_excerpt}</code></pre> : <p className="boundary">许可不明确，服务端未返回源码正文。</p>}
     {source.permalink && <a href={source.permalink} target="_blank" rel="noreferrer">打开固定版本源码</a>}<p>{source.relevance.reason}</p></article>;
-}
-
-function pointOffset(root, container, offset) {
-  const range = window.document.createRange(); range.selectNodeContents(root);
-  try { range.setEnd(container, offset); } catch { return 0; }
-  const value = range.toString(); return utf16ToCodePoint(value, value.length);
-}
-
-function Reader({ record, units, unit, navigate, select, importing, importFile }) {
-  const nodes = useRef(new Map());
-  const [search, setSearch] = useState("");
-  const matches = unit?.blocks.filter((item) => search.trim() && item.text.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())) || [];
-  function capture() {
-    const selection = window.getSelection(); if (!selection || selection.isCollapsed || !unit) return;
-    const range = selection.getRangeAt(0), spans = [];
-    unit.blocks.forEach((item) => {
-      const node = nodes.current.get(item.block_id); if (!node || item.kind === "table" || !selection.containsNode(node, true)) return;
-      let start = node.contains(range.startContainer) ? pointOffset(node, range.startContainer, range.startOffset) : 0;
-      let end = node.contains(range.endContainer) ? pointOffset(node, range.endContainer, range.endOffset) : Array.from(item.text).length;
-      start = Math.max(0, Math.min(start, Array.from(item.text).length)); end = Math.max(start, Math.min(end, Array.from(item.text).length));
-      if (end > start) spans.push({ block_id: item.block_id, start, end });
-    });
-    if (spans.length) select({ spans, text: spans.map((span) => { const text = unit.blocks.find((x) => x.block_id === span.block_id).text; return Array.from(text).slice(span.start, span.end).join(""); }).join("\n") });
-  }
-  return <section className="reader pane"><div className="pane-header"><div><h2>{record?.file_name || "导入学习材料"}</h2></div><label className="import"><input aria-label="导入文件" disabled={importing} type="file" accept=".pdf,.pptx,.docx,.md,.markdown" onChange={(e) => { const file = e.target.files[0]; if (file) importFile(file); e.target.value = ""; }}/>{importing ? "导入中…" : "导入文件"}</label></div>
-    {!record ? <div className="empty"><h3>选择 PDF、PPTX、DOCX 或 Markdown</h3><p>文件副本与提取结果只保存在本地数据目录。</p></div> : <><div className="doc-meta"><span>{record.source_type}</span><span>{record.unit_count} 个单元</span><span>修订 {record.revision}</span></div>
-      <nav className="unit-nav" aria-label="文档导航"><button aria-label="上一单元" disabled={!unit || unit.index === 1} onClick={() => navigate(unit.index - 2)}>←</button><select aria-label="当前页或章节" value={unit?.unit_id || ""} onChange={(e) => navigate(units.findIndex((x) => x.unit_id === e.target.value))}>{units.map((x) => <option key={x.unit_id} value={x.unit_id}>{x.index}. {x.heading_path.at(-1) || x.unit_type}</option>)}</select><button aria-label="下一单元" disabled={!unit || unit.index === units.length} onClick={() => navigate(unit.index)}>→</button></nav><div className="block-search"><input aria-label="搜索当前单元" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="搜索当前页或章节"/>{search && <span>{matches.length} 个匹配块</span>}</div>{matches.length > 0 && <div className="search-results">{matches.map((item) => <button key={item.block_id} onClick={() => select({ text: item.text, spans: [{ block_id: item.block_id, start: 0, end: Array.from(item.text).length }] })}>选择：{item.text.slice(0, 48)}</button>)}</div>}
-      {unit?.preview.kind === "native_pdf" && <PdfPreview url={assetUrl(record.document_id, unit.preview.asset_id)} pageIndex={unit.index}/>}
-      {record.source_type !== "MARKDOWN" && unit?.preview.limitations?.length > 0 && <p className="boundary">{unit.preview.limitations.join(" ")}</p>}
-      <article className="blocks" tabIndex="0" onMouseUp={capture} onKeyUp={capture} aria-label="当前文档单元">{unit?.heading_path.length > 0 && unit.blocks[0]?.text !== unit.heading_path.at(-1) && <h3>{unit.heading_path.join(" / ")}</h3>}{unit?.blocks.map((item) => <div key={item.block_id} ref={(node) => node ? nodes.current.set(item.block_id, node) : nodes.current.delete(item.block_id)}>{item.kind === "code" ? <pre><code>{item.text}</code></pre> : item.kind === "table" ? <div className="table-wrap"><table><tbody>{item.table_rows.map((row, i) => <tr key={i}>{row.map((cell, j) => <td key={j}>{cell}</td>)}</tr>)}</tbody></table><button onClick={() => select({ text: item.text, spans: [{ block_id: item.block_id, start: 0, end: Array.from(item.text).length }] })}>选中表格</button></div> : item.image_asset_id ? <img src={assetUrl(record.document_id, item.image_asset_id)} alt="文档内图片"/> : item.kind === "unsupported" ? <p className="boundary">此对象无法完整呈现，请参照原文件。</p> : <p className={item.text === unit.heading_path.at(-1) ? "document-heading" : undefined}>{item.text}</p>}</div>)}{unit?.extraction_status === "NO_EXTRACTABLE_TEXT" && <div className="empty"><strong>NO_EXTRACTABLE_TEXT</strong><p>没有可提取文字；原始页面或图片仍保留。</p></div>}</article></>}
-  </section>;
 }
 
 function Notes({ notes, query, setQuery, report, changed, removed }) {
@@ -126,7 +97,11 @@ export default function App() {
   const retry = useRef(null);
   const noteEpoch = useRef(0);
   const mounted = useRef(false);
+  const questionInput = useRef(null), questionRef = useRef(""), autoQuestion = useRef("");
+  const selectionRequest = useRef("");
+  questionRef.current = question;
   const explanation = result?.explanation;
+  const annotations = useAnnotations(record, unit, report, setNotice);
 
   function rememberSession(value) { sessionRef.current = value; setSession(value); }
   function report(e, action) { setError(e); retry.current = action; }
@@ -184,6 +159,7 @@ export default function App() {
   }
   function beginContextChange() {
     stopActive();
+    selectionRequest.current = "";
     const epoch = ++contextEpoch.current;
     setContextBusy(true); setChosen([]); setNotice(""); setError(null);
     return epoch;
@@ -204,11 +180,15 @@ export default function App() {
         if (epoch === contextEpoch.current && mounted.current) {
           rememberSession(next); setRecord(doc); setUnits(list); setUnit(target);
           setSelection(value); setResult(null); setChosen([]); saveKey.current = null;
+          if (!value && questionRef.current === autoQuestion.current) {
+            autoQuestion.current = ""; questionRef.current = ""; setQuestion("");
+          }
+          return next;
         }
       } catch (e) {
         // Recover the authoritative revision after a concurrent request or response loss.
         try { sessionRef.current = await api(`/sessions/${current.session_id}`); } catch { /* retain input */ }
-        if (epoch === contextEpoch.current) { setSession(null); report(e, () => navigate(doc, list, list.indexOf(target))); }
+        if (epoch === contextEpoch.current) { selectionRequest.current = ""; setSession(null); report(e, () => navigate(doc, list, list.indexOf(target))); }
       } finally {
         if (epoch === contextEpoch.current && mounted.current) setContextBusy(false);
       }
@@ -236,7 +216,35 @@ export default function App() {
     if (value && Array.from(value.text).length > 10000) {
       report(new Error("选中文字过长，请缩小到 10,000 字以内。")); return;
     }
-    return activate(record, units, unit, value, beginContextChange());
+    if (value?.spans.length > 50) { report(new Error("选区跨越的段落过多，请缩小到 50 段以内。")); return; }
+    const key = `${record.document_id}:${unit.unit_id}:${selectionKey(value)}`;
+    if (selectionRequest.current === key || (!contextBusy && selectionKey(value) === selectionKey(selection))) return;
+    const epoch = beginContextChange(); selectionRequest.current = key;
+    const next = await activate(record, units, unit, value, epoch);
+    if (next && value && epoch === contextEpoch.current) {
+      if (!questionRef.current.trim() || questionRef.current === autoQuestion.current) {
+        autoQuestion.current = questionForSelection(value); questionRef.current = autoQuestion.current; setQuestion(autoQuestion.current);
+      }
+      setNotice("原句已引用到对话框，可编辑问题或为这段话写批注。");
+    }
+    return next;
+  }
+  function editQuestion(replace = false) {
+    if (replace && selection) { autoQuestion.current = questionForSelection(selection); questionRef.current = autoQuestion.current; setQuestion(autoQuestion.current); }
+    questionInput.current?.focus({ preventScroll: true });
+    questionInput.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+  }
+  function writeAnnotation() { if (annotations.start(selection)) setTab("annotations"); }
+  function openAnnotation(value) { if (annotations.open(value)) setTab("annotations"); }
+  async function locateAnnotation(value) {
+    if (value.anchor.document_revision !== record?.revision || value.anchor.original_sha256 !== record?.original_sha256) {
+      setNotice("这条批注属于另一个文档版本，请核对原文后再引用。"); return;
+    }
+    const target = units.find((x) => x.unit_id === value.anchor.unit_id);
+    if (!target) return;
+    const quote = { text: value.anchor.selected_text, spans: value.anchor.selection_locator.spans, reveal: true };
+    if (unit.unit_id === target.unit_id && selectionKey(selection) === selectionKey(quote)) setSelection(quote);
+    else await activate(record, units, target, quote, beginContextChange());
   }
   async function importFile(file) {
     if (importing) return;
@@ -318,14 +326,16 @@ export default function App() {
       <div className={`connection ${caps?.tutor?.available ? "ready" : "partial"}`}><span/>{caps?.tutor?.available ? "模型可用" : "阅读与笔记可用"}</div>
     </header>
     <main className="workspace">
-      <Reader record={record} units={units} unit={unit} navigate={(i) => navigate(record, units, i)} select={chooseSelection} importing={importing} importFile={importFile}/>
+      <Reader record={record} units={units} unit={unit} navigate={(i) => navigate(record, units, i)} select={chooseSelection} selection={selection} importing={importing} importFile={importFile}
+        annotations={annotations.highlighted} openAnnotation={openAnnotation} annotate={writeAnnotation} editQuestion={() => editQuestion()} report={report}/>
       <section className="assistant pane" aria-busy={busy || contextBusy}>
         <div className="pane-header"><h2>结合材料与真实代码</h2><span className="context-chip">{contextBusy ? "切换中…" : selection ? "已选文字" : "当前单元"}</span></div>
         <ErrorBox error={error} retry={retry.current}/>
         {notice && <p className="notice" role="status">{notice}</p>}
         {caps?.tutor?.available === false && <div className="setup"><strong>模型尚未配置</strong><p>{caps.tutor.needed_action || "启动本地模型后可生成讲解。"}</p><button onClick={refreshCapabilities}>重新检查模型</button></div>}
-        {selection && <div className="selection-summary"><p>{selection.text.slice(0, 180)}{selection.text.length > 180 ? "…" : ""}</p><button onClick={() => chooseSelection(null)}>清除选区</button></div>}
-        <label>问题<textarea aria-label="学习问题" maxLength={2000} value={question} onChange={(e) => { setQuestion(e.target.value); setChosen([]); }} placeholder="这个概念如何在真实项目中使用？"/></label>
+        {selection && <div className="selection-summary"><strong>引用原文</strong><blockquote>{selection.text}</blockquote><div className="quote-actions">
+          <button onClick={() => editQuestion(true)}>带入问题</button><button disabled={contextBusy} onClick={writeAnnotation}>写批注</button><button disabled={contextBusy} onClick={() => chooseSelection(null)}>清除引用</button></div></div>}
+        <label>问题<textarea ref={questionInput} aria-label="学习问题" aria-describedby="question-help" maxLength={2000} value={question} onChange={(e) => { questionRef.current = e.target.value; setQuestion(e.target.value); setChosen([]); }} placeholder="划选原文后，可在这里改写或补充你的问题。"/><small id="question-help">可直接改写提问；原文引用会保留。</small></label>
         <div className="levels" role="group" aria-label="解释等级">{levels.map((x) => <button key={x} aria-pressed={level === x} onClick={() => setLevel(x)}>{x}</button>)}</div>
         <fieldset><legend>代码来源</legend>
           <select aria-label="来源模式" value={scopeMode} onChange={(e) => changeScope(() => setScopeMode(e.target.value))}>
@@ -353,8 +363,8 @@ export default function App() {
           <label>我的理解<textarea aria-label="我的理解" maxLength={20000} value={noteText} onChange={(e) => setNoteText(e.target.value)} placeholder="这里的文字不会被追问覆盖。"/></label><button disabled={saving} onClick={saveNote}>{saving ? "保存中…" : "保存为笔记"}</button>
         </article>}
       </section>
-      <aside className="side pane"><nav><button aria-pressed={tab === "sources"} onClick={() => setTab("sources")}>来源</button><button aria-pressed={tab === "notes"} onClick={() => setTab("notes")}>笔记 {notes.length}</button></nav>
-        {tab === "sources" ? <div>{!sources.length && <div className="empty"><h3>暂无代码来源</h3><p>加入仓库后，可将文档概念与真实代码联系起来。</p></div>}{sources.map((x) => <SourceCard key={x.source_id} source={x}/>)}</div> : <><Notes notes={notes} query={noteQuery} setQuery={setNoteQuery} report={report} changed={(value) => setNotes((items) => items.map((x) => x.note_id === value.note_id ? value : x))} removed={(noteId) => setNotes((items) => items.filter((x) => x.note_id !== noteId))}/>{notes.length < noteTotal && <button onClick={moreNotes}>更多笔记</button>}</>}
+      <aside className="side pane"><nav aria-label="学习记录"><button aria-pressed={tab === "sources"} onClick={() => setTab("sources")}>来源</button><button aria-pressed={tab === "annotations"} onClick={() => setTab("annotations")}>批注 {annotations.total}</button><button aria-pressed={tab === "notes"} onClick={() => setTab("notes")}>笔记 {notes.length}</button></nav>
+        {tab === "sources" ? <div>{!sources.length && <div className="empty"><h3>暂无代码来源</h3><p>加入仓库后，可将文档概念与真实代码联系起来。</p></div>}{sources.map((x) => <SourceCard key={x.source_id} source={x}/>)}</div> : tab === "annotations" ? <Annotations state={annotations} unit={unit} locate={locateAnnotation}/> : <><Notes notes={notes} query={noteQuery} setQuery={setNoteQuery} report={report} changed={(value) => setNotes((items) => items.map((x) => x.note_id === value.note_id ? value : x))} removed={(noteId) => setNotes((items) => items.filter((x) => x.note_id !== noteId))}/>{notes.length < noteTotal && <button onClick={moreNotes}>更多笔记</button>}</>}
       </aside>
     </main>
   </>;

@@ -1,0 +1,164 @@
+{
+  "verified_at": "2026-09-11T05:33:28.411814+00:00",
+  "base_head": "03fa1ad180f87b156b8252f7165a7321bd681980",
+  "evidence_directory": "selection-annotations-20260911-050812Z",
+  "scope": "mouse selection, editable question quoting, local annotations, PDF text layer",
+  "automated": {
+    "python_passed": 373,
+    "frontend_passed": 26,
+    "isolated_data": true,
+    "checks": [
+      {
+        "command": [
+          "pytest",
+          "-q"
+        ],
+        "exit_code": 0,
+        "seconds": 40.84,
+        "log": "validation/1789104077853611000.log",
+        "sandboxed": true,
+        "sha256": "c21f040ffca57c89647ce3495c712b47655fe850f19a2b5e0779b41567f158b0"
+      },
+      {
+        "command": [
+          "npm",
+          "--prefix",
+          "apps/web",
+          "test"
+        ],
+        "exit_code": 0,
+        "seconds": 1.72,
+        "log": "validation/1789104523688373000.log",
+        "sandboxed": true,
+        "sha256": "585e9eb28f13dc859636598d49fd9e9dbd30ba74e02ca0e6e15ebdb206f952e3"
+      },
+      {
+        "command": [
+          "npm",
+          "--prefix",
+          "apps/web",
+          "run",
+          "build"
+        ],
+        "exit_code": 0,
+        "seconds": 1.14,
+        "log": "validation/1789104523688349000.log",
+        "sandboxed": true,
+        "sha256": "57e72be2306273f609797576772392140e06a4aa609402af0613e6be3574ed8c"
+      },
+      {
+        "command": [
+          "ruff",
+          "check",
+          "."
+        ],
+        "exit_code": 0,
+        "seconds": 0.08,
+        "log": "validation/1789104077872495000.log",
+        "sandboxed": true,
+        "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+      },
+      {
+        "command": [
+          "python",
+          "scripts/export_full_contracts.py",
+          "--check"
+        ],
+        "exit_code": 0,
+        "seconds": 0.51,
+        "log": "validation/1789104116156200000.log",
+        "sandboxed": true,
+        "sha256": "491a8622837db27f33381885ed161c2733a0c7e3066967782ded723dad6538d2"
+      },
+      {
+        "command": [
+          "python",
+          "scripts/tutor.py",
+          "doctor"
+        ],
+        "exit_code": 0,
+        "seconds": 0.13,
+        "log": "validation/1789104116156273000.log",
+        "sandboxed": true,
+        "sha256": "8964289675b72c63863c4a2af74f01b17046e189de876e809e2fc35bd1676b94"
+      }
+    ]
+  },
+  "manual_browser": {
+    "status": "PASS",
+    "platform": "macOS Apple Silicon; Codex in-app browser",
+    "desktop_viewport": [
+      1280,
+      720
+    ],
+    "narrow_viewport": [
+      390,
+      844
+    ],
+    "checks": [
+      "native left drag",
+      "Chinese and emoji across paragraphs",
+      "custom question preservation",
+      "whole paragraph button",
+      "annotation save and edit",
+      "reload persistence",
+      "return to original",
+      "PDF original-page drag mapped to exact original",
+      "PDF empty page",
+      "narrow editor focus and no horizontal overflow"
+    ],
+    "touch_hardware": "NOT_TESTED",
+    "browser_errors_or_warnings": []
+  },
+  "real_ai": {
+    "status": "PASS",
+    "provider": "existing local MLX Qwen3-4B-Instruct-2507-4bit",
+    "case": "selected Chinese sentence -> user rewrites question -> actual explanation and rewritten sentence",
+    "fixture": false,
+    "semantic_correctness": "manual reader judgment still required"
+  },
+  "compatibility": {
+    "legacy_schema_changed": false,
+    "legacy_db_migrated": false,
+    "new_database": "annotations-v1.sqlite3",
+    "model_downloaded_this_increment": false
+  },
+  "impeccable_findings": [],
+  "source_files": {
+    "apps/web/src/Annotations.jsx": "7a4e1acc8933018bd6bddc33237de46434a5579ec1490145adf9bb6750f6e9cb",
+    "apps/web/src/Annotations.test.jsx": "097f48783f79bfe64dada00f2ab3cff23e95e8e9acf9a46e0546b8de4e58108b",
+    "apps/web/src/App.jsx": "8a83273d33851f114b60398fea619c095f80c064eb9a719dfd1d3ce671cca409",
+    "apps/web/src/App.test.jsx": "e86f7583d31c7a5d0809618c4fe99098f219f3d6b6325e590610ddc016401c62",
+    "apps/web/src/PdfPreview.jsx": "980985c5de556cbff0ac3e51c987ee9cc863469a4575dbb774503237413bcc61",
+    "apps/web/src/PdfPreview.test.jsx": "f853bb10ece055edee74cc4557b9da8710879979e98380744a9a4d7f609f57a5",
+    "apps/web/src/Reader.jsx": "8dfc7fa3d427282ea549f03bc4e7c4eaea932584703690a82b671045e0e1ce22",
+    "apps/web/src/api.js": "f7c91c4e7c1567a2a76e8efde89fd583481456f1c966cfc82f2804d2ae73d092",
+    "apps/web/src/main.jsx": "efc4c8026cf02d58be34fb8cda2bac8d79467ea48ee6c86734cc910fa5d26799",
+    "apps/web/src/selection.js": "17d677db56829c91e4d7f54b2531a3c38443b8920c9e2d788f6a7a0fa267471d",
+    "apps/web/src/selection.test.js": "4b75d2e102938f3e4491e9b794f7768e154c2226ab1f420c77c9b22bef0b49ec",
+    "apps/web/src/styles.css": "670c8f4e21816c0611c394b0db56a3bfe507bba75e9c963486b9ec164d0db518",
+    "apps/web/src/test-setup.js": "e622dbe67df19d7637a02d2887cbb3c254eaeb2e71fb1e6d35107292fae449eb",
+    "apps/web/src/workspace.css": "addf1ff7cf4fa78004315fea5a047034df31316c67a367c1639fb6d41f6c67d7",
+    "src/concept_to_code_learning/full_learning/__init__.py": "3e2bbcbaa15f2b51ad8d42682f82fd0083978ac506e9bcf74c2a1cb153b51689",
+    "src/concept_to_code_learning/full_learning/annotations.py": "4627abaf165623177bc9942ba811520728c2509c60ec26e7b12a9ab5eb925417",
+    "src/concept_to_code_learning/full_learning/api.py": "e00e99b85dc7a4a723a0566c7d23de9fab48593fb0132fe41025db073572e961",
+    "src/concept_to_code_learning/full_learning/context.py": "4ae1f439f5e3ab662bd8c5e8044a346e9bd88b1cf549c96d3cc4da6fe245712c",
+    "src/concept_to_code_learning/full_learning/errors.py": "d8d7f96811acf5411a2c62fb0b2413ce1f7183a61fd5547defd9ed50fe2df19a",
+    "src/concept_to_code_learning/full_learning/export.py": "e706f705925d264980db231bb7060f7df189b98d009207ca70215d2fe0d5a510",
+    "src/concept_to_code_learning/full_learning/ports.py": "8769cf5846f3b98551a0abdb5d6a01c0a11519d9d30725693607df8e479a1e32",
+    "src/concept_to_code_learning/full_learning/providers.py": "373b55a2d2fa61a9b0e2167c781071ac8cdcf3b0005b9326ca0e045ecafaef61",
+    "src/concept_to_code_learning/full_learning/service.py": "23e58fbca994e01e82f77353527b10a163f4ced470f151a5cb9b95f12218a212",
+    "src/concept_to_code_learning/full_learning/store.py": "40d2f3fe246b86fc3ac06294fadafad21f401693cd3ac479ca54d93cb9923004",
+    "src/concept_to_code_learning/full_contracts/__init__.py": "b9acf9ad877f2c56f1c9614cae472d928b12c7bbbd11b16894bd65c7d5463356",
+    "src/concept_to_code_learning/full_contracts/annotations.py": "4a8b41993440f0f436472ff6235719173ccd9cb219ee213a5717d5fad93d5a07",
+    "src/concept_to_code_learning/full_contracts/compat.py": "08d6d3b7f0b4c12e34cf53deb5cce8dc0c6713966cc24da5492128e1da935872",
+    "src/concept_to_code_learning/full_contracts/models.py": "bcc8ce21c9170b635e51c0ae24da5ec85f431edc2000f4e91f7b0810a4d5218a"
+  },
+  "screenshots": {
+    "narrow-annotation.png": "4ab2c6be6e916e88ff3446ead75308e19d70076d8633e95153b814868fa9a1b5",
+    "persisted-annotation.png": "da58e5dc9df8cb9aad82e51b3d47a3c7e6016843d3313be4d844416727004ab9",
+    "workflow.png": "57316aae460cf4f9516e33761f99b854115e75a2c3f548b48649e60501ceb489"
+  },
+  "lead_human_review": "PENDING",
+  "main_merge": "NOT_PERFORMED"
+}

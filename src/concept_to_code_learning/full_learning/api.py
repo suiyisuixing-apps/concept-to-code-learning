@@ -8,7 +8,9 @@ from fastapi.exceptions import RequestValidationError, ResponseValidationError
 from fastapi.responses import JSONResponse, Response
 from pydantic import ValidationError
 
+from concept_to_code_learning.full_contracts import annotations as a
 from concept_to_code_learning.full_contracts import models as m
+from concept_to_code_learning.full_learning.annotations import AnnotationStore
 from concept_to_code_learning.full_learning.errors import LearningError, require
 from concept_to_code_learning.full_learning.export import export_note
 from concept_to_code_learning.full_learning.ports import DocumentUpload
@@ -19,6 +21,7 @@ ERROR_RESPONSES = {status: {"model": m.LearningErrorResponse} for status in (400
 
 def create_router(service, legacy_store, sprint_store) -> APIRouter:
     router = APIRouter(prefix=PREFIX, tags=["Full delivery v1"], responses=ERROR_RESPONSES)
+    annotations = AnnotationStore(service.store.path.parent)
 
     @router.get("/capabilities", response_model=m.Capabilities)
     async def capabilities():
@@ -87,6 +90,28 @@ def create_router(service, legacy_store, sprint_store) -> APIRouter:
     @router.get("/sources/local-handles", response_model=list[m.ID])
     async def local_handles():
         return await service.call("sources", service.providers.sources.local_handles)
+
+    @router.post("/documents/{document_id}/annotations", response_model=a.Annotation, status_code=201)
+    async def annotation_create(document_id: m.ID, body: a.CreateAnnotationRequest):
+        request = m.ContextRequest.model_validate(body.model_dump(exclude={"annotation_id", "comment"}))
+        context = await service.context(document_id, request)
+        return annotations.create(body.annotation_id, context, body.comment)
+
+    @router.get("/documents/{document_id}/annotations", response_model=a.AnnotationList)
+    async def annotation_list(document_id: m.ID, unit_id: m.ID | None = None,
+                              offset: int = Query(default=0, ge=0), limit: int = Query(default=50, ge=1, le=100)):
+        items, total = annotations.list(document_id, unit_id, offset, limit)
+        mode = "FIXTURE" if any(item.mode == "FIXTURE" for item in items) else ("LIVE" if items else "UNAVAILABLE")
+        return a.AnnotationList(mode=mode, document_id=document_id, annotations=items, total=total, offset=offset)
+
+    @router.patch("/annotations/{annotation_id}", response_model=a.Annotation)
+    async def annotation_edit(annotation_id: m.ID, body: a.EditAnnotationRequest):
+        return annotations.edit(annotation_id, body.expected_revision, body.comment)
+
+    @router.delete("/annotations/{annotation_id}", status_code=204)
+    async def annotation_delete(annotation_id: m.ID, body: m.DeleteNoteRequest):
+        annotations.delete(annotation_id, body.expected_revision, body.confirmed_by_user)
+        return Response(status_code=204)
 
     @router.post("/sources/search", response_model=m.SearchResult)
     async def search(body: m.SearchRequest):
