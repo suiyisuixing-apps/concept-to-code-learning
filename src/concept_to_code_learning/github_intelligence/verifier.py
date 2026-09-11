@@ -1,305 +1,208 @@
-"""Source verification for specified_public mode.
+"""Verify immutable file bytes, real line ranges and observed license files."""
 
-The verifier turns a pinned GitHub commit + file path + symbol into a
-CodeEvidence that passes the strict model_validator in full_contracts. It only
-uses static AST (never imports the fetched code) and reads the license from the
-same immutable commit so the permalink and the bytes are coherent.
-"""
-
-from __future__ import annotations
-
-import ast
+import hashlib
 import re
 from pathlib import PurePosixPath
-from typing import Any
+from urllib.parse import quote
 
-from concept_to_code_learning.full_contracts.models import (
-    CodeEvidence,
-    LicenseFile,
-    LicenseObservation,
-    Relevance,
-    SearchCandidate,
-    SourceQuery,
-    digest,
-    utcnow,
-)
+from concept_to_code_learning.full_contracts import models as m
 from concept_to_code_learning.full_learning.ports import VerificationReceipt
 
+from .discovery import EXTENSIONS, matched, python_symbols
 from .errors import SourceError
-from .github_client import GitHubRawClient
+from .github_client import safe_path
 
-# Candidate license paths probed at the same commit. Order is informational;
-# the first that resolves wins. The detector only marks DETECTED when an
-# SPDX-grade identifier can be asserted from the bytes, never guessed.
-LICENSE_PATHS = ("LICENSE", "LICENSE.md", "LICENSE.txt", "COPYING", "NOTICE")
+LICENSE_PATHS = tuple(name + suffix for name in ("LICENSE", "LICENCE", "COPYING")
+                      for suffix in ("", ".md", ".txt", ".rst"))
 
-# A minimal, conservative identifier detector. It looks for the canonical
-# SPDX title in the first lines of the license file. Unknown content remains
-# UNKNOWN and code_excerpt is withheld per INTERFACES.md.
-LICENSE_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
-    ("MIT", re.compile(r"MIT License", re.IGNORECASE)),
-    ("Apache-2.0", re.compile(r"Apache License(?:,? Version 2\.0)?", re.IGNORECASE)),
-    ("BSD-3-Clause", re.compile(r"Redistribution and use.*source and binary forms", re.IGNORECASE | re.DOTALL)),
-    ("BSD-2-Clause", re.compile(r"Redistribution and use.*source and binary forms.*Neither the name", re.IGNORECASE | re.DOTALL)),
-    ("ISC", re.compile(r"ISC License", re.IGNORECASE)),
-    ("MPL-2.0", re.compile(r"Mozilla Public License.*Version 2\.0", re.IGNORECASE | re.DOTALL)),
-    ("Unlicense", re.compile(r"This is free and unencumbered software released into the public domain", re.IGNORECASE)),
-)
 
-REPO_PATTERN = re.compile(r"^([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)$")
-SHA_PATTERN = re.compile(r"^[a-f0-9]{40}$")
-PY_EXTENSION = ".py"
+def detect_identifier(text):
+    value = " ".join(text.casefold().split())
+    if (
+        "permission is hereby granted, free of charge" in value
+        and "the software is provided" in value
+    ):
+        return "MIT"
+    if "apache license" in value and "version 2.0" in value and "terms and conditions" in value:
+        return "Apache-2.0"
+    if (
+        "redistribution and use in source and binary forms" in value
+        and "this software is provided" in value
+    ):
+        return "BSD-3-Clause" if "neither the name" in value else "BSD-2-Clause"
+    if (
+        "permission to use, copy, modify, and/or distribute" in value
+        and "the software is provided" in value
+    ):
+        return "ISC"
+    if "this is free and unencumbered software released into the public domain" in value:
+        return "Unlicense"
+    return None
+
+
+def excerpt(text, path, symbol, terms):
+    lines = text.splitlines()
+    if not lines:
+        raise SourceError("NO_RELEVANT_SOURCE", "verify", "源码文件为空。", 422)
+    kind = "NOT_APPLICABLE"
+    if symbol and PurePosixPath(path).suffix.lower() == ".py":
+        found = [x for x in python_symbols(text) if x[0] == symbol]
+        if not found:
+            raise SourceError("SYMBOL_NOT_FOUND", "verify", "固定版本中找不到候选符号。", 404)
+        _, kind, start, end = found[0]
+    else:
+        index = next((i for i, line in enumerate(lines) if matched(line, terms)), 0)
+        start, end = max(1, index - 12), min(len(lines), index + 48)
+    code = "\n".join(lines[start - 1 : end])
+    if len(code) > 20000:
+        raise SourceError(
+            "NO_RELEVANT_SOURCE", "verify", "匹配符号超过片段上限，请缩小概念范围。", 422
+        )
+    return kind, start, end, code
+
+
+def license_observation(entries):
+    files = [
+        m.LicenseFile(
+            path=path,
+            commit_sha=commit,
+            content_sha256=hashlib.sha256(raw).hexdigest(),
+            permalink=link,
+            identifier=detect_identifier(raw.decode("utf-8", errors="replace")),
+        )
+        for path, raw, commit, link in entries
+    ]
+    identifiers = {f.identifier for f in files}
+    detected = bool(files) and None not in identifiers and len(identifiers) == 1
+    status = "DETECTED" if detected else ("MIXED" if len(identifiers) > 1 else "UNKNOWN")
+    return m.LicenseObservation(
+        status=status,
+        files=files,
+        code_display_allowed=detected,
+        limitations=["记录已读取的许可文件；保留作者和许可声明。未对所有依赖或例外进行法律审查。"],
+    )
 
 
 class SourceVerifier:
-    """Pure orchestration: parse → fetch → AST → hashes → license → evidence."""
-
-    def __init__(self, client: GitHubRawClient):
+    def __init__(self, client):
         self._client = client
 
-    async def verify_specified_public(
-        self, query: SourceQuery, candidate: SearchCandidate, scope_sha256: str,
-    ) -> VerificationReceipt:
-        scope = query  # SourceQuery extends SourceScope; same fields.
-        self._require_mode(scope, "specified_public")
-        self._require_network(scope)
-        self._require_allowlist(scope)
-        repo = self._require_candidate_repo(candidate)
-        self._require_repo_in_allowlist(repo, scope.repository_allowlist)
-        owner, name = self._split_repo(repo)
-        commit_sha = await self._resolve_commit(owner, name, candidate.ref_hint)
-        file_path = self._require_file_path(candidate)
-        file_bytes = await self._client.fetch_raw(owner, name, commit_sha, file_path)
-        file_text = file_bytes.decode("utf-8")
-        symbol, symbol_kind, line_start, line_end = self._resolve_symbol(
-            file_text, file_path, candidate.symbol_hint,
-        )
-        excerpt_lines = file_text.splitlines()[line_start - 1:line_end]
-        code_excerpt = "\n".join(excerpt_lines)
-        excerpt_sha256 = digest(code_excerpt)
-        file_sha256 = digest(file_text)
-        file_blob_sha = await self._client.fetch_blob_sha(owner, name, commit_sha, file_path)
-        license_obs = await self._resolve_license(owner, name, commit_sha)
-        checks = self._verification_checks(
-            commit_sha=commit_sha, file_blob_sha=file_blob_sha,
-            file_sha256=file_sha256, excerpt_sha256=excerpt_sha256,
-            license_obs=license_obs, symbol_kind=symbol_kind,
-        )
-        # Code excerpt is only attached when the license explicitly allows display.
-        displayed_excerpt = code_excerpt if license_obs.code_display_allowed else ""
-        displayed_sha = digest(displayed_excerpt)
-        permalink = self._permalink(owner, name, commit_sha, file_path, line_start, line_end)
-        relevance = Relevance(
-            status="SUPPORTED",
-            reason="Candidate was discovered and verified at the pinned commit.",
-            basis=[f"commit:{commit_sha}", f"file:{file_path}",
-                   f"symbol:{symbol or 'none'}", f"lines:{line_start}-{line_end}"],
-        )
-        evidence = CodeEvidence(
-            mode="LIVE",
-            source_id=candidate.candidate_id,
-            source_mode="specified_public",
-            repository_owner=owner,
-            repository_name=name,
-            repository_url=f"https://github.com/{owner}/{name}",
-            visibility="public",
-            commit_sha=commit_sha,
-            requested_ref=candidate.ref_hint,
-            file_path=file_path,
-            language=self._language_for(file_path),
-            symbol=symbol,
-            symbol_kind=symbol_kind,
-            line_start=line_start,
-            line_end=line_end,
-            code_excerpt=displayed_excerpt,
-            excerpt_sha256=displayed_sha,
-            file_blob_sha=file_blob_sha,
-            file_sha256=file_sha256,
-            permalink=permalink,
-            license_observation=license_obs,
-            retrieved_at=utcnow(),
-            verification_checks=checks,
-            provenance_kind="SOURCE_EXACT",
-            verification_status="VERIFIED",
-            relevance=relevance,
-        )
-        return VerificationReceipt(
-            query_id=query.query_id, candidate_id=candidate.candidate_id,
-            scope_sha256=scope_sha256, evidence=evidence,
-        )
-
-    # --- helpers -----------------------------------------------------------
-
-    def _require_mode(self, scope: Any, expected: str) -> None:
-        if scope.source_mode != expected:
-            raise SourceError("INVALID_PROVIDER_RESPONSE", "verify",
-                              f"Verifier received mode {scope.source_mode!r}, expected {expected!r}",
-                              status=422)
-
-    def _require_network(self, scope: Any) -> None:
-        if not scope.network_authorized:
-            raise SourceError("NETWORK_NOT_AUTHORIZED", "verify",
-                              "specified_public requires explicit network authorization",
-                              status=403, needed_action="Set network_authorized=true with user consent.")
-
-    def _require_allowlist(self, scope: Any) -> None:
-        if not scope.repository_allowlist:
-            raise SourceError("NETWORK_NOT_AUTHORIZED", "verify",
-                              "specified_public requires a non-empty repository allowlist",
-                              status=403, needed_action="Provide at least one owner/repo in the allowlist.")
-
-    def _require_candidate_repo(self, candidate: SearchCandidate) -> str:
+    async def verify_specified_public(self, query, candidate, scope_sha256):
+        if (
+            query.source_mode not in {"specified_public", "public_search"}
+            or not query.network_authorized
+        ):
+            raise SourceError(
+                "NETWORK_NOT_AUTHORIZED", "verify", "当前范围不允许公开仓库读取。", 403
+            )
         repo = candidate.repository
-        if not repo:
-            raise SourceError("INVALID_PROVIDER_RESPONSE", "verify",
-                              "candidate.repository is required for specified_public",
-                              status=422)
-        return repo
-
-    def _require_repo_in_allowlist(self, repo: str, allowlist: list[str]) -> None:
-        if repo not in allowlist:
-            raise SourceError("REPO_UNAVAILABLE", "verify",
-                              f"{repo} is not in the authorized allowlist",
-                              status=403, needed_action="Add the repository to the allowlist.")
-
-    def _split_repo(self, repo: str) -> tuple[str, str]:
-        match = REPO_PATTERN.match(repo)
-        if not match:
-            raise SourceError("INVALID_PROVIDER_RESPONSE", "verify",
-                              f"Repository {repo!r} is not a canonical owner/name",
-                              status=422)
-        return match.group(1), match.group(2)
-
-    async def _resolve_commit(self, owner: str, name: str, ref_hint: str | None) -> str:
-        if not ref_hint:
-            raise SourceError("REF_UNRESOLVED", "verify",
-                              "candidate.ref_hint is required to pin the commit",
-                              status=422, needed_action="Provide a branch, tag or 40-char SHA.")
-        if SHA_PATTERN.match(ref_hint):
-            return ref_hint
+        if not repo or (
+            query.source_mode == "specified_public" and repo not in query.repository_allowlist
+        ):
+            raise SourceError("REPO_UNAVAILABLE", "verify", "候选不在指定仓库范围内。", 403)
+        if candidate.query_id != query.query_id or candidate.source_mode != query.source_mode:
+            raise SourceError("SOURCE_MISMATCH", "verify", "候选不属于本次检索。", 409)
+        owner, name = repo.split("/", 1)
+        await self._client.repository(owner, name)
+        if not candidate.ref_hint:
+            raise SourceError("REF_UNRESOLVED", "verify", "候选缺少版本信息。", 422)
         try:
-            return await self._client.resolve_ref(owner, name, ref_hint)
+            commit = await self._client.resolve_ref(owner, name, candidate.ref_hint)
         except SourceError as exc:
             if exc.code == "FILE_NOT_FOUND":
-                raise SourceError("REF_UNRESOLVED", "verify",
-                                  f"Ref {ref_hint!r} could not be resolved",
-                                  status=404, needed_action="Confirm the ref exists.") from exc
+                raise SourceError("REF_UNRESOLVED", "verify", "候选版本无法解析。", 404) from None
             raise
-
-    def _require_file_path(self, candidate: SearchCandidate) -> str:
+        if re.fullmatch(r"[a-f0-9]{40}", candidate.ref_hint) and commit != candidate.ref_hint:
+            raise SourceError("SOURCE_MISMATCH", "verify", "返回版本与候选不符。", 502)
         path = candidate.file_hint
-        if not path:
-            raise SourceError("FILE_NOT_FOUND", "verify",
-                              "candidate.file_hint is required",
-                              status=422, needed_action="Provide a repository-relative file path.")
-        checked = PurePosixPath(path)
-        if checked.is_absolute() or ".." in checked.parts or "\\" in path:
-            raise SourceError("FILE_NOT_FOUND", "verify",
-                              "File path must be repository-relative and cannot escape the root",
-                              status=422, needed_action="Use a path like 'src/app.py'.")
-        return path
-
-    def _resolve_symbol(
-        self, file_text: str, file_path: str, symbol_hint: str | None,
-    ) -> tuple[str | None, str, int, int]:
-        """Return (symbol, kind, line_start, line_end). Lines are 1-indexed inclusive."""
-        if not symbol_hint:
-            # No symbol requested: cover the whole file. python_symbol=NOT_APPLICABLE.
-            lines = file_text.splitlines()
-            return None, "NOT_APPLICABLE", 1, max(1, len(lines))
-        if PurePosixPath(file_path).suffix != PY_EXTENSION:
-            # Non-Python file with a symbol hint: AST cannot resolve; mark NOT_APPLICABLE.
-            # Line range defaults to the whole file; caller may narrow with hints later.
-            lines = file_text.splitlines()
-            return symbol_hint, "NOT_APPLICABLE", 1, max(1, len(lines))
-        return self._locate_python_symbol(file_text, symbol_hint)
-
-    def _locate_python_symbol(self, file_text: str, symbol: str) -> tuple[str, str, int, int]:
+        safe_path(path)
+        raw = await self._client.fetch_raw(owner, name, commit, path)
         try:
-            tree = ast.parse(file_text, mode="exec")
-        except SyntaxError as exc:
-            raise SourceError("SYMBOL_NOT_FOUND", "verify",
-                              f"File cannot be parsed as Python: {exc.msg}",
-                              status=422, needed_action="Confirm the file is valid Python.") from exc
-        for node in ast.walk(tree):
-            name = getattr(node, "name", None)
-            if name != symbol:
-                continue
-            kind = self._ast_symbol_kind(node)
-            if kind is None:
-                continue
-            # Decorator lines are excluded from the function's own line range;
-            # the user sees the def line and the body, not the decorators.
-            start = node.lineno
-            end = getattr(node, "end_lineno", start)
-            return symbol, kind, start, end
-        raise SourceError("SYMBOL_NOT_FOUND", "verify",
-                          f"Symbol {symbol!r} not found in the file",
-                          status=404, needed_action="Confirm the symbol exists at the pinned commit.")
-
-    def _ast_symbol_kind(self, node: ast.AST) -> str | None:
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            return "function"
-        if isinstance(node, ast.ClassDef):
-            return "class"
-        return None
-
-    def _language_for(self, file_path: str) -> str:
-        suffix = PurePosixPath(file_path).suffix.lower().lstrip(".")
-        return suffix or "text"
-
-    async def _resolve_license(self, owner: str, name: str, commit: str) -> LicenseObservation:
-        for path in LICENSE_PATHS:
-            content = await self._client.fetch_license(owner, name, commit, path)
-            if content is None:
-                continue
-            text = content.decode("utf-8")
-            identifier = self._detect_identifier(text)
-            content_sha256 = digest(text)
-            license_file = LicenseFile(
-                path=path, commit_sha=commit, content_sha256=content_sha256,
-                permalink=f"https://github.com/{owner}/{name}/blob/{commit}/{path}",
-                identifier=identifier,
-            )
-            if identifier is None:
-                # File exists but identifier cannot be asserted: UNKNOWN, withhold code.
-                return LicenseObservation(
-                    status="UNKNOWN", files=[license_file], code_display_allowed=False,
-                )
-            return LicenseObservation(
-                status="DETECTED", files=[license_file], code_display_allowed=True,
-                limitations=["Retain the license notice when reproducing the excerpt."],
-            )
-        # No license file found at any candidate path.
-        return LicenseObservation(status="UNKNOWN", files=[], code_display_allowed=False)
-
-    def _detect_identifier(self, text: str) -> str | None:
-        head = text[:4096]
-        for identifier, pattern in LICENSE_PATTERNS:
-            if pattern.search(head):
-                return identifier
-        return None
-
-    def _permalink(self, owner: str, name: str, commit: str, path: str,
-                   line_start: int, line_end: int) -> str:
-        return (f"https://github.com/{owner}/{name}/blob/{commit}/"
-                f"{path}#L{line_start}-L{line_end}")
-
-    def _verification_checks(
-        self, *, commit_sha: str, file_blob_sha: str | None,
-        file_sha256: str, excerpt_sha256: str, license_obs: LicenseObservation,
-        symbol_kind: str,
-    ) -> dict[str, str]:
-        checks: dict[str, str] = {
-            "public_repository": "PASSED",
-            "commit": "PASSED" if commit_sha else "FAILED",
-            "file": "PASSED" if file_sha256 else "FAILED",
-            "line_range": "PASSED",
-            "excerpt_hash": "PASSED" if excerpt_sha256 else "FAILED",
-            "license": "PASSED" if license_obs.status == "DETECTED" else "NOT_APPLICABLE",
+            text = raw.decode("utf-8")
+        except UnicodeError:
+            raise SourceError(
+                "NO_RELEVANT_SOURCE", "verify", "源码不是支持的 UTF-8 文本。", 422
+            ) from None
+        kind, start, end, code = excerpt(text, path, candidate.symbol_hint, query.concept_terms)
+        blob = await self._client.fetch_blob_sha(owner, name, commit, path)
+        actual_blob = hashlib.sha1(b"blob " + str(len(raw)).encode() + b"\0" + raw).hexdigest()
+        if blob != actual_blob:
+            raise SourceError("SOURCE_MISMATCH", "verify", "下载文件与 Git blob 标识不一致。", 502)
+        license = await self._resolve_license(owner, name, commit, path)
+        displayed = code if license.code_display_allowed else ""
+        repo_url = f"https://github.com/{repo}"
+        checks = {
+            k: "PASSED"
+            for k in ("public_repository", "commit", "file", "line_range", "excerpt_hash", "scope")
         }
-        if symbol_kind == "NOT_APPLICABLE":
-            checks["python_symbol"] = "NOT_APPLICABLE"
-        else:
-            checks["python_symbol"] = "PASSED"
-        return checks
+        checks["license"] = "PASSED" if license.code_display_allowed else "NOT_CHECKED"
+        checks["python_symbol"] = "PASSED" if kind != "NOT_APPLICABLE" else "NOT_APPLICABLE"
+        hits = matched(code, query.concept_terms)
+        evidence = m.CodeEvidence(
+            mode="LIVE",
+            source_id=candidate.candidate_id,
+            source_mode=query.source_mode,
+            repository_owner=owner,
+            repository_name=name,
+            repository_url=repo_url,
+            visibility="public",
+            commit_sha=commit,
+            requested_ref=candidate.ref_hint,
+            file_path=path,
+            language=EXTENSIONS.get(PurePosixPath(path).suffix.lower(), "text"),
+            symbol=candidate.symbol_hint,
+            symbol_kind=kind,
+            line_start=start,
+            line_end=end,
+            code_excerpt=displayed,
+            excerpt_sha256=m.digest(displayed),
+            file_blob_sha=blob,
+            file_sha256=hashlib.sha256(raw).hexdigest(),
+            permalink=f"{repo_url}/blob/{commit}/{quote(path, safe='/')}#L{start}-L{end}",
+            license_observation=license,
+            retrieved_at=m.utcnow(),
+            verification_checks=checks,
+            provenance_kind="SOURCE_EXACT",
+            verification_status="VERIFIED" if displayed else "NEEDS_CONFIRMATION",
+            relevance=m.Relevance(
+                status="CANDIDATE" if hits else "UNCERTAIN",
+                reason="固定文件与符号已核验；概念词匹配只提供相关性线索，不证明教学结论。",
+                basis=hits,
+            ),
+        )
+        return VerificationReceipt(query.query_id, candidate.candidate_id, scope_sha256, evidence)
+
+    async def _resolve_license(self, owner, name, commit, file_path="source.py"):
+        tree = await self._client.tree(owner, name, commit)
+        paths = {
+            x["path"]
+            for x in tree.get("tree", [])
+            if x.get("type") == "blob" and x.get("mode") in {"100644", "100755"}
+        }
+        ancestors = [PurePosixPath(".")] + list(reversed(PurePosixPath(file_path).parent.parents))
+        ancestors += [PurePosixPath(file_path).parent]
+        folders = {str(folder) for folder in ancestors}
+        names = {name.casefold() for name in LICENSE_PATHS}
+        candidates = sorted(p for p in paths if str(PurePosixPath(p).parent) in folders
+                            and PurePosixPath(p).name.casefold() in names)[:12]
+        entries = []
+        for path in candidates:
+            raw = await self._client.fetch_license(owner, name, commit, path)
+            if raw is not None:
+                entries.append(
+                    (
+                        path,
+                        raw,
+                        commit,
+                        f"https://github.com/{owner}/{name}/blob/{commit}/{quote(path, safe='/')}",
+                    )
+                )
+        observation = license_observation(entries)
+        if tree.get("truncated"):
+            observation.status = "UNKNOWN"
+            observation.code_display_allowed = False
+            observation.limitations.append("文件树被截断，无法确认目录许可覆盖。")
+        return observation
+
+    def _detect_identifier(self, text):
+        return detect_identifier(text)

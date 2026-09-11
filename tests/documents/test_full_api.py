@@ -17,7 +17,8 @@ def test_real_markdown_upload_navigation_selection_and_asset_boundary(tmp_path):
         assert uploaded.status_code == 201
         record = uploaded.json()
         unit = client.get(f"{PREFIX}/documents/{record['document_id']}/units").json()["units"][0]
-        source = unit["blocks"][0]["text"]
+        source_block = next(b for b in unit["blocks"] if "😀" in b["text"])
+        source = source_block["text"]
         selected = "😀"
         start = source.index(selected)
         context = client.post(
@@ -28,7 +29,7 @@ def test_real_markdown_upload_navigation_selection_and_asset_boundary(tmp_path):
                 "selected_text": selected,
                 "selected_text_hash": digest(selected),
                 "selection_locator": {
-                    "spans": [{"block_id": unit["blocks"][0]["block_id"], "start": start,
+                    "spans": [{"block_id": source_block["block_id"], "start": start,
                                "end": start + 1}],
                     "normalization": "exact",
                 },

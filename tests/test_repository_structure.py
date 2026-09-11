@@ -27,16 +27,19 @@ def test_ci_cost_and_permission_constraints():
     assert workflow["permissions"] == {"contents": "read"}
     assert workflow["concurrency"]["cancel-in-progress"] == "true"
     assert "github.head_ref" in workflow["concurrency"]["group"]
-    assert len(workflow["jobs"]) == 1
-    job = workflow["jobs"]["phase0-checks"]
-    assert int(job["timeout-minutes"]) <= 10
-    assert job["runs-on"] == "ubuntu-latest"
-    assert "strategy" not in job
-    assert [step["run"] for step in job["steps"] if "run" in step] == [
-        'python -m pip install -e ".[dev]"', "ruff check .", "pytest -q",
-        "python scripts/tutor.py doctor", "python scripts/tutor.py demo",
-        "npm ci", "npm test", "npm run build",
-    ]
+    # One required Linux check and at most one native Windows check, with no matrix fan-out.
+    assert "phase0-checks" in workflow["jobs"] and len(workflow["jobs"]) <= 2
+    assert workflow["jobs"]["phase0-checks"]["runs-on"] == "ubuntu-latest"
+    for job in workflow["jobs"].values():
+        assert int(job["timeout-minutes"]) <= 10
+        assert job["runs-on"] in {"ubuntu-latest", "windows-latest"}
+        assert "strategy" not in job
+        assert "permissions" not in job
+        commands = [step["run"] for step in job["steps"] if "run" in step]
+        assert "pytest -q" in commands and "npm test" in commands and "npm run build" in commands
+        for step in job["steps"]:
+            if step.get("uses", "").startswith("actions/checkout@"):
+                assert step["with"]["persist-credentials"] == "false"
 
 
 @pytest.mark.parametrize("missing", ["SKILL.md", "references/document-grounding.md",

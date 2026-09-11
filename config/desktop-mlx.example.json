@@ -1,0 +1,5 @@
+{
+  "model_python": "/absolute/path/to/model-runtime/bin/python",
+  "model_dir": "/absolute/path/to/already-downloaded-mlx-model",
+  "local_roots": []
+}

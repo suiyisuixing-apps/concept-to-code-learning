@@ -34,6 +34,7 @@ class ProviderSettings:
             local = url.hostname in {"127.0.0.1", "localhost", "::1"}
             if (url.scheme not in {"http", "https"} or not url.hostname
                     or url.username or url.password or url.query or url.fragment
+                    or not local and url.scheme != "https"
                     or not local and not authorized):
                 raise LearningError("INVALID_CONFIGURATION", "configuration",
                                     "模型端点不合法或缺少明确远程数据授权。")

@@ -14,7 +14,7 @@ from concept_to_code_learning.full_learning.store import LearningStore, canonica
 
 
 class LearningService:
-    def __init__(self, providers: ProviderBundle, store: LearningStore, *, timeout_seconds: float = 60):
+    def __init__(self, providers: ProviderBundle, store: LearningStore, *, timeout_seconds: float = 120):
         self.providers, self.store = providers, store
         self.timeout_seconds = timeout_seconds
         self.active: dict[str, asyncio.Task] = {}
@@ -101,6 +101,8 @@ class LearningService:
         if scope.source_mode == "local_authorized":
             require(bool(scope.local_handle), "AUTH_REQUIRED", "sources", "请选择已授权的本地仓库句柄。")
         else:
+            if scope.source_mode == "specified_public" and not scope.repository_allowlist:
+                raise LearningError("NO_RELEVANT_SOURCE", "sources", "未选择公开仓库；本次只讲解文档。")
             if not scope.network_authorized:
                 raise LearningError("NETWORK_NOT_AUTHORIZED", "sources", "当前未授权 GitHub 联网。",
                                     needed_action="明确选择仓库或公开搜索，并确认联网范围。")
@@ -375,8 +377,11 @@ class LearningService:
                     observations.append(source)
                     warnings.append("LICENSE_UNKNOWN" if source.license_observation.status != "DETECTED"
                                     else "NO_RELEVANT_SOURCE")
-        elif plan.needs_code and not sources:
+        elif (plan.needs_code or request.scope.repository_allowlist or request.scope.local_handle
+              or request.scope.source_mode == "public_search") and not sources:
             terms = plan.source_query.concept_terms if plan.source_query else plan.concepts
+            if request.scope.source_mode == "public_search" and request.scope.query_terms_approved:
+                terms = request.scope.approved_query_terms
             try:
                 result = await self.search(m.SearchRequest(session_id=request.session_id,
                     context_revision=request.context_revision, question=request.question,
@@ -389,8 +394,14 @@ class LearningService:
                 for candidate in result.candidates:
                     if len(sources) >= request.scope.max_sources:
                         break
-                    source = await self.verify(m.VerifyRequest(session_id=request.session_id,
-                        query_id=result.query_id, candidate_id=candidate.candidate_id))
+                    try:
+                        source = await self.verify(m.VerifyRequest(session_id=request.session_id,
+                            query_id=result.query_id, candidate_id=candidate.candidate_id))
+                    except LearningError as exc:
+                        if exc.code != "NO_RELEVANT_SOURCE":
+                            raise
+                        warnings.append(exc.code)
+                        continue
                     self.store.check_request(request.request_id)
                     if self.usable(source):
                         sources.append(source)

@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+import asyncio
+import base64
 import hashlib
+import importlib.util
 import io
 import json
 import os
 import re
 import shutil
+import sys
 import zipfile
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
@@ -26,7 +30,8 @@ from concept_to_code_learning.full_learning.ports import DocumentAsset, Document
 
 MAX_UNPACKED = 100 * 1024 * 1024
 MAX_ENTRIES = 2_000
-MAX_ASSETS = 500
+MAX_ASSETS = 300
+MAX_UNITS = 300
 SAFE_IMAGES = {"image/png", "image/jpeg", "image/webp"}
 
 
@@ -70,11 +75,11 @@ def validate_office(content, source_type):
         archive.close()
         raise fail("INVALID_FILE", f"扩展名与 {source_type} 结构不匹配。")
     for name in names:
-        if name.endswith(".rels"):
+        if name.endswith((".xml", ".rels")):
             value = archive.read(name).decode("utf-8", errors="replace")
-            if re.search(r'TargetMode\s*=\s*["\']External["\']', value, re.I):
+            if "<!DOCTYPE" in value.upper() or "<!ENTITY" in value.upper():
                 archive.close()
-                raise fail("INVALID_FILE", "Office 文件包含不允许的外部关系。")
+                raise fail("INVALID_FILE", "Office 文件包含不允许的 XML 实体。")
     archive.close()
 
 
@@ -85,11 +90,14 @@ class FullDocumentProvider:
         self.root.mkdir(parents=True, exist_ok=True)
 
     async def capabilities(self):
+        missing = [name for name in ("pypdf", "pptx", "docx") if importlib.util.find_spec(name) is None]
         return ProviderCapability(
-            provider_id="inogi-document", implemented=True, available=True, mode="LIVE",
+            provider_id="inogi-document", implemented=True, available=not missing, mode="LIVE",
             features=["pdf-native-pages", "pptx-learning-view", "docx-sections",
                       "markdown-safe-blocks", "unicode-codepoint-selection", "local-assets"],
-            status="AVAILABLE", needed_action="扫描 PDF 需 OCR；Office 学习视图不等同原版。")
+            status="UNAVAILABLE" if missing else "AVAILABLE",
+            reason_code="DEPENDENCY_MISSING" if missing else None,
+            needed_action="安装正式依赖后重试。" if missing else "扫描 PDF 需 OCR；Office 学习视图不等同原版。")
 
     async def close(self):
         return None
@@ -102,7 +110,7 @@ class FullDocumentProvider:
             raise fail("FILE_TOO_LARGE", "文件超过导入上限。", 413)
         source_type = self.detect(upload.file_name, content)
         sha = hashlib.sha256(content).hexdigest()
-        document_id = f"doc-{sha[:24]}"
+        document_id = "doc-" + hashlib.sha256(content + b"\0" + upload.file_name.encode("utf-8")).hexdigest()[:24]
         final = self.root / document_id
         if final.exists():
             return self.record(final)
@@ -112,7 +120,7 @@ class FullDocumentProvider:
             suffix = Path(upload.file_name).suffix.lower()
             original = f"original{suffix}"
             (staging / original).write_bytes(content)
-            units, assets, warnings, capabilities = self.parse(source_type, content, document_id)
+            units, assets, warnings, capabilities = await self.parse_async(source_type, content, document_id)
             for asset_id, asset in assets.items():
                 (staging / "assets" / asset_id).write_bytes(asset.content)
             no_text = units and all(u.extraction_status == "NO_EXTRACTABLE_TEXT" for u in units)
@@ -130,11 +138,13 @@ class FullDocumentProvider:
                 json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8")
             try:
                 os.replace(staging, final)
-            except FileExistsError:
+            except OSError:
+                if not final.is_dir():
+                    raise
                 shutil.rmtree(staging)
             (final / original).chmod(0o444)
             return self.record(final)
-        except LearningError:
+        except (LearningError, asyncio.CancelledError):
             shutil.rmtree(staging, ignore_errors=True)
             raise
         except Exception as exc:
@@ -146,7 +156,7 @@ class FullDocumentProvider:
         for path in self.root.glob("doc-*/metadata.json"):
             try:
                 values.append(self.record(path.parent))
-            except (OSError, ValueError, KeyError, json.JSONDecodeError):
+            except (OSError, ValueError, KeyError, json.JSONDecodeError, LearningError):
                 continue
         return sorted(values, key=lambda item: item.created_at, reverse=True)
 
@@ -172,23 +182,36 @@ class FullDocumentProvider:
         if asset_id == "original-pdf" and data["record"]["source_type"] == "PDF":
             return DocumentAsset((folder / data["original"]).read_bytes(), "application/pdf",
                                  data["record"]["file_name"])
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", asset_id):
+            raise fail("FILE_NOT_FOUND", "文档资产不存在。", 404)
         info = data.get("assets", {}).get(asset_id)
         if not info:
             raise fail("FILE_NOT_FOUND", "文档资产不存在。", 404)
         path = folder / "assets" / asset_id
-        if not path.is_file():
+        if not path.is_file() or path.is_symlink():
             raise fail("FILE_NOT_FOUND", "文档资产不存在。", 404)
         return DocumentAsset(path.read_bytes(), info["media_type"], info["file_name"])
 
     def folder(self, document_id):
         if not re.fullmatch(r"doc-[a-f0-9]{24}", document_id):
             raise fail("FILE_NOT_FOUND", "文档不存在。", 404)
-        return self.root / document_id
+        folder = self.root / document_id
+        if folder.is_symlink():
+            raise fail("FILE_NOT_FOUND", "文档路径不合法。", 404)
+        return folder
 
     @staticmethod
     def metadata(folder):
         try:
-            return json.loads((folder / "metadata.json").read_text(encoding="utf-8"))
+            path = folder / "metadata.json"
+            if path.is_symlink() or path.stat().st_size > 40 * 1024 * 1024:
+                raise fail("DOCUMENT_VERSION_MISMATCH", "文档索引无效。", 409)
+            data = json.loads(path.read_text(encoding="utf-8"))
+            original = folder / data["original"]
+            if (Path(data["original"]).name != data["original"] or original.is_symlink()
+                    or hashlib.sha256(original.read_bytes()).hexdigest() != data["record"]["original_sha256"]):
+                raise fail("DOCUMENT_VERSION_MISMATCH", "文档副本已变化，请重新导入。", 409)
+            return data
         except (OSError, json.JSONDecodeError) as exc:
             raise fail("FILE_NOT_FOUND", "文档不存在或索引无法读取。", 404) from exc
 
@@ -219,37 +242,71 @@ class FullDocumentProvider:
     def parse(self, source_type, content, document_id):
         return getattr(self, f"parse_{source_type.lower()}")(content, document_id)
 
+    async def parse_async(self, source_type, content, document_id):
+        env = {"PATH": os.defpath, "PYTHONPATH": str(Path(__file__).resolve().parents[2]),
+               "PYTHONIOENCODING": "utf-8"}
+        env.update({k: os.environ[k] for k in ("SYSTEMROOT", "WINDIR", "TEMP", "TMP") if k in os.environ})
+        process = await asyncio.create_subprocess_exec(sys.executable, "-m",
+            "concept_to_code_learning.documents.worker", source_type, document_id,
+            stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.DEVNULL, env=env)
+        async def send():
+            process.stdin.write(content)
+            await process.stdin.drain()
+            process.stdin.close()
+        async def read():
+            chunks, size = [], 0
+            while chunk := await process.stdout.read(65536):
+                size += len(chunk)
+                if size > 40 * 1024 * 1024:
+                    raise fail("FILE_TOO_LARGE", "提取结果超过安全上限。", 413)
+                chunks.append(chunk)
+            return b"".join(chunks)
+        try:
+            async with asyncio.timeout(35):
+                _, payload = await asyncio.gather(send(), read())
+                await process.wait()
+            if process.returncode:
+                raise fail("INVALID_FILE", "解析进程未完成；文件可能过于复杂或已损坏。")
+            value = json.loads(payload)
+            if "error" in value:
+                raise fail(value["error"], value["message"], value["status"])
+            return ([DocumentUnit.model_validate(u) for u in value["units"]],
+                    {key: DocumentAsset(base64.b64decode(a["content"]), a["media_type"], a["file_name"])
+                     for key, a in value["assets"].items()}, value["warnings"], value["capabilities"])
+        except TimeoutError:
+            raise fail("PROVIDER_TIMEOUT", "文档解析超时，请拆分文件后重试。", 504) from None
+        finally:
+            if process.returncode is None:
+                process.kill()
+                await process.wait()
+
     def parse_pdf(self, content, document_id):
         try:
-            import fitz
-            pdf = fitz.open(stream=content, filetype="pdf")
+            from pypdf import PdfReader
         except ImportError as exc:
             raise fail("DEPENDENCY_MISSING", "未安装 PDF 解析依赖。", 503) from exc
-        except (RuntimeError, ValueError) as exc:
-            raise fail("INVALID_FILE", "PDF 已损坏或不可读取。") from exc
-        if pdf.needs_pass:
-            pdf.close()
-            raise fail("INVALID_FILE", "不支持加密 PDF。")
-        units = []
-        for index, page in enumerate(pdf, 1):
-            blocks = []
-            for number, raw in enumerate(page.get_text("blocks"), 1):
-                text = str(raw[4]).strip()
-                if text:
-                    blocks.append(block("page", index, number, "paragraph", text, [],
-                                        bbox=tuple(float(x) for x in raw[:4])))
-            units.append(DocumentUnit(
-                mode="LIVE", document_id=document_id, document_revision=1,
-                unit_id=f"page-{index}", unit_type="page", index=index, heading_path=[],
-                blocks=blocks, source_locator=locator("page", index, []),
-                preview=Preview(kind="native_pdf", asset_id="original-pdf", fidelity="original"),
-                extraction_status="READY" if blocks else "NO_EXTRACTABLE_TEXT",
-                warnings=[] if blocks else ["NO_EXTRACTABLE_TEXT"]))
-        pdf.close()
-        if not units:
-            raise fail("INVALID_FILE", "PDF 没有物理页面。")
-        warning = ["NO_EXTRACTABLE_TEXT"] if all(not u.blocks for u in units) else []
-        return units, {}, warning, ["native-pdf-preview", "physical-pages", "selectable-text"]
+        with io.BytesIO(content) as stream:
+            pdf = PdfReader(stream, strict=True)
+            if pdf.is_encrypted:
+                raise fail("INVALID_FILE", "不支持加密 PDF。")
+            if not 1 <= len(pdf.pages) <= MAX_UNITS:
+                raise fail("FILE_TOO_LARGE", "PDF 需包含 1 到 300 个物理页面。", 413)
+            units = []
+            for index, page in enumerate(pdf.pages, 1):
+                contents = page.get_contents()
+                if contents is not None and len(contents.get_data()) > 8*1024*1024:
+                    raise fail("FILE_TOO_LARGE", "PDF 页面解码内容超过安全上限。", 413)
+                text = (page.extract_text() or "").strip()
+                blocks = [block("page", index, 1, "paragraph", text, [])] if text else []
+                units.append(DocumentUnit(mode="LIVE", document_id=document_id, document_revision=1,
+                    unit_id=f"page-{index}", unit_type="page", index=index, heading_path=[], blocks=blocks,
+                    source_locator=locator("page", index, []),
+                    preview=Preview(kind="native_pdf", asset_id="original-pdf", fidelity="original",
+                        limitations=["文字阅读顺序由 PDF 编码决定；扫描页尚不支持 OCR。"]),
+                    extraction_status="READY" if blocks else "NO_EXTRACTABLE_TEXT",
+                    warnings=[] if blocks else ["NO_EXTRACTABLE_TEXT"]))
+        return units, {}, ["PDF_READING_ORDER_MAY_DIFFER"], ["native-pdf-preview", "physical-pages", "selectable-text"]
 
     def parse_pptx(self, content, document_id):
         validate_office(content, "PPTX")
@@ -259,6 +316,8 @@ class FullDocumentProvider:
         except ImportError as exc:
             raise fail("DEPENDENCY_MISSING", "未安装 PPTX 解析依赖。", 503) from exc
         deck = Presentation(io.BytesIO(content))
+        if not 1 <= len(deck.slides) <= MAX_UNITS:
+            raise fail("FILE_TOO_LARGE", "PPTX 需包含 1 到 300 页。", 413)
         units, assets, any_unsupported = [], {}, False
         for index, slide in enumerate(deck.slides, 1):
             blocks, headings, unsupported = [], [], False
@@ -282,7 +341,7 @@ class FullDocumentProvider:
                     if shape == slide.shapes.title:
                         headings = [text]
                     blocks.append(block("slide", index, number, "paragraph", text, headings))
-                elif getattr(shape, "has_chart", False):
+                else:
                     unsupported = any_unsupported = True
                     blocks.append(block("slide", index, number, "unsupported", "", headings))
             has_text = any(item.text for item in blocks)
@@ -309,8 +368,8 @@ class FullDocumentProvider:
         except ImportError as exc:
             raise fail("DEPENDENCY_MISSING", "未安装 DOCX 解析依赖。", 503) from exc
         doc = Document(io.BytesIO(content))
-        assets = {}
-        for rel in doc.part.rels.values():
+        assets, image_refs = {}, {}
+        for rel_id, rel in doc.part.rels.items():
             if "image" in rel.reltype and not getattr(rel, "is_external", False):
                 media = rel.target_part.content_type
                 if media in SAFE_IMAGES:
@@ -318,6 +377,7 @@ class FullDocumentProvider:
                         raise fail("INVALID_FILE", "DOCX 图片数量超过安全上限。")
                     asset_id = f"docx-image-{len(assets) + 1}"
                     assets[asset_id] = DocumentAsset(rel.target_part.blob, media, asset_id)
+                    image_refs[rel_id] = asset_id
         units, headings, current = [], [], []
         def flush():
             if not current:
@@ -332,7 +392,8 @@ class FullDocumentProvider:
                 source_locator=locator("section", index, headings),
                 preview=Preview(kind="learning_view", fidelity="partial",
                                 limitations=["Word 学习视图按标题定位，不提供物理页码。"]),
-                extraction_status="READY" if any(x.text for x in values) else "NO_EXTRACTABLE_TEXT"))
+                extraction_status="PARTIAL" if any(x.kind == "unsupported" for x in values) else (
+                    "READY" if any(x.text for x in values) else "NO_EXTRACTABLE_TEXT")))
             current.clear()
         for item in doc.iter_inner_content():
             if isinstance(item, Paragraph):
@@ -342,15 +403,20 @@ class FullDocumentProvider:
                     flush()
                     level = int(match.group(1))
                     headings[:] = headings[:level - 1] + [text]
-                elif text:
+                if text:
                     current.append(block("section", 1, len(current) + 1, "paragraph", text, headings))
+                for node in item._p.iter():
+                    if node.tag.endswith("}blip"):
+                        relation = node.get("{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed")
+                        if relation in image_refs:
+                            current.append(block("section", 1, len(current) + 1, "image", "", headings,
+                                                 asset_id=image_refs[relation]))
+                    elif node.tag.endswith(("}oMath", "}chart")):
+                        current.append(block("section", 1, len(current) + 1, "unsupported", "", headings))
             elif isinstance(item, Table):
                 rows = [[cell.text for cell in row.cells] for row in item.rows]
                 current.append(block("section", 1, len(current) + 1, "table",
                                      "\n".join(" | ".join(row) for row in rows), headings, rows))
-        for asset_id in assets:
-            current.append(block("section", 1, len(current) + 1, "image", "", headings,
-                                 asset_id=asset_id))
         flush()
         if not units:
             units.append(DocumentUnit(
@@ -397,6 +463,7 @@ class FullDocumentProvider:
                 flush()
                 level = len(heading.group(1))
                 headings[:] = headings[:level - 1] + [heading.group(2)]
+                current.append(block("section", 1, len(current) + 1, "paragraph", heading.group(2), headings))
                 continue
             clean = re.sub(r"<[^>]*>", "", raw).strip()
             clean = re.sub(r"\[([^]]+)\]\((?:javascript|data|file):.*\)", r"\1", clean,

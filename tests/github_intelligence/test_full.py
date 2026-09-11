@@ -16,6 +16,7 @@ from .conftest import (
     FROZEN_COMMIT,
     FROZEN_FILE,
     FROZEN_REPO_SLUG,
+    FakeGitHubRawClient,
     make_candidate,
     make_query,
 )
@@ -37,6 +38,8 @@ def settings(tmp_path: Path) -> ProviderSettings:
 def provider(settings: ProviderSettings) -> GitHubSourceProvider:
     result = build_provider(settings)
     assert isinstance(result, GitHubSourceProvider)
+    fake = FakeGitHubRawClient()
+    result._client = result._verifier._client = result._searcher._client = fake
     return result
 
 
@@ -79,7 +82,8 @@ class TestLocalHandles:
                                     authorized_local_roots=(root,))
         provider = build_provider(settings)
         handles = run(provider.local_handles())
-        assert str(root.resolve()) in handles
+        assert len(handles) == 1 and handles[0].startswith("local-")
+        assert str(root.resolve()) not in handles
 
 
 class TestSearchDispatch:
@@ -89,16 +93,16 @@ class TestSearchDispatch:
         assert result.query_id == query.query_id
         assert len(result.candidates) == 1
 
-    def test_public_search_raises_not_implemented(self, provider):
+    def test_public_search_requires_approved_terms(self, provider):
         query = make_query(source_mode="public_search",
                            repository_allowlist=[FROZEN_REPO_SLUG])
-        with pytest.raises(SourceError, match="NOT_IMPLEMENTED"):
+        with pytest.raises(SourceError, match="QUERY_TERMS_NOT_APPROVED"):
             run(provider.search(query))
 
-    def test_local_authorized_raises_not_implemented(self, provider):
+    def test_local_authorized_requires_handle(self, provider):
         query = make_query(source_mode="local_authorized",
                            repository_allowlist=[])
-        with pytest.raises(SourceError, match="NOT_IMPLEMENTED"):
+        with pytest.raises(SourceError, match="AUTH_REQUIRED"):
             run(provider.search(query))
 
 
@@ -118,18 +122,19 @@ class TestVerifyDispatch:
         receipt = run(provider.verify(query, candidate, SCOPE_SHA256))
         assert receipt.query_id == query.query_id
 
-    def test_public_search_verify_raises_not_implemented(self, provider):
+    def test_public_search_verify_works(self, provider):
         query = make_query(source_mode="public_search",
                            repository_allowlist=[FROZEN_REPO_SLUG])
         candidate = make_candidate(source_mode="public_search")
-        with pytest.raises(SourceError, match="NOT_IMPLEMENTED"):
-            run(provider.verify(query, candidate, SCOPE_SHA256))
+        receipt = run(provider.verify(query, candidate, SCOPE_SHA256))
+        assert receipt.evidence.source_mode == "public_search"
+        assert receipt.evidence.verification_status == "VERIFIED"
 
-    def test_local_authorized_verify_raises_not_implemented(self, provider):
+    def test_local_authorized_verify_requires_handle(self, provider):
         query = make_query(source_mode="local_authorized",
                            repository_allowlist=[])
         candidate = make_candidate(source_mode="local_authorized")
-        with pytest.raises(SourceError, match="NOT_IMPLEMENTED"):
+        with pytest.raises(SourceError, match="AUTH_REQUIRED"):
             run(provider.verify(query, candidate, SCOPE_SHA256))
 
 

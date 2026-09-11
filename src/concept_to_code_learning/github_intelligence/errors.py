@@ -4,13 +4,16 @@ from __future__ import annotations
 
 from typing import Any
 
+from concept_to_code_learning.full_learning.errors import LearningError
 
-class SourceError(Exception):
+
+class SourceError(LearningError):
     """Structured failure used by search/verify. Caller maps it to learning errors."""
 
     def __init__(self, code: str, stage: str, message: str, status: int = 503,
                  *, needed_action: str | None = None, detail: dict[str, Any] | None = None):
-        super().__init__(message)
+        super().__init__(code, stage, message, status, retryable=status in {429, 503, 504},
+                         needed_action=needed_action)
         # Codes follow the public B8 vocabulary in INTERFACES.md:
         # NETWORK_NOT_AUTHORIZED / AUTH_REQUIRED / RATE_LIMITED / REPO_UNAVAILABLE
         # / REF_UNRESOLVED / FILE_NOT_FOUND / SYMBOL_NOT_FOUND / SOURCE_MISMATCH

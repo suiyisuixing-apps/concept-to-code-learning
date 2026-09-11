@@ -1,65 +1,53 @@
 # Concept-to-Code Learning
 
-> 当前候选：**完整模块交付 / PARTIAL**。Lead 已提供新接口、中央编排和来源笔记；三名成员完整模块尚未交付，真实文档/来源/模型链不能宣称可用。现有网页仍是明确标注的 Fixture 演示。查看 [完整范围与任务书](docs/full-delivery/PLAN.md)、[启动说明](docs/full-delivery/RUNNING.md)、[实际能力 API](docs/full-delivery/INTERFACES.md) 和 [审核材料](docs/delivery/lead/FINAL_REVIEW.md)。以下原演示说明保留。
+导入学习材料，在旁边提问，用可核对的真实代码理解概念，再保存自己的来源笔记。
 
-文档学习 + AI 讲解 + GitHub 真实代码引用。用户围绕当前页、章节或选中文字提问，按自己的理解程度阅读讲解，核对真实源码，再主动保存有来源的个人笔记。
+当前为 **0.2.0 完整产品候选，等待 Lead 人工验收**。四格式阅读器、三种来源模式、两阶段真实模型教学和笔记已整合；2026-09-11 在 Apple Silicon Mac 上完成真实本地模型与公开 GitHub 案例。实际验收范围见 [最终审核](docs/delivery/lead/FINAL_REVIEW.md)。本分支尚未进入 main。
 
-**0.2.0.dev0 · Phase 0.5 · FIXTURE / SCAFFOLD_DEMO**
+## 开始使用
 
-当前可运行：三栏 React 界面、合成依赖注入讲义、四档固定讲解、FastAPI 官方代码的一条已核验冻结引用，以及真正持久化的本地笔记。它没有实时搜索、真实模型或完整 Office 解析。
-
-## 运行
-
-需要 Python 3.12；前端使用 Node.js 20.19+（CI 固定 Node 20）。从此仓库根目录运行：
+已有 Python 3.12、Node 22.13+。在仓库中创建独立虚拟环境，一次安装并构建：
 
 ```sh
 python3.12 -m venv .venv
 source .venv/bin/activate
-python -m pip install -e ".[dev]"
+python -m pip install -c requirements/full-delivery-py312.lock -e ".[dev]"
+npm --prefix apps/web ci --ignore-scripts
+npm --prefix apps/web run build
+python scripts/desktop.py
+```
+
+最后一条是日常启动入口，会打开本地浏览器。未配置模型时可以阅读和管理笔记；配置好后使用真实 AI。[macOS/Windows 配置、模型接入、数据备份与停止方法](docs/full-delivery/RUNNING.md)。启动器不下载模型。
+
+## 学习流程
+
+1. 导入 PDF、PPTX、DOCX 或 Markdown，切换页面/章节，也可以选中文字或搜索文本块。
+2. 输入问题，选择 Beginner、University、Engineering 或 Source-code。
+3. 公开仓库留空时只学习文档。填写 `owner/repo` 并允许联网，可自动寻找代码；公开搜索需单独确认通用搜索词。本地模式只展示预先授权的仓库。
+4. 点击「开始讲解」，核对来源卡上的固定 Commit、文件、行号、许可与原始代码。继续追问沿用冻结来源；高级选项可以比较两个仓库。
+5. 填写「我的理解」并保存。笔记支持搜索、修订、Markdown/JSON 导出及重启恢复。
+
+PDF 保留原始页面；Office 提供结构化学习视图，保留可提取的段落、表格与内嵌图片，并显示无法呈现的对象。DOCX 以章节定位；扫描 PDF 需要额外 OCR，本版没有自动 OCR。
+
+## 来源与数据
+
+代码核验包括仓库公开属性、固定版本、真实字节与哈希、行号及许可文件。相关性仍是可检查的线索，不等于自动证明讲解正确。来源代码默认为未运行。许可未知时隐藏代码正文并保留原因。
+
+本地模型与 GitHub 联网分别授权。默认绑定本机，读取文档的副本，第三方代码只静态读取。模型输出错误、网络失败或无匹配源码会明确显示；无静默云回退。个人笔记和模型权重不进入 Git。
+
+## 开发与交付
+
+```sh
 ruff check .
 pytest -q
 python scripts/tutor.py doctor
 python scripts/tutor.py demo
-npm --prefix apps/web ci
 npm --prefix apps/web test
-npm --prefix apps/web run build
-python scripts/tutor.py serve
+python scripts/package_skill.py
 ```
 
-在浏览器打开 http://127.0.0.1:8766 。保持该进程运行即可使用。开发时另开终端运行 `npm --prefix apps/web run dev`，前端将 `/api` 和 `/health` 转发到本地后端。
+`doctor/demo` 保留原来的离线回归；其中 Fixture 的成功不代表真实模型效果。旧 `/api/sprint-1` 与旧笔记接口保留；当前工作台使用 `/api/learning/v1`。
 
-## 体验一次完整流程
+[最终审核与成员贡献](docs/delivery/lead/FINAL_REVIEW.md) · [启动说明](docs/full-delivery/RUNNING.md) · [Skill](SKILL.md) · [完整接口](docs/full-delivery/INTERFACES.md) · [DGX 部署包](deploy/dgx/README.md) · [产品范围](docs/product-scope.md)
 
-1. 左栏阅读合成讲义，翻页或选中当前页的一句话。
-2. 中栏保留示例问题“依赖注入到底是什么？真实项目中怎么使用？”，选择 Beginner / University / Engineering / Source-code level，点击“结合代码讲解”。
-3. 右栏核对 `fastapi/fastapi`、Commit、文件、`read_items`、12–14 行及 MIT 许可证。此冻结片段没有运行，状态为 `NOT_RUN`。
-4. 填写“我的补充”，点击“保存为学习笔记”。打开“我的笔记”，刷新或重启服务后仍能看到自己的文字和两类来源。
-
-笔记默认位于忽略目录 `data/local/fixture-notes.sqlite3`；`C2C_DATA_DIR` 可指定独立目录。只提供新增与读取，没有自动覆盖。CLI demo 使用临时数据库，不修改 UI 笔记。演示报告位于忽略目录 `reports/learning-demo/`。旧 Phase 0 回归报告单独位于 `reports/demo/`。
-
-## 目标边界
-
-支持目标：PDF、PPTX、DOCX、Markdown；当前页/选区上下文；用户指定 GitHub 仓库、授权本地仓库、明确授权的公开 GitHub 搜索；四档讲解；来源笔记。Notebook、网页为后续扩展。
-
-尚未实现：真实文件导入、实时 GitHub 搜索、任意仓库/Commit/文件/符号核验、本地模型推理、DGX 部署、多仓库比较及新片段的隔离运行。预留接口返回 `NOT_IMPLEMENTED`，不会生成虚假搜索结果。旧员工考核、隐藏评分与强制练习已退出比赛 MVP。
-
-## 团队与协作
-
-| 账号 | 主责 |
-| --- | --- |
-| @suiyisuixing | 产品、Skill、公共契约、后端集成、最终合并 |
-| @inogi-sama | 文档阅读、页码/选区、三栏前端、笔记 UI |
-| @zchzbjklg | GitHub 来源模式、固定 Commit、核验、证据卡、比较 |
-| @fqf060420 | 知识点、讲解级别、本地模型、DGX、Grounding 评测 |
-
-2026-09-09 API 已核验三名成员均为 Write，@suiyisuixing 为唯一 Admin、唯一最终审核人和 main 合并人。所有 PR 保留强制 phase0-checks；外部批准数为 0。成员 PR 由 Lead 审核；Lead 自有 PR 经人工自检、Codex 审计、CI 且无 P0/P1 后可自行合并。团队建议非阻塞。详见 [Lead 合并政策](docs/governance/lead-controlled-merge-policy.md)、[协作指南](CONTRIBUTING.md)、[分工](docs/roles-and-ownership.md)。
-
-## 导航
-
-[SKILL](SKILL.md) · [产品范围](docs/product-scope.md) · [重构决策与历史](docs/rescope-decision.md) · [架构](docs/architecture.md) · [六个契约](docs/data-contracts.md) · [API](docs/api.md) · [来源核验](demo/learning/README.md) · [安全](SECURITY.md)
-
-现有仓库直接改名，ID `1360182264` 不变。基线 Commit `8c487316ccf598b0a549803d3cff3814302633c3` 和 `pre-rules-v0.1.0` 标签保留。PR #56 已合并，`pre-rules-v0.2.0` 固定在 `e83a64d63a78f11534fbe51631775ceeb3885ccb`；历史标签保持原指向。本次不创建 GitHub Release 或新 Tag。
-
-## Sprint 1 合同准备
-
-版本化合同与 `/api/sprint-1` 由 [PR #58](https://github.com/suiyisuixing/concept-to-code-learning/pull/58) 引入；请核验该 PR 是否已进入 main。治理文档本身不引入运行时代码。详见 [Sprint 1 接缝](docs/sprint-1-first-real-vertical-slice.md) 与 [角色提示词](docs/codex-prompts/lead-integration.md)。这些合同及 Fixture 不代表真实 PPTX、通用 GitHub 核验或模型已完成。
+只有 @suiyisuixing 最终人工审核和合并。成员原始提交记录保留；CI 和 Codex 审核不能代替人工决定。私有仓库、历史标签和旧个人数据保持原有归属。

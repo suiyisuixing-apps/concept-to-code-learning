@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, test, vi } from "vitest";
 import App from "./App.jsx";
@@ -109,4 +109,92 @@ test("search selects a complete emoji block with code-point offsets", async () =
     block_id: "section-1-block-1", start: 0, end: 4,
   });
   expect(selectionBody.selected_text).toBe("A😀中文");
+});
+
+
+function deferred() { let resolve; const promise = new Promise((done) => { resolve = done; }); return { promise, resolve }; }
+function readyWorkspace(hook = () => undefined) {
+  const record = { document_id: "doc-live", file_name: "学习.md", source_type: "MARKDOWN", unit_count: 3, revision: 1 };
+  const units = [1, 2, 3].map((i) => ({ unit_id: `section-${i}`, index: i, unit_type: "section", heading_path: [`章节${i}`],
+    extraction_status: "READY", preview: { kind: "learning_view", limitations: [] },
+    blocks: [{ block_id: `block-${i}`, kind: "paragraph", text: `单元内容${i}` }] }));
+  let revision = 0;
+  const requests = [];
+  vi.stubGlobal("fetch", vi.fn(async (url, options = {}) => {
+    requests.push([url, options]); let value = await hook(url, options, requests);
+    if (value === undefined) {
+      if (url.endsWith("/capabilities")) value = { tutor: { available: true } };
+      else if (url.endsWith("/sessions")) value = { session_id: "s1", context_revision: 0 };
+      else if (url.endsWith("/documents")) value = { documents: [record] };
+      else if (url.endsWith("/units")) value = { units };
+      else if (url.endsWith("/context")) value = { session_id: "s1", context_revision: ++revision };
+      else if (url.endsWith("/local-handles")) value = { handles: [] };
+      else if (url.includes("/notes")) value = { notes: [], total: 0 };
+      else value = {};
+    }
+    return { ok: true, status: 200, headers: { get: () => "application/json" }, json: async () => value };
+  }));
+  return requests;
+}
+function answer(question = "最初的问题") {
+  return { status: "COMPLETE", sources: [], explanation: {
+    explanation_id: "explanation-1", question, status: "NO_VERIFIED_CODE", level: "Beginner",
+    answer_sections: [{ title: "解释结果", text: "只属于当前请求的回答" }], document_citations: [],
+    concept_code_links: [], example_blocks: [], limitations: [], provider_info: { model_id: "local-model" },
+    metrics: { latency_ms: 100, token_source: "PROVIDER_USAGE", input_tokens: 10, output_tokens: 20 },
+  } };
+}
+
+test("navigation cancels an in-flight answer and late results cannot replace the new unit", async () => {
+  const late = deferred();
+  const requests = readyWorkspace((url) => url.endsWith("/explanations") ? late.promise : undefined);
+  const user = userEvent.setup(); render(<App />);
+  await user.type(await screen.findByLabelText("学习问题"), "最初的问题");
+  await waitFor(() => expect(screen.getByRole("button", { name: "开始讲解" })).toBeEnabled());
+  await user.click(screen.getByRole("button", { name: "开始讲解" }));
+  await screen.findByRole("button", { name: "取消" });
+  await user.click(screen.getByRole("button", { name: "下一单元" }));
+  await waitFor(() => expect(screen.getByLabelText("当前页或章节")).toHaveValue("section-2"));
+  await act(async () => late.resolve(answer()));
+  expect(screen.queryByText("只属于当前请求的回答")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "开始讲解" })).toBeEnabled();
+  expect(requests.some(([url, options]) => url.includes("/requests/") && options.method === "DELETE")).toBe(true);
+  expect(requests.find(([url]) => url.endsWith("/explanations"))[1].signal.aborted).toBe(true);
+});
+
+test("rapid context changes serialize revisions and retain the last selected unit", async () => {
+  const second = deferred(); let count = 0;
+  const requests = readyWorkspace((url) => {
+    if (url.endsWith("/context")) { count++; if (count === 2) return second.promise; if (count === 3) return { session_id: "s1", context_revision: 3 }; }
+  });
+  const user = userEvent.setup(); render(<App />);
+  await screen.findByText("单元内容1");
+  await user.selectOptions(screen.getByLabelText("当前页或章节"), "section-2");
+  await waitFor(() => expect(count).toBe(2));
+  await user.selectOptions(screen.getByLabelText("当前页或章节"), "section-3");
+  await act(async () => second.resolve({ session_id: "s1", context_revision: 2 }));
+  await screen.findByText("单元内容3");
+  const contexts = requests.filter(([url]) => url.endsWith("/context"));
+  expect(JSON.parse(contexts[2][1].body)).toMatchObject({ unit_id: "section-3", expected_context_revision: 2 });
+});
+
+test("saving retains the answered question and duplicate clicks create one note", async () => {
+  const saved = deferred();
+  const requests = readyWorkspace((url, options) => {
+    if (url.endsWith("/explanations")) return answer();
+    if (url.endsWith("/notes") && options.method === "POST") return saved.promise;
+  });
+  const user = userEvent.setup(); render(<App />);
+  await user.type(await screen.findByLabelText("学习问题"), "最初的问题");
+  await waitFor(() => expect(screen.getByRole("button", { name: "开始讲解" })).toBeEnabled());
+  await user.click(screen.getByRole("button", { name: "开始讲解" }));
+  await screen.findByText("只属于当前请求的回答");
+  await user.clear(screen.getByLabelText("学习问题"));
+  await user.type(screen.getByLabelText("学习问题"), "下一条尚未回答的问题");
+  await user.dblClick(screen.getByRole("button", { name: "保存为笔记" }));
+  const saves = requests.filter(([url, options]) => url.endsWith("/notes") && options.method === "POST");
+  expect(saves).toHaveLength(1);
+  expect(JSON.parse(saves[0][1].body).title).toBe("最初的问题");
+  await act(async () => saved.resolve({ note_id: "note-1", title: "最初的问题", revision: 1 }));
+  await screen.findByText("笔记已保存。后续修改可在右侧「笔记」中编辑。");
 });

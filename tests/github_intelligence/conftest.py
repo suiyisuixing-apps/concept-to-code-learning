@@ -8,6 +8,7 @@ dependency-injection tutorial referenced in the repo's existing fixtures.
 
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 from typing import Any
 
@@ -57,7 +58,7 @@ copies of the Software.
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
 """
 
-FROZEN_BLOB_SHA = "a" * 40  # Placeholder git blob SHA returned by the fake API.
+FROZEN_BLOB_SHA = hashlib.sha1(b"blob " + str(len(FROZEN_FILE_TEXT.encode())).encode() + b"\0" + FROZEN_FILE_TEXT.encode()).hexdigest()
 
 
 class FakeGitHubRawClient(GitHubRawClient):
@@ -81,6 +82,17 @@ class FakeGitHubRawClient(GitHubRawClient):
         self._license_missing = license_missing
         self._ref_missing = ref_missing
 
+    async def repository(self, owner, name):
+        return {"full_name": f"{owner}/{name}", "private": False, "default_branch": "main"}
+
+    async def tree(self, owner, name, commit):
+        return {"truncated": False, "tree": [
+            {"path": FROZEN_FILE, "type": "blob", "mode": "100644", "size": 400},
+            {"path": "LICENSE", "type": "blob", "mode": "100644", "size": 400}]}
+
+    async def search_repositories(self, terms, limit, language=None):
+        return [FROZEN_REPO_SLUG][:limit]
+
     async def fetch_raw(self, owner: str, name: str, commit: str, path: str) -> bytes:
         if self._file_missing or self._file_text is None:
             raise SourceError("FILE_NOT_FOUND", "fetch_raw",
@@ -98,7 +110,10 @@ class FakeGitHubRawClient(GitHubRawClient):
     async def fetch_blob_sha(self, owner: str, name: str, commit: str, path: str) -> str | None:
         if self._file_missing:
             return None
-        return self._blob_sha
+        if self._blob_sha != FROZEN_BLOB_SHA:
+            return self._blob_sha
+        raw = (self._file_text or "").encode()
+        return hashlib.sha1(b"blob " + str(len(raw)).encode() + b"\0" + raw).hexdigest()
 
     async def fetch_license(self, owner: str, name: str, commit: str, path: str) -> bytes | None:
         if self._license_missing or self._license_text is None:
@@ -147,7 +162,7 @@ def make_query(
     if source_mode == "local_authorized":
         network_authorized = False
     return SourceQuery(
-        mode="FIXTURE",
+        mode="LIVE",
         query_id=query_id,
         question="How does FastAPI dependency injection work?",
         concept_terms=concept_terms or ["dependency injection", "Depends"],
@@ -179,7 +194,7 @@ def make_candidate(
     """Build a SearchCandidate for tests."""
     from concept_to_code_learning.full_contracts.models import SearchCandidate, utcnow
     return SearchCandidate(
-        mode="FIXTURE",
+        mode="LIVE",
         candidate_id=candidate_id,
         query_id=query_id,
         source_mode=source_mode,

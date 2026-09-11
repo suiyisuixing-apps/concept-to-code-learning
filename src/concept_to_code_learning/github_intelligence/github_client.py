@@ -1,166 +1,282 @@
-"""GitHub raw-content and refs client. Token never leaves this module.
+"""Bounded, cancellable public GitHub reads; per-instance cache and no ambient proxy."""
 
-Only the allowed GitHub domains are contacted: raw.githubusercontent.com and
-api.github.com. Redirects are not followed across hosts. 401/403/404/429 are
-surfaced as SourceError; the Authorization header is never logged.
-"""
-
-from __future__ import annotations
-
-from typing import Any
+import asyncio
+import base64
+import json
+import re
+import time
+from collections import OrderedDict
+from urllib.parse import quote, urlencode, urlsplit
 
 import httpx
 
 from .errors import SourceError
 
-# Frozen list of hosts this provider is allowed to contact. No arbitrary URL.
 ALLOWED_HOSTS = frozenset({"raw.githubusercontent.com", "api.github.com"})
-DEFAULT_TIMEOUT = 10.0
-DEFAULT_RETRIES = 1
-MAX_BODY_BYTES = 5 * 1024 * 1024  # 5 MiB cap; files above are refused
+MAX_BODY_BYTES = 1024 * 1024
+
+
+def safe_path(path):
+    if (
+        not isinstance(path, str)
+        or not path
+        or len(path) > 1000
+        or path.startswith("/")
+        or "\\" in path
+        or "\x00" in path
+        or any(p in {".", "..", ""} for p in path.split("/"))
+    ):
+        raise SourceError("FILE_NOT_FOUND", "sources", "源码路径不合法。", 422)
+    return quote(path, safe="/")
+
+
+def repo_path(owner, name):
+    if not all(re.fullmatch(r"[A-Za-z0-9_-][A-Za-z0-9_.-]*", s or "") for s in (owner, name)):
+        raise SourceError("REPO_UNAVAILABLE", "sources", "仓库标识不合法。", 422)
+    return f"https://api.github.com/repos/{owner}/{name}"
 
 
 class GitHubRawClient:
-    """Read-only client for raw file content, ref resolution and blob SHA."""
-
-    def __init__(self, *, token: str | None = None, timeout: float = DEFAULT_TIMEOUT,
-                 retries: int = DEFAULT_RETRIES):
-        # Token is held privately; repr() never exposes it.
+    def __init__(self, *, token=None, timeout=10.0, retries=1, transport=None):
         self._token = token
-        self._timeout = timeout
-        self._retries = max(0, retries)
-        self._client: httpx.AsyncClient | None = None
+        self._timeout = min(30, max(0.1, timeout))
+        self._retries = min(1, max(0, retries))
+        self._client = None
+        self._transport = transport
+        self._cache = OrderedDict()
+        self._cache_size = 0
+        self._blocked_until = 0
 
-    def _headers(self) -> dict[str, str]:
-        headers = {"Accept": "application/vnd.github+json",
-                    "X-GitHub-Api-Version": "2022-11-28",
-                    "User-Agent": "concept-to-code-learning/source-provider"}
-        if self._token:
-            # Authorization is only built here and never echoed in exceptions.
-            headers["Authorization"] = f"Bearer {self._token}"
-        return headers
-
-    async def _ensure_client(self) -> httpx.AsyncClient:
+    async def _ensure_client(self):
         if self._client is None:
             self._client = httpx.AsyncClient(
-                headers=self._headers(), timeout=self._timeout,
-                follow_redirects=False, trust_env=False)
+                timeout=self._timeout,
+                follow_redirects=False,
+                trust_env=False,
+                transport=self._transport,
+            )
         return self._client
 
-    async def fetch_raw(self, owner: str, name: str, commit: str, path: str) -> bytes:
-        """Fetch raw file bytes pinned to an immutable commit SHA."""
-        url = f"https://raw.githubusercontent.com/{owner}/{name}/{commit}/{path}"
-        return await self._get_bytes(url, stage="fetch_raw")
+    async def repository(self, owner, name):
+        data = await self._get_json(repo_path(owner, name), stage="repository")
+        if (
+            data.get("private") is not False
+            or data.get("visibility", "public") != "public"
+            or str(data.get("full_name", "")).casefold() != f"{owner}/{name}".casefold()
+        ):
+            raise SourceError("REPO_UNAVAILABLE", "repository", "只允许已核实的公开仓库。", 403)
+        return data
 
-    async def resolve_ref(self, owner: str, name: str, ref: str) -> str:
-        """Resolve a branch/tag/ref to a 40-char commit SHA."""
-        url = f"https://api.github.com/repos/{owner}/{name}/git/refs/{ref}"
-        data = await self._get_json(url, stage="resolve_ref")
-        try:
-            return str(data["object"]["sha"])
-        except (KeyError, TypeError) as exc:
-            raise SourceError("REF_UNRESOLVED", "resolve_ref",
-                               f"GitHub returned an unexpected ref payload for {ref}",
-                               status=502, needed_action="Verify the ref exists and the token has read scope.",
-                               detail={"ref": ref}) from exc
+    async def search_repositories(self, terms, limit, language=None):
+        # Only server-approved concept terms reach this endpoint. Quote search operators.
+        words = ['"' + re.sub(r'["\\\x00-\x1f]', " ", term) + '"' for term in terms[:3]]
+        query = " ".join(words)
+        if language and re.fullmatch(r"[A-Za-z0-9+#._-]{1,30}", language):
+            query += " language:" + language
+        url = "https://api.github.com/search/repositories?" + urlencode(
+            {"q": query + " is:public", "per_page": min(20, limit), "sort": "stars"}
+        )
+        data = await self._get_json(url, stage="search")
+        return [
+            r["full_name"]
+            for r in data.get("items", [])
+            if isinstance(r, dict)
+            and r.get("private") is False
+            and isinstance(r.get("full_name"), str)
+        ][:limit]
 
-    async def fetch_blob_sha(self, owner: str, name: str, commit: str, path: str) -> str | None:
-        """Fetch the git blob SHA for a path pinned to a commit. Returns None on 404."""
-        url = f"https://api.github.com/repos/{owner}/{name}/contents/{path}?ref={commit}"
+    async def tree(self, owner, name, commit):
+        return await self._get_json(
+            repo_path(owner, name) + f"/git/trees/{quote(commit, safe='')}?recursive=1",
+            stage="tree",
+        )
+
+    async def fetch_raw(self, owner, name, commit, path):
+        if not re.fullmatch(r"[0-9a-f]{40}", commit):
+            raise SourceError("REF_UNRESOLVED", "fetch", "源码读取必须固定 Commit。", 422)
+        # The contents API returns bytes and blob identity together and avoids reliance
+        # on a separate raw-content host, which is unavailable on some networks.
+        data = await self._get_json(
+            repo_path(owner, name)
+            + "/contents/"
+            + safe_path(path)
+            + "?"
+            + urlencode({"ref": commit}),
+            stage="contents",
+        )
+        if data.get("type") != "file" or data.get("encoding") != "base64":
+            raise SourceError("FILE_NOT_FOUND", "fetch", "路径不是支持大小的普通源码文件。", 422)
         try:
-            data = await self._get_json(url, stage="fetch_blob_sha")
+            raw = base64.b64decode("".join(data["content"].split()), validate=True)
+        except (ValueError, KeyError, TypeError):
+            raise SourceError(
+                "INVALID_PROVIDER_RESPONSE", "fetch", "源码字节编码无效。", 502
+            ) from None
+        if len(raw) > MAX_BODY_BYTES:
+            raise SourceError(
+                "INVALID_PROVIDER_RESPONSE", "fetch", "源码文件超过 1 MiB 上限。", 413
+            )
+        return raw
+
+    async def resolve_ref(self, owner, name, ref):
+        data = await self._get_json(
+            repo_path(owner, name) + "/commits/" + quote(ref, safe=""), stage="commit"
+        )
+        sha = data.get("sha")
+        if not isinstance(sha, str) or not re.fullmatch(r"[a-f0-9]{40}", sha):
+            raise SourceError("REF_UNRESOLVED", "commit", "未得到有效的固定 Commit。", 502)
+        return sha
+
+    async def fetch_blob_sha(self, owner, name, commit, path):
+        data = await self._get_json(
+            repo_path(owner, name)
+            + "/contents/"
+            + safe_path(path)
+            + "?"
+            + urlencode({"ref": commit}),
+            stage="blob",
+        )
+        if data.get("type") != "file":
+            raise SourceError("FILE_NOT_FOUND", "blob", "路径不是普通源码文件。", 422)
+        return data.get("sha")
+
+    async def fetch_license(self, owner, name, commit, path):
+        try:
+            return await self.fetch_raw(owner, name, commit, path)
         except SourceError as exc:
             if exc.code == "FILE_NOT_FOUND":
                 return None
             raise
-        sha = data.get("sha") if isinstance(data, dict) else None
-        return str(sha) if isinstance(sha, str) and len(sha) == 40 else None
 
-    async def fetch_license(self, owner: str, name: str, commit: str, path: str) -> bytes | None:
-        """Fetch a candidate license file pinned to the same commit. None if absent."""
-        url = f"https://raw.githubusercontent.com/{owner}/{name}/{commit}/{path}"
-        try:
-            return await self._get_bytes(url, stage="fetch_license", allow_404=True)
-        except SourceError as exc:
-            if exc.code == "FILE_NOT_FOUND":
-                return None
-            raise
-
-    async def _get_bytes(self, url: str, *, stage: str, allow_404: bool = False) -> bytes:
+    async def _get_bytes(self, url, *, stage, allow_404=False):
         response = await self._request("GET", url, stage=stage, allow_404=allow_404)
-        body = response.content
-        if len(body) > MAX_BODY_BYTES:
-            raise SourceError("INVALID_PROVIDER_RESPONSE", stage,
-                              "File exceeds the 5 MiB provider cap",
-                              status=413, needed_action="Use a smaller path or pin a narrower excerpt.")
-        return body
+        return response.content
 
-    async def _get_json(self, url: str, *, stage: str) -> dict[str, Any]:
-        response = await self._request("GET", url, stage=stage, allow_404=False,
-                                       accept="application/vnd.github+json")
+    async def _get_json(self, url, *, stage):
+        response = await self._request("GET", url, stage=stage)
         try:
-            return response.json()
-        except ValueError as exc:
-            raise SourceError("INVALID_PROVIDER_RESPONSE", stage,
-                              "GitHub returned a non-JSON payload",
-                              status=502, needed_action="Retry; if persistent, report the endpoint.") from exc
+            data = json.loads(response.content)
+            if not isinstance(data, dict):
+                raise ValueError
+            return data
+        except (ValueError, UnicodeError):
+            raise SourceError(
+                "INVALID_PROVIDER_RESPONSE", stage, "GitHub 返回的数据格式无效。", 502
+            ) from None
 
-    async def _request(self, method: str, url: str, *, stage: str,
-                       allow_404: bool = False, accept: str | None = None) -> httpx.Response:
+    async def _request(self, method, url, *, stage, allow_404=False, accept=None):
+        parts = urlsplit(url)
+        if (
+            parts.scheme != "https"
+            or parts.hostname not in ALLOWED_HOSTS
+            or parts.username
+            or parts.password
+        ):
+            raise SourceError("NETWORK_NOT_AUTHORIZED", stage, "地址超出 GitHub 读取范围。", 403)
+        now = time.monotonic()
+        cache_key = (url, accept or "application/vnd.github+json")
+        cached = self._cache.get(cache_key)
+        if cached and cached[0] > now:
+            self._cache.move_to_end(cache_key)
+            return httpx.Response(200, content=cached[1])
+        if self._blocked_until > now:
+            raise SourceError(
+                "RATE_LIMITED",
+                stage,
+                "GitHub 限流等待窗口尚未结束。",
+                429,
+                needed_action="等待后重试，不需要扩大令牌权限。",
+            )
+        headers = {
+            "Accept": accept or "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+            "User-Agent": "concept-to-code-learning",
+            "Accept-Encoding": "identity",
+        }
+        if self._token and parts.hostname == "api.github.com":
+            headers["Authorization"] = "Bearer " + self._token
         client = await self._ensure_client()
-        last_exc: SourceError | None = None
         for attempt in range(self._retries + 1):
             try:
-                response = await client.request(method, url,
-                                                headers={"Accept": accept} if accept else None)
-            except (httpx.TimeoutException, httpx.TransportError) as exc:
-                # Network failure never carries the token; safe to surface.
-                last_exc = SourceError("NETWORK_NOT_AUTHORIZED", stage,
-                                       "Request to GitHub timed out or failed transport",
-                                       status=504, needed_action="Retry once; check proxy and reachability.",
-                                       detail={"type": type(exc).__name__})
-                continue
-            return self._interpret(response, url=url, stage=stage, allow_404=allow_404)
-        assert last_exc is not None
-        raise last_exc
+                async with asyncio.timeout(self._timeout):
+                    async with client.stream(method, url, headers=headers) as response:
+                        self._interpret(response, url=url, stage=stage, allow_404=allow_404)
+                        cap = (
+                            8 if stage == "tree" else 2 if stage == "contents" else 1
+                        ) * MAX_BODY_BYTES
+                        chunks, size = [], 0
+                        async for chunk in response.aiter_bytes(chunk_size=16384):
+                            size += len(chunk)
+                            if size > cap:
+                                raise SourceError(
+                                    "INVALID_PROVIDER_RESPONSE",
+                                    stage,
+                                    "响应超过安全读取上限。",
+                                    413,
+                                )
+                            chunks.append(chunk)
+                        body = b"".join(chunks)
+                previous = self._cache.pop(cache_key, None)
+                if previous:
+                    self._cache_size -= len(previous[1])
+                immutable = bool(re.search(r"/(?:git/trees|commits)/[0-9a-f]{40}(?:\?|$)", url)
+                                 or re.search(r"[?&]ref=[0-9a-f]{40}(?:&|$)", url))
+                self._cache[cache_key] = (
+                    time.monotonic() + (300 if immutable else 30),
+                    body,
+                )
+                self._cache_size += len(body)
+                while self._cache_size > 20 * MAX_BODY_BYTES or len(self._cache) > 100:
+                    self._cache_size -= len(self._cache.popitem(last=False)[1][1])
+                return httpx.Response(200, content=body)
+            except (httpx.TransportError, TimeoutError):
+                if attempt == self._retries:
+                    raise SourceError(
+                        "PROVIDER_TIMEOUT",
+                        stage,
+                        "GitHub 连接失败或响应超时。",
+                        504,
+                        needed_action="检查网络后重试。",
+                    ) from None
 
-    def _interpret(self, response: httpx.Response, *, url: str, stage: str,
-                   allow_404: bool) -> httpx.Response:
+    def _interpret(self, response, *, url, stage, allow_404):
         status = response.status_code
-        # Reject any redirect that leaves the allowed hosts.
-        if 300 <= status < 400:
-            location = response.headers.get("location", "")
-            raise SourceError("INVALID_PROVIDER_RESPONSE", stage,
-                               "GitHub returned a redirect; cross-host redirects are not followed",
-                               status=502, needed_action="Pin to an immutable commit URL.",
-                               detail={"location_prefix": location[:120]})
-        if status == 404 and allow_404:
-            raise SourceError("FILE_NOT_FOUND", stage,
-                              "The requested path was not found at the pinned commit",
-                              status=404, needed_action="Confirm the path or ref.")
+        if status in (403, 429) and (
+            status == 429
+            or response.headers.get("x-ratelimit-remaining") == "0"
+            or "retry-after" in response.headers
+        ):
+            try:
+                delay = float(response.headers.get("retry-after", "60"))
+                if "x-ratelimit-reset" in response.headers:
+                    delay = max(delay, float(response.headers["x-ratelimit-reset"]) - time.time())
+            except ValueError:
+                delay = 60
+            self._blocked_until = time.monotonic() + min(3600, max(1, delay))
+            raise SourceError(
+                "RATE_LIMITED",
+                stage,
+                "GitHub 达到速率限制。",
+                429,
+                needed_action="等待限流窗口后重试。",
+            )
         if status in (401, 403):
-            # Never include the Authorization header in the message.
-            raise SourceError("AUTH_REQUIRED", stage,
-                              "GitHub rejected the request as unauthorized",
-                              status=401, needed_action="Provide a token with public_repo read scope.")
+            raise SourceError(
+                "AUTH_REQUIRED",
+                stage,
+                "GitHub 拒绝了读取请求。",
+                401,
+                needed_action="检查专用只读配置；不需要使用仓库管理员密钥。",
+            )
         if status == 404:
-            raise SourceError("FILE_NOT_FOUND", stage,
-                              "The requested path or ref was not found",
-                              status=404, needed_action="Confirm the path or ref exists at the commit.")
-        if status == 429:
-            retry_after = response.headers.get("retry-after")
-            reset = response.headers.get("x-ratelimit-reset")
-            raise SourceError("RATE_LIMITED", stage,
-                              "GitHub rate limit reached",
-                              status=429, needed_action="Wait for the reset window then retry.",
-                              detail={"retry_after": retry_after, "rate_limit_reset": reset})
-        if not (200 <= status < 300):
-            raise SourceError("REPO_UNAVAILABLE", stage,
-                              f"GitHub returned HTTP {status}",
-                              status=502, needed_action="Retry; if persistent, verify the repository visibility.")
+            raise SourceError("FILE_NOT_FOUND", stage, "指定文件、仓库或版本不存在。", 404)
+        if status != 200:
+            raise SourceError("REPO_UNAVAILABLE", stage, f"GitHub 返回 HTTP {status}。", 502)
         return response
 
-    async def close(self) -> None:
-        if self._client is not None:
+    async def close(self):
+        if self._client:
             await self._client.aclose()
             self._client = None
+        self._cache.clear()
+        self._cache_size = 0

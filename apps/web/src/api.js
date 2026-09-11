@@ -10,7 +10,12 @@ export class ApiError extends Error {
 }
 
 export async function api(path, options = {}) {
-  const response = await fetch(`${BASE}${path}`, options);
+  let response;
+  try { response = await fetch(`${BASE}${path}`, options); }
+  catch (error) {
+    if (error.name === "AbortError") throw error;
+    throw new ApiError({ code: "CONNECTION_LOST", user_message: "本地服务未连接。请启动应用后重试。", retryable: true }, 0);
+  }
   if (response.status === 204) return null;
   const type = response.headers?.get?.("content-type") || "";
   const value = type.includes("json") ? await response.json() : await response.text();

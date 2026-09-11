@@ -29,7 +29,7 @@ def main(argv: list[str] | None = None) -> int:
 
         print(f"本地学习软件：http://127.0.0.1:{args.port}\n"
               f"真实能力状态：http://127.0.0.1:{args.port}/api/learning/v1/capabilities\n"
-              "现有网页为 Fixture 演示；真实模块以能力状态为准。按 Ctrl+C 停止。", flush=True)
+              "阅读器与笔记可直接使用；模型连接状态见页面提示。按 Ctrl+C 停止。", flush=True)
         uvicorn.run(create_app(root=root, data_dir=args.data_dir), host="127.0.0.1", port=args.port)
         return 0
     if args.command == "doctor":

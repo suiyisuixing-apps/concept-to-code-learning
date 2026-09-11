@@ -29,7 +29,7 @@ async def test_markdown_is_safe_unicode_persistent_and_selectable(provider):
     assert record.source_type == "MARKDOWN" and record.unit_count == 1
     assert "<script>" not in "\n".join(x.text for x in units[0].blocks)
     assert next(x.text for x in units[0].blocks if x.text.startswith("x")) == "x"
-    text_block = units[0].blocks[0]
+    text_block = next(b for b in units[0].blocks if "A😀" in b.text)
     selected = "😀中"
     request = ContextRequest(document_revision=1, unit_id=units[0].unit_id,
         selected_text=selected, selected_text_hash=digest(selected),
@@ -68,13 +68,20 @@ async def test_office_external_relationship_is_rejected(provider):
 
 
 async def test_real_pdf_pages_include_blank_page_and_native_asset(provider):
-    import fitz
-    pdf = fitz.open()
-    first = pdf.new_page()
-    first.insert_text((72, 72), "Hello PDF")
-    pdf.new_page()
-    content = pdf.tobytes()
-    pdf.close()
+    from pypdf import PdfWriter
+    from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
+    writer = PdfWriter()
+    page = writer.add_blank_page(width=612, height=792)
+    font = DictionaryObject({NameObject("/Type"): NameObject("/Font"),
+        NameObject("/Subtype"): NameObject("/Type1"), NameObject("/BaseFont"): NameObject("/Helvetica")})
+    page[NameObject("/Resources")] = DictionaryObject({NameObject("/Font"): DictionaryObject({NameObject("/F1"): font})})
+    stream = DecodedStreamObject()
+    stream.set_data(b"BT /F1 12 Tf 72 720 Td (Hello PDF) Tj ET")
+    page[NameObject("/Contents")] = writer._add_object(stream)
+    writer.add_blank_page(width=612, height=792)
+    output = io.BytesIO()
+    writer.write(output)
+    content = output.getvalue()
     record = await provider.import_document(DocumentUpload("pages.pdf", content))
     units = await provider.list_units(record.document_id)
     assert [x.extraction_status for x in units] == ["READY", "NO_EXTRACTABLE_TEXT"]

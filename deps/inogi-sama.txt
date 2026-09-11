@@ -1,3 +1,4 @@
-PyMuPDF==1.26.4
+# Lead integration replaced PyMuPDF with BSD-licensed pypdf.
+pypdf==6.18.0
 python-pptx==1.0.2
 python-docx==1.2.0

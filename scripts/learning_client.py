@@ -42,7 +42,7 @@ class Client:
         request = urllib.request.Request(self.base_url + path, data=data, method=method,
                                          headers={"Content-Type": content_type, "Accept": "application/json"})
         try:
-            with self.opener.open(request, timeout=90) as response:
+            with self.opener.open(request, timeout=150) as response:
                 content = response.read(16 * 1024 * 1024 + 1)
                 if len(content) > 16 * 1024 * 1024:
                     raise ClientError("RESPONSE_TOO_LARGE", "响应过大，请分页读取。")

@@ -1,62 +1,94 @@
-"""Local handle registry. Host-configured; no web path endpoint.
+"""Opaque handles for explicitly configured local roots. Paths never reach the browser."""
 
-Per INTERFACES.md, local_authorized handles are configured outside HTTP by
-the host process member module. This registry only ever returns handles that
-were explicitly authorized at construction time; it never accepts arbitrary
-paths supplied by a request.
-"""
+import hashlib
+import os
+import stat
+from pathlib import Path, PurePosixPath
 
-from __future__ import annotations
-
-from pathlib import Path
+from .errors import SourceError
 
 
 class LocalRegistry:
-    """Read-only registry of host-authorized local repository roots."""
+    def __init__(self, authorized_roots):
+        self._roots = {}
+        self._identities = {}
+        for root in authorized_roots:
+            root = Path(root).resolve(strict=True)
+            if not root.is_dir():
+                raise ValueError("Local root is not a directory")
+            handle = "local-" + hashlib.sha256(os.fsencode(root)).hexdigest()[:24]
+            self._roots[handle] = root
+            info = root.stat()
+            self._identities[handle] = (info.st_dev, info.st_ino)
 
-    def __init__(self, authorized_roots: tuple[Path, ...]):
-        # Roots are resolved to absolute paths at construction; later lookups
-        # compare canonical strings so symlinked duplicates collapse.
-        self._roots = tuple(self._canonical(root) for root in authorized_roots)
+    def handles(self):
+        return [
+            handle
+            for handle, root in self._roots.items()
+            if root.is_dir() and not root.is_symlink()
+        ]
 
-    @staticmethod
-    def _canonical(root: Path) -> Path:
-        # resolve(strict=True) is enforced in ProviderSettings.from_env; the
-        # registry only normalizes for comparison, it does not re-validate.
-        return root.resolve() if root.exists() else root
-
-    def handles(self) -> list[str]:
-        """Return the string identifiers of authorized local roots."""
-        return [str(root) for root in self._roots]
-
-    def is_authorized(self, handle: str) -> bool:
+    def is_authorized(self, handle):
         return handle in self.handles()
 
-    def root_for(self, handle: str) -> Path | None:
-        for root in self._roots:
-            if str(root) == handle:
-                return root
-        return None
+    def root_for(self, handle):
+        return self._roots.get(handle) if self.is_authorized(handle) else None
 
-    def rejects_escape(self, handle: str, requested_path: str) -> bool:
-        """Return True when requested_path would escape the registered root.
-
-        Local reads must stay inside the Git root and must not follow symlinks
-        that point outside. This guard is called before any file is opened.
-        """
+    def rejects_escape(self, handle, requested_path):
         root = self.root_for(handle)
-        if root is None:
+        path = PurePosixPath(requested_path)
+        if (
+            root is None
+            or not requested_path
+            or path.is_absolute()
+            or ".." in path.parts
+            or "\\" in requested_path
+            or "\x00" in requested_path
+        ):
             return True
-        candidate = (root / requested_path).resolve()
-        try:
-            candidate.relative_to(root.resolve())
-        except ValueError:
-            return True
-        # Reject if the resolved path is a symlink whose target leaves the root.
-        if candidate.is_symlink():
-            target = candidate.resolve()
-            try:
-                target.relative_to(root.resolve())
-            except ValueError:
+        current = root
+        for part in path.parts:
+            current = current / part
+            if current.is_symlink():
                 return True
-        return False
+        return not current.resolve().is_relative_to(root)
+
+    def read(self, handle, path):
+        if self.rejects_escape(handle, path):
+            raise SourceError("AUTH_REQUIRED", "local", "源码路径超出授权范围或包含符号链接。", 403)
+        target = self.root_for(handle) / path
+        # O_NOFOLLOW defends the final component, repeated canonical check defends parents.
+        parent_fds = []
+        try:
+            if os.open in os.supports_dir_fd:
+                flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+                current = os.open(self.root_for(handle), flags)
+                parent_fds.append(current)
+                info = os.fstat(current)
+                if (info.st_dev, info.st_ino) != self._identities[handle]:
+                    raise SourceError("AUTH_REQUIRED", "local", "授权根目录已被替换。", 403)
+                parts = PurePosixPath(path).parts
+                for part in parts[:-1]:
+                    current = os.open(part, flags, dir_fd=current)
+                    parent_fds.append(current)
+                fd = os.open(parts[-1], os.O_RDONLY | os.O_NOFOLLOW, dir_fd=current)
+            else:
+                fd = os.open(target, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+        finally:
+            for parent_fd in reversed(parent_fds):
+                os.close(parent_fd)
+        try:
+            info = os.fstat(fd)
+            if not stat.S_ISREG(info.st_mode) or info.st_size > 1024 * 1024:
+                raise SourceError(
+                    "FILE_NOT_FOUND", "local", "仅支持不超过 1 MiB 的普通源码文件。", 422
+                )
+            if self.rejects_escape(handle, path):
+                raise SourceError("AUTH_REQUIRED", "local", "本地路径在读取时发生变化。", 403)
+            with os.fdopen(fd, "rb", closefd=False) as source:
+                raw = source.read(1024 * 1024 + 1)
+            if len(raw) > 1024 * 1024:
+                raise SourceError("FILE_NOT_FOUND", "local", "文件超过读取上限。", 413)
+            return raw
+        finally:
+            os.close(fd)

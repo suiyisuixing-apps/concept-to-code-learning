@@ -170,7 +170,9 @@ def test_uninstalled_modules_report_partial_without_fixture_fallback(tmp_path):
     with TestClient(create_app(tmp_path)) as client:
         caps = client.get(PREFIX + "/capabilities").json()
         assert caps["integrated_product"] == "UNAVAILABLE" and caps["status"] == "PARTIAL"
-        assert all(not caps[key]["available"] for key in ("document", "sources", "tutor"))
+        assert caps["document"]["available"] and caps["sources"]["available"]
+        assert not caps["tutor"]["available"]
+        assert caps["tutor"]["implemented"]
         assert caps["persistent_notes"] and caps["target_hardware"] == "NOT_TESTED"
         assert client.get("/api/sprint-1/session").status_code == 200
 

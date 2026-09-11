@@ -15,6 +15,7 @@ endpoints with stdlib only. It records the provider model id, latency, token usa
 
 import errno
 import json
+import math
 import socket
 import time
 import urllib.error
@@ -47,7 +48,6 @@ _REFUSED_ERRNOS = {errno.ECONNREFUSED, errno.EHOSTUNREACH, errno.ENETUNREACH,
                    10061, 10065}
 
 _USER_AGENT = "concept-to-code-learning/0.2 local-adapter"
-_MAX_ERROR_BODY_BYTES = 2048
 
 
 def _estimate_tokens(text: str) -> int:
@@ -71,9 +71,9 @@ class LocalModelConfig:
     base_url is refused with ``MODEL_HOST_NOT_AUTHORIZED`` (data-flow rule).
     """
 
-    base_url: str
+    base_url: str = field(repr=False)
     model: str
-    api_key: str | None = None
+    api_key: str | None = field(default=None, repr=False)
     timeout_seconds: float = 30.0
     max_input_chars: int = 24000
     max_output_tokens: int = 1024
@@ -84,10 +84,14 @@ class LocalModelConfig:
         for name, value in (("timeout_seconds", self.timeout_seconds),
                             ("max_input_chars", self.max_input_chars),
                             ("max_output_tokens", self.max_output_tokens)):
-            if value <= 0:
+            if not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0:
                 raise ValueError(f"INVALID_CONFIG: {name} must be positive")
-        if self.max_retries < 0:
-            raise ValueError("INVALID_CONFIG: max_retries must be >= 0")
+        if type(self.max_retries) is not int or not 0 <= self.max_retries <= 2:
+            raise ValueError("INVALID_CONFIG: max_retries must be 0..2")
+        if (self.timeout_seconds > 120 or type(self.max_input_chars) is not int
+                or self.max_input_chars > 100000 or type(self.max_output_tokens) is not int
+                or self.max_output_tokens > 8192 or not self.model.strip()):
+            raise ValueError("INVALID_CONFIG: configuration exceeds supported limits")
 
     def endpoint(self, path: str) -> str:
         parts = urlsplit(self.base_url)
@@ -95,6 +99,12 @@ class LocalModelConfig:
             raise ValueError("INVALID_CONFIG: base_url must be an absolute http(s) URL")
         if parts.query or parts.fragment:
             raise ValueError("INVALID_CONFIG: base_url must not carry a query or fragment")
+        if parts.username is not None or parts.password is not None:
+            raise ValueError("INVALID_CONFIG: URL credentials are forbidden")
+        try:
+            parts.port
+        except ValueError:
+            raise ValueError("INVALID_CONFIG: invalid endpoint port") from None
         host = parts.hostname or ""
         if not is_loopback_host(host):
             if not self.allow_remote_endpoint:
@@ -108,6 +118,8 @@ class LocalModelConfig:
                     " endpoints; a remote endpoint must use https"
                 )
         base_path = parts.path.rstrip("/")
+        if base_path.endswith("/v1") and path.startswith("/v1/"):
+            path = path[3:]
         return f"{parts.scheme}://{parts.netloc}{base_path}{path}"
 
 
@@ -131,7 +143,7 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
-_NO_REDIRECT_OPENER = urllib.request.build_opener(_NoRedirect)
+_NO_REDIRECT_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}), _NoRedirect)
 
 
 class LocalModelAdapter:
@@ -160,6 +172,8 @@ class LocalModelAdapter:
             return error
         result = _checked(self._result(started, attempts),
                           lambda: _parse_model_ids(payload))
+        if result.ok and self._config.model not in result.usage["served_models"]:
+            return _failure("MODEL_NOT_FOUND", "Configured model is not served by this endpoint.")
         return result
 
     # -- generation -----------------------------------------------------------
@@ -192,6 +206,9 @@ class LocalModelAdapter:
 
         result = _checked(self._result(started, attempts), parse)
         if result.ok:
+            identity = _load_json(payload).get("model")
+            if identity is not None and identity != self._config.model:
+                return _failure("MODEL_IDENTITY_MISMATCH", "Response came from a different model.")
             result.text = result.usage.pop("_text")
             provider_usage = result.usage.pop("_provider_usage", None)
             result.usage = {
@@ -222,10 +239,12 @@ class LocalModelAdapter:
                              latency_ms=_elapsed_ms(started))
 
     def _validate_messages(self, messages: list[dict[str, str]]) -> tuple[int, bool]:
-        if not messages:
+        if not isinstance(messages, list) or not messages or len(messages) > 30:
             raise ValueError("INVALID_REQUEST: messages must not be empty")
         for message in messages:
-            if set(message) != {"role", "content"} or not isinstance(message.get("content"), str):
+            if (not isinstance(message, dict) or set(message) != {"role", "content"}
+                    or not isinstance(message.get("content"), str)
+                    or message.get("role") not in {"system", "user", "assistant"}):
                 raise ValueError("INVALID_REQUEST: each message needs role and string content")
         total = sum(len(m["content"]) for m in messages)
         if total > self._config.max_input_chars:
@@ -249,11 +268,15 @@ class LocalModelAdapter:
                 request.add_header("Authorization", f"Bearer {self._config.api_key}")
             try:
                 with self._opener.open(request, timeout=self._config.timeout_seconds) as response:
-                    return response.read(), None, attempt
+                    payload = response.read(1024 * 1024 + 1)
+                    if len(payload) > 1024 * 1024:
+                        return b"", _failure(ERROR_MALFORMED, "Response exceeded byte limit."), attempt
+                    return payload, None, attempt
             except urllib.error.HTTPError as exc:
                 # A 3xx (redirects are refused), 4xx or 5xx from the provider:
                 # no retry, classify honestly. The key is never echoed back.
-                detail = f"provider returned HTTP {exc.code}: {_read_error_body(exc)}"
+                detail = f"provider returned HTTP {exc.code}"
+                exc.close()
                 return b"", AdapterResult(ok=False, error_code=ERROR_HTTP, detail=detail,
                                           attempts=attempt, model_id=self._config.model), attempt
             except (urllib.error.URLError, TimeoutError, OSError) as exc:
@@ -263,10 +286,10 @@ class LocalModelAdapter:
                 elif _is_refused(reason):
                     code, message = MODEL_OFFLINE, "connection refused (is the model running?)"
                 else:
-                    code, message = ERROR_TRANSPORT, f"unreachable: {reason}"
+                    code, message = ERROR_TRANSPORT, "transport failed"
                 last_error = AdapterResult(
                     ok=False, error_code=code,
-                    detail=f"endpoint {urlsplit(url).netloc} {message}",
+                    detail=message,
                     attempts=attempt, model_id=self._config.model)
         assert last_error is not None
         return b"", last_error, attempts
@@ -302,15 +325,6 @@ def _elapsed_ms(started: float) -> int:
     return int((time.monotonic() - started) * 1000)
 
 
-def _read_error_body(exc: urllib.error.HTTPError) -> str:
-    try:
-        raw = exc.read(_MAX_ERROR_BODY_BYTES)
-    except Exception:  # noqa: BLE001 - the error body is best-effort only
-        return "<unreadable>"
-    text = raw.decode("utf-8", errors="replace").strip() or "<empty>"
-    return (text[:_MAX_ERROR_BODY_BYTES] + "...") if len(raw) >= _MAX_ERROR_BODY_BYTES else text
-
-
 def _parse_model_ids(payload: bytes) -> list[str]:
     data = _load_json(payload)
     try:
@@ -323,7 +337,7 @@ def _parse_model_ids(payload: bytes) -> list[str]:
                  if isinstance(item, dict) and isinstance(item.get("id"), str)]
     if not model_ids:
         raise _ProviderError(ERROR_MALFORMED, "/v1/models returned no model ids")
-    return model_ids[:8]
+    return model_ids
 
 
 def _parse_completion(payload: bytes) -> tuple[str, dict | None]:
@@ -336,10 +350,17 @@ def _parse_completion(payload: bytes) -> tuple[str, dict | None]:
         raise _ProviderError(ERROR_MALFORMED, "message.content is missing or not a string")
     if message.get("refusal"):
         raise _ProviderError(ERROR_EMPTY, "the model refused to answer")
+    if data["choices"][0].get("finish_reason") == "length":
+        raise _ProviderError("MODEL_OUTPUT_TRUNCATED", "Model reached its output limit.")
     text = message["content"].strip()
     if not text:
         raise _ProviderError(ERROR_EMPTY, "the model returned an empty completion")
     usage = data.get("usage")
+    if not (isinstance(usage, dict) and all(type(usage.get(k)) is int and usage[k] >= 0
+                                         for k in ("prompt_tokens", "completion_tokens"))):
+        usage = None
+    elif usage is not None:
+        usage = {k: usage[k] for k in ("prompt_tokens", "completion_tokens")}
     return text, usage if isinstance(usage, dict) else None
 
 
@@ -347,7 +368,7 @@ def _load_json(payload: bytes) -> Any:
     try:
         return json.loads(payload.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise _ProviderError(ERROR_MALFORMED, f"response is not valid JSON: {exc}") from exc
+        raise _ProviderError(ERROR_MALFORMED, "response is not valid JSON") from exc
 
 
 def _failure(code: str, detail: str) -> AdapterResult:

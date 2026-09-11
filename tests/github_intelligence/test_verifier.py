@@ -58,12 +58,12 @@ class TestVerifyHappyPath:
         assert evidence.commit_sha == FROZEN_COMMIT
         assert evidence.requested_ref == FROZEN_COMMIT
         assert evidence.file_path == FROZEN_FILE
-        assert evidence.language == "py"
+        assert evidence.language == "python"
         assert evidence.symbol == "read_items"
         assert evidence.symbol_kind == "function"
-        assert evidence.line_start == 12
+        assert evidence.line_start == 11
         assert evidence.line_end == 14
-        expected_excerpt = "\n".join(FROZEN_FILE_TEXT.splitlines()[11:14])
+        expected_excerpt = "\n".join(FROZEN_FILE_TEXT.splitlines()[10:14])
         assert evidence.code_excerpt == expected_excerpt
         assert evidence.excerpt_sha256 == hashlib.sha256(
             expected_excerpt.encode("utf-8")).hexdigest()
@@ -72,7 +72,7 @@ class TestVerifyHappyPath:
             FROZEN_FILE_TEXT.encode("utf-8")).hexdigest()
         assert evidence.permalink == (
             f"https://github.com/{FROZEN_OWNER}/{FROZEN_REPO}/blob/"
-            f"{FROZEN_COMMIT}/{FROZEN_FILE}#L12-L14")
+            f"{FROZEN_COMMIT}/{FROZEN_FILE}#L11-L14")
         assert evidence.license_observation.status == "DETECTED"
         assert evidence.license_observation.code_display_allowed is True
         assert evidence.license_observation.files[0].identifier == "MIT"
@@ -86,23 +86,22 @@ class TestVerifyHappyPath:
         assert evidence.verification_checks["excerpt_hash"] == "PASSED"
         assert evidence.verification_checks["license"] == "PASSED"
 
-    def test_relevance_records_supported_basis(self, verifier):
+    def test_exact_source_does_not_claim_semantic_proof(self, verifier):
         query = make_query()
         candidate = make_candidate()
         receipt = run(verifier.verify_specified_public(query, candidate, SCOPE_SHA256))
-        assert receipt.evidence.relevance.status == "SUPPORTED"
+        assert receipt.evidence.relevance.status == "CANDIDATE"
         basis = receipt.evidence.relevance.basis
-        assert any(f"commit:{FROZEN_COMMIT}" in b for b in basis)
-        assert any(f"file:{FROZEN_FILE}" in b for b in basis)
+        assert "Depends" in basis
 
 
 class TestVerifyModeAndAuthorization:
     """Authorization boundary: mode, network, allowlist."""
 
     def test_rejects_wrong_mode(self, verifier):
-        query = make_query(source_mode="public_search")
-        candidate = make_candidate(source_mode="public_search")
-        with pytest.raises(SourceError, match="mode 'public_search'"):
+        query = make_query(source_mode="local_authorized")
+        candidate = make_candidate(source_mode="local_authorized")
+        with pytest.raises(SourceError, match="NETWORK_NOT_AUTHORIZED"):
             run(verifier.verify_specified_public(query, candidate, SCOPE_SHA256))
 
     def test_rejects_no_network(self, verifier):
@@ -114,13 +113,13 @@ class TestVerifyModeAndAuthorization:
     def test_rejects_empty_allowlist(self, verifier):
         query = make_query(repository_allowlist=[])
         candidate = make_candidate()
-        with pytest.raises(SourceError, match="non-empty repository allowlist"):
+        with pytest.raises(SourceError, match="REPO_UNAVAILABLE"):
             run(verifier.verify_specified_public(query, candidate, SCOPE_SHA256))
 
     def test_rejects_repo_not_in_allowlist(self, verifier):
         query = make_query(repository_allowlist=["other/other"])
         candidate = make_candidate(repository="fastapi/fastapi")
-        with pytest.raises(SourceError, match="not in the authorized allowlist"):
+        with pytest.raises(SourceError, match="REPO_UNAVAILABLE"):
             run(verifier.verify_specified_public(query, candidate, SCOPE_SHA256))
 
 
@@ -150,7 +149,7 @@ class TestVerifyRefAndFile:
     def test_rejects_path_escape(self, verifier):
         query = make_query()
         candidate = make_candidate(file_hint="../escape.py")
-        with pytest.raises(SourceError, match="repository-relative"):
+        with pytest.raises(SourceError, match="FILE_NOT_FOUND"):
             run(verifier.verify_specified_public(query, candidate, SCOPE_SHA256))
 
 
@@ -196,4 +195,4 @@ class TestVerifyLicense:
         assert evidence.license_observation.code_display_allowed is False
         assert evidence.code_excerpt == ""
         assert evidence.excerpt_sha256 == hashlib.sha256(b"").hexdigest()
-        assert evidence.verification_checks["license"] == "NOT_APPLICABLE"
+        assert evidence.verification_checks["license"] == "NOT_CHECKED"

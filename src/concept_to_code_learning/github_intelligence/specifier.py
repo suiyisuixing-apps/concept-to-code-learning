@@ -1,88 +1,55 @@
-"""specified_public mode: discover candidates from an authorized allowlist.
+"""Discover file paths and symbols within the authorized public repository scope."""
 
-The current slice returns framework candidates (repo + matched terms) without
-performing concept-term retrieval across the repository contents. Real code
-discovery (PR #67 section C3) is tracked in HANDOFF.md as the next slice; the
-verify path is fully implemented and tested offline with a frozen commit.
-"""
-
-from __future__ import annotations
-
-from concept_to_code_learning.full_contracts.models import (
-    SearchCandidate,
-    SearchResult,
-    SourceQuery,
-    uid,
-    utcnow,
-)
-
+from .discovery import candidate, ranked_paths, result
 from .errors import SourceError
-from .github_client import GitHubRawClient
 
 
 class SpecifiedPublicSearcher:
-    """Discovers allowlist-bound candidates for specified_public mode."""
-
-    def __init__(self, client: GitHubRawClient):
-        # Client is kept for the future C3 retrieval slice; today's search is
-        # allowlist-only and does not fetch repository contents.
+    def __init__(self, client):
         self._client = client
 
-    async def search(self, query: SourceQuery) -> SearchResult:
-        self._require_mode(query, "specified_public")
-        self._require_network(query)
-        self._require_allowlist(query)
-        candidates = [self._framework_candidate(query, repo, query.concept_terms)
-                      for repo in query.repository_allowlist]
-        return SearchResult(
-            mode="LIVE",
-            query_id=query.query_id,
-            candidates=candidates,
-            selection_required=True,
-            status="NEEDS_CONFIRMATION",
-            warnings=[
-                "Concept-term retrieval (C3) is not implemented in this slice; "
-                "candidates are framework entries from the allowlist.",
-                "Provide ref_hint, file_hint and symbol_hint during selection "
-                "so the verifier can pin a commit and locate the symbol.",
-            ],
-        )
-
-    def _framework_candidate(
-        self, query: SourceQuery, repo: str, matched_terms: list[str],
-    ) -> SearchCandidate:
-        return SearchCandidate(
-            mode="LIVE",
-            candidate_id=uid(),
-            query_id=query.query_id,
-            source_mode="specified_public",
-            repository=repo,
-            local_handle=None,
-            ref_hint=None,
-            file_hint=None,
-            symbol_hint=None,
-            matched_terms=list(matched_terms),
-            ranking_reason=("Allowlisted repository; awaiting user-selected "
-                            "ref, file and symbol."),
-            discovery_method="allowlist_framework",
-            discovery_status="NEEDS_CONFIRMATION",
-            retrieved_at=utcnow(),
-        )
-
-    def _require_mode(self, query: SourceQuery, expected: str) -> None:
-        if query.source_mode != expected:
-            raise SourceError("INVALID_PROVIDER_RESPONSE", "search",
-                              f"Searcher received mode {query.source_mode!r}, expected {expected!r}",
-                              status=422)
-
-    def _require_network(self, query: SourceQuery) -> None:
+    async def search(self, query):
         if not query.network_authorized:
-            raise SourceError("NETWORK_NOT_AUTHORIZED", "search",
-                              "specified_public search requires explicit network authorization",
-                              status=403, needed_action="Set network_authorized=true with user consent.")
-
-    def _require_allowlist(self, query: SourceQuery) -> None:
-        if not query.repository_allowlist:
-            raise SourceError("NETWORK_NOT_AUTHORIZED", "search",
-                              "specified_public search requires a non-empty repository allowlist",
-                              status=403, needed_action="Provide at least one owner/repo in the allowlist.")
+            raise SourceError("NETWORK_NOT_AUTHORIZED", "search", "尚未授权 GitHub 联网。", 403)
+        repositories = query.repository_allowlist[:query.scope_limit.repositories]
+        if query.source_mode == "specified_public" and not repositories:
+            raise SourceError("NO_RELEVANT_SOURCE", "search", "未指定公开仓库。", 422)
+        if query.source_mode == "public_search":
+            if (not query.query_terms_approved or not set(t.casefold() for t in query.concept_terms)
+                    <= set(t.casefold() for t in query.approved_query_terms)):
+                raise SourceError("QUERY_TERMS_NOT_APPROVED", "search", "公开搜索词尚未获得逐项确认。", 403)
+            repositories = await self._client.search_repositories(query.concept_terms,
+                                            query.scope_limit.repositories, query.language_hint)
+        candidates, warnings, reads = [], [], 0
+        for i, repo in enumerate(repositories):
+            owner, name = repo.split("/", 1)
+            meta = await self._client.repository(owner, name)
+            commit = await self._client.resolve_ref(owner, name, meta["default_branch"])
+            tree = await self._client.tree(owner, name, commit)
+            if tree.get("truncated"):
+                warnings.append("仓库文件树被 GitHub 截断；本次只检索已返回的部分。")
+            paths = [x["path"] for x in tree.get("tree", []) if x.get("type") == "blob"
+                     and x.get("mode") in {"100644", "100755"} and 0 < x.get("size", 0) <= 1024*1024]
+            remaining = query.scope_limit.files - reads
+            budget = max(1, remaining // (len(repositories)-i)) if remaining > 0 else 0
+            for path in ranked_paths(paths, query.concept_terms, query.language_hint)[:budget]:
+                reads += 1
+                raw = await self._client.fetch_raw(owner, name, commit, path)
+                try:
+                    text = raw.decode("utf-8")
+                except UnicodeError:
+                    warnings.append("一个非 UTF-8 源码文件未用于讲解。")
+                    continue
+                value = candidate(query, repo, None, commit, path, text)
+                if value:
+                    candidates.append(value)
+        candidates.sort(key=lambda c: -len(c.matched_terms))
+        # Interleave repositories so a comparison can choose independent implementations.
+        unique, rest, seen = [], [], set()
+        for value in candidates:
+            if value.repository in seen:
+                rest.append(value)
+            else:
+                unique.append(value)
+                seen.add(value.repository)
+        return result(query, unique + rest, warnings)
