@@ -56,6 +56,16 @@
           "title": "Contract Version",
           "type": "string"
         },
+        "file_hints": {
+          "items": {
+            "maxLength": 300,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 5,
+          "title": "File Hints",
+          "type": "array"
+        },
         "language_hint": {
           "anyOf": [
             {
@@ -131,6 +141,16 @@
           },
           "maxItems": 20,
           "title": "Repository Allowlist",
+          "type": "array"
+        },
+        "repository_hints": {
+          "items": {
+            "maxLength": 200,
+            "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$",
+            "type": "string"
+          },
+          "maxItems": 3,
+          "title": "Repository Hints",
           "type": "array"
         },
         "revision": {
@@ -231,6 +251,18 @@
       "minLength": 1,
       "title": "Question",
       "type": "string"
+    },
+    "reuse_previous_sources": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reuse Previous Sources"
     },
     "revision": {
       "default": 1,

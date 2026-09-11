@@ -8,6 +8,7 @@ from urllib.parse import quote
 
 from concept_to_code_learning.full_contracts import models as m
 from concept_to_code_learning.full_learning.ports import VerificationReceipt
+from concept_to_code_learning.learning_concepts import guide_for, guide_for_terms
 
 from .discovery import EXTENSIONS, matched, python_symbols
 from .errors import SourceError
@@ -52,6 +53,8 @@ def excerpt(text, path, symbol, terms):
             raise SourceError("SYMBOL_NOT_FOUND", "verify", "固定版本中找不到候选符号。", 404)
         _, kind, start, end = found[0]
     else:
+        guide = guide_for_terms(terms) or guide_for(" ".join(terms))
+        terms = list(dict.fromkeys([*terms, *(guide.terms if guide else ())]))
         index = next((i for i, line in enumerate(lines) if matched(line, terms)), 0)
         if PurePosixPath(path).suffix.lower() == ".py":
             try:
@@ -66,7 +69,12 @@ def excerpt(text, path, symbol, terms):
                     index = positions[0]
             except (SyntaxError, ValueError, RecursionError):
                 pass
-        start, end = max(1, index - 12), min(len(lines), index + 36)
+        window = 36 if PurePosixPath(path).suffix.lower() == ".py" else 96
+        start, end = max(1, index - 12), min(len(lines), index + window)
+    # A joined trailing empty line is interpreted as a line terminator by
+    # splitlines(), not another line. Keep the displayed inclusive range exact.
+    while end > start and lines[end - 1] == "":
+        end -= 1
     code = "\n".join(lines[start - 1 : end])
     if len(code) > 20000:
         raise SourceError(

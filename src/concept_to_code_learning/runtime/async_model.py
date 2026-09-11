@@ -140,6 +140,9 @@ class AsyncLocalModelAdapter(LocalModelAdapter):
                     max_tokens or self._config.max_output_tokens, self._config.max_output_tokens
                 ),
                 "stream": bool(on_text),
+                # Some Qwen MLX conversions retain the base model's end-of-text
+                # token. Stop at ChatML's turn boundary instead of leaking it into JSON.
+                **({"stop": ["<|im_end|>"]} if "qwen" in self._config.model.casefold() else {}),
                 **({"stream_options": {"include_usage": True}} if on_text else {}),
             },
             on_text=on_text,

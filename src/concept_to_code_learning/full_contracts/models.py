@@ -196,6 +196,9 @@ class SourceQuery(Record, SourceScope):
     question: Annotated[str, Field(min_length=1, max_length=2000)]
     concept_terms: list[Annotated[str, Field(min_length=1, max_length=100)]] = Field(
         min_length=1, max_length=20)
+    repository_hints: list[Repo] = Field(default_factory=list, max_length=3)
+    file_hints: list[Annotated[str, Field(min_length=1, max_length=300)]] = Field(
+        default_factory=list, max_length=5)
     status: Literal["PLANNED", "AUTHORIZED", "NEEDS_CONFIRMATION"]
 
 
@@ -327,6 +330,7 @@ class TeachingPlan(Record):
     prerequisites: list[str] = Field(default_factory=list)
     needs_code: Annotated[bool, Field(strict=True)]
     source_query: SourceQuery | None = None
+    reuse_previous_sources: Annotated[bool, Field(strict=True)] | None = None
     uncertainties: list[str] = Field(default_factory=list)
     status: Literal["READY", "NEEDS_CONFIRMATION"]
 

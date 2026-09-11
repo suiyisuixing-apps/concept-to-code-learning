@@ -26,9 +26,9 @@
     "schemas/full-delivery-v1/SearchRequest.schema.json": "e02efd42f1cfd4beb7cb088ee5eb501b6fdf4cdd15b9a6c1bc91ef0292b99146",
     "schemas/full-delivery-v1/SearchResult.schema.json": "94ba9bf57cb1d06d34bc3c86bea0f22c0ea0c3ca5322578409a18733194072c7",
     "schemas/full-delivery-v1/SessionRecord.schema.json": "52c15e5c5757fb759b247a29209dff913042568d4b4b3cf60e7b64d87aea9a60",
-    "schemas/full-delivery-v1/SourceQuery.schema.json": "2f53ef2ea2bba5e93df98da995848a7b0a3695adc97614bafcc45df2838e6bf1",
+    "schemas/full-delivery-v1/SourceQuery.schema.json": "870e8c8d55deab0a86d839d22646be7e8da32c30d2570812d48093bce789e734",
     "schemas/full-delivery-v1/SourceScope.schema.json": "43cb8cce032f718633b36e4e0901c225e9d76cd6cb776dab75409d951245a402",
-    "schemas/full-delivery-v1/TeachingPlan.schema.json": "63d2ae5d1e6013ffbcf3cc3cf7ab455b83ffa952facc657c46e18ff0b8dfdc05",
+    "schemas/full-delivery-v1/TeachingPlan.schema.json": "784922b05b922bf651503fe07919090c3d2911293d2b12910f3fb8ee04c77f0e",
     "schemas/full-delivery-v1/VerifyRequest.schema.json": "ff96cd95f9b7bba14b94c0bfeffdc4d842b93d26f7888eab7293ff6c04af5ad0"
   },
   "contract_version": "full-delivery-v1",

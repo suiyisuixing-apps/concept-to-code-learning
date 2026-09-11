@@ -148,9 +148,12 @@ def main(argv=None):
             )
             endpoint = f"http://127.0.0.1:{args.port + 1}/v1"
             models = wait_ready(endpoint + "/models", processes)
-            if str(model) not in [x.get("id") for x in models.get("data", [])]:
+            # The startup model and the preferred chat model may differ. The
+            # service also lists pinned models in this app's offline cache.
+            selected_model = config.get("model_id") or str(model)
+            if selected_model not in [x.get("id") for x in models.get("data", [])]:
                 raise ValueError("模型服务没有提供指定的模型。")
-            env.update(C2C_MODEL_BASE_URL=endpoint, C2C_MODEL_ID=str(model))
+            env.update(C2C_MODEL_BASE_URL=endpoint, C2C_MODEL_ID=selected_model)
         elif config.get("model_base_url"):
             env.update(C2C_MODEL_BASE_URL=config["model_base_url"], C2C_MODEL_ID=config["model_id"])
             if config.get("model_network_authorized") is True:

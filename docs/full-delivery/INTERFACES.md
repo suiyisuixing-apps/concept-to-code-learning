@@ -43,13 +43,15 @@ Lead 的路由已经代理标准操作，成员一般只需交 Provider；确需
 `SourceScope`：source_mode，repository_allowlist（owner/repo），local_handle，language_hint，
 scope_limit（默认 repositories=5/files=10），network_authorized，query_terms_approved，
 approved_query_terms（精确批准的必要概念词数组），max_sources（1–3）。
-SourceQuery 在这些字段上加 query_id、question、concept_terms、mode/status/revision/version。
+SourceQuery 在这些字段上加 query_id、question、concept_terms、mode/status/revision/version，以及默认为空的 repository_hints/file_hints。
 
 公共检索接口：`POST /sources/search` 接受 session_id、context_revision、question、concept_terms、scope。
 中央教学调用将 Tutor 概念词与用户 scope 重建成 SourceQuery；忽略模型自带的仓库/联网权限。
 发送给 SourceProvider 的 question 仅由概念词组成，整页文档和问题原文不会进入来源客户端。
 specified_public 必须联网已授权且 allowlist 非空；不得扩大到全网。
-public_search 必须联网授权、query_terms_approved=true，且所有发送词属于 approved_query_terms；否则未调用 SourceProvider。
+public_search 必须联网授权。手动检索要求 query_terms_approved=true，且所有发送词属于 approved_query_terms；auto_public_search=true 时由模型提炼简短公共技术概念，中央服务校验后构造批准词集合。没有固定知识点白名单。模型建议只在已授权的自动公开搜索中作为待核验线索，不能扩大指定仓库或本地范围。
+
+模型规划内部可返回 learning_goal，将普通追问结合材料补全成具体学习任务。它只用于本次生成，不改变公共 TeachingPlan/GroundedExplanation 的原始 question，不影响来源授权。讲解输入同时保留原始问题及补全后的目标；模型未返回目标时继续使用原问题。
 local_authorized 不允许 network_authorized=true，只接受 SourceProvider 当前 local_handles() 返回的已授权句柄。
 目录授权由主机进程的成员模块配置完成；本版没有任意 Web 路径注册入口。
 
@@ -86,6 +88,7 @@ scope_sha256 是 canonical JSON SourceScope 的 UTF-8 SHA256，由 Lead 传入�
 unsupported_claims 非空、引用不存在、原码被改写不会被悄悄删除后标成功。最终链接中的 symbol 由服务端已核验来源填写，模型只负责选择已有 source_id，不负责复制可信元数据。
 
 追问传 continue_from=当前context下已有explanation_id；最多最近六次对话传入Tutor。
+未传 continue_from 时仍提取同一文档版本最近六次已完成讲解的问答上下文，划选/翻页不清空这段会话语义；不跨文档版本，也不沿用旧选区的 source_id。真实模型将历史裁剪到最近三次。
 同主题、同授权范围默认复用之前的核验来源版本，不自动刷新到最新 commit；识别出主题切换或范围变化时重新检索。显式 source_ids 必须属于当前 registry 和相同授权范围。
 compare=true 需要两个不同仓库的独立证据，Comparison.source_ids 必须属于本次 code_source_ids。
 无相关代码可返回只有文档依据的讲解，warnings=NO_VERIFIED_CODE；真实 Tutor 的 status=NO_VERIFIED_CODE。
@@ -129,14 +132,20 @@ GET /notes/{id}/export?format=markdown|json 使用冻结快照，网络/原文�
 
 本轮用户要求修复搜索失败、选择模型并简化对话，Lead 在原集成分支增加以下默认可省略字段；旧 Sprint 1 合同、原 `/explanations` JSON 路由和数据库结构保留。
 
-- `SourceScope.auto_public_search=false`：显式启用且没有手动搜索词时，只采用有限公共概念词表中的检索词。仍要求 `network_authorized=true`；未知主题不把任意文档文字发送到 GitHub。关闭此字段时，scope hash 沿用旧序列化方式，旧来源可继续核对。手动批准的空数组返回 `QUERY_TERMS_NOT_APPROVED`，不再误报模型输出错误。
+- `SourceScope.auto_public_search=false`：显式启用且没有手动搜索词时，由模型从问题、选区、周围段落和同文档历史生成公共技术概念。仍要求 `network_authorized=true`。关闭此字段时，scope hash 沿用旧序列化方式，旧来源可继续核对。手动批准的空数组返回 `QUERY_TERMS_NOT_APPROVED`，不再误报模型输出错误。
 - `ExplanationRequest.model_id`、`model_base_url` 默认为 null。`GET /models` 和 `POST /models/discover` 返回服务实际提供的模型；新增地址仅限本机，无用户凭据传输给新服务。每次请求绑定同一个 Tutor 做计划和回答，并在最终响应核对模型身份。
 - `POST /explanations/stream` 输出 NDJSON：`progress`、`preview`、`result`、`error`。preview 只含暂时的回答正文，不构成已核验来源、已保存回答或笔记；完整 JSON 和所有引用通过校验后才输出 result。错误和断开连接取消临时生成。请求和完成结果与原 JSON 接口相同。
 - `GET /sessions/recent` 返回最近有文档上下文的会话；`GET /sessions/{id}/history` 返回该本地会话最近 20 条完成讲解。不会把失败/取消请求呈现为完成回答，也不改写旧记录。
 
-已知知识点省去一次串行模型规划；来源仍经实时文件树、固定 commit、原文片段、许可与服务端 registry 核验。HTTP 连接复用、受限并发文件读取、缩小相关上下文和正文流式显示减少等待。未知主题、模型能力、网络延迟仍影响结果；不是通用检索成功保证。
+每个问题都经过模型规划。小型检索指引仅用于优先定位常见教学示例，不决定主题能否检索。AI 的 repository_hints/file_hints 默认可省略，必须在真实公开仓库和文件树中存在；过期建议、过大的自动候选树可继续查找其他公开候选。指定仓库不会静默扩大范围。
 
-本轮验证：390 项 Python、30 项前端，真实 Qwen + GitHub 首问和追问、原生 PDF 划选、批注和停止恢复。详见 [对话修复验收](../delivery/lead/CONVERSATION_REPAIR.md)。
+`TeachingPlan.reuse_previous_sources` 默认为 null 以兼容旧 Provider；真实模型明确判断是否延续已有代码。false 触发新检索，不能覆盖用户显式选定的 source_ids。上述增量不改变 SourceScope 哈希或数据库布局。
+
+固定 commit 的公开 HTTP 响应可缓存24小时/48 MiB/128条，客户端重新核实公开可读后才用磁盘缓存；元数据仅在当前进程短时缓存。哈希、片段和许可检查保持不变；缓存命中不是一次新的网络读取。GitHub core/search 主配额分别退避，次级限流全局退避，不切换身份或绕过上限。
+
+模型返回格式或引用失败时，在同一冻结证据上最多重新生成一次，所有生成用量计入结果。模型生成精简文字、文档编号和来源说明映射，由服务端组成旧响应结构；旧嵌套模型格式仍兼容。完整 JSON 后至多8个多余闭合符号可作为包装噪声去除；不接受缺失结构、额外 JSON 对象或其他尾随内容。正文必须引用实际代码标识符，引用合法性并不等于语义正确；真实验收还需检查数据流和调用。规划阶段的不确定性不再机械附到已取得代码的最终答案。
+
+历次验证及本次上下文检索修复分别见 [对话修复验收](../delivery/lead/CONVERSATION_REPAIR.md) 和 [上下文检索验收](../delivery/lead/CONTEXTUAL_SEARCH.md)。
 
 统一错误：request_id、stage、code、user_message、retryable、needed_action；不回显请求输入、Token、私密路径或原始异常。
 成员必须按公共 B8 提供 INVALID_FILE / FILE_TOO_LARGE / UNSUPPORTED_FORMAT / NO_EXTRACTABLE_TEXT /
@@ -150,3 +159,6 @@ CITATION_INVALID / STORAGE_FAILURE / CANCELLED 等语义。当前未交付模块
 [Pydantic JSON Schema](https://docs.pydantic.dev/latest/concepts/json_schema/)、
 [Python3.12 SQLite事务与连接](https://docs.python.org/3.12/library/sqlite3.html)。
 SQLite connection context仅处理事务，closing负责关闭；本实现不在数据库事务中 await。
+
+
+2026-09-11 引用绑定修复：默认模型内部协议改为 `NarrativeOutput`（answer、可选 comparison/tradeoffs、limitations）。服务端在生成前固定输入包，回答的文档引用绑定实际给出的选区块或首个上下文块，源码引用绑定给出的已核验片段。模型不生成仓库身份、行范围或来源 ID。`PlainTeachingOutput` 和原 `TeachingOutput` 仍可读；凡响应声明了引用，必须通过原有逐项校验，不能删掉错误引用后降级发布。生成预览不保存，最终输出仍经过来源、范围、原始字节、引用和代码相关性检查。`GROUNDED` 不等于逐句语义正确，来源卡片表明本次输入依据。公共 DTO、已有笔记、历史回答及旧接口保持原样。

@@ -1,7 +1,7 @@
 """Small retrieval guides, never source evidence. Every suggested file is verified live.
 
-Automatic public queries use this finite vocabulary, not text copied from a private
-document. Unrecognized concepts require an explicit user-supplied search term.
+These hints accelerate discovery after AI planning; they never limit what can be
+learned or searched. Public queries contain compact concepts, not document prose.
 """
 
 import re
@@ -59,6 +59,22 @@ def guide_for_terms(terms):
 
 
 def public_terms(terms):
-    allowed = {term.casefold() for guide in GUIDES for term in guide.terms}
-    return list(dict.fromkeys(term.casefold().strip() for term in terms
-                             if term.casefold().strip() in allowed))
+    """Structural bounds on AI abstractions, not a catalog of allowed knowledge.
+
+    The local planner removes identities and private terms semantically. This
+    additional check blocks URLs, addresses, paths, long identifiers and prose.
+    It is not a general-purpose detector of confidential terminology.
+    """
+    values = []
+    for term in terms:
+        value = " ".join(term.strip().split())
+        # Eponymous public concepts commonly arrive as "Dijkstra's algorithm".
+        # Normalize the possessive instead of silently discarding the main topic.
+        value = re.sub(r"(?<=[A-Za-z])['’](?:s\b|(?=\s|$))", "", value, flags=re.I)
+        if (not re.fullmatch(r"[A-Za-z][A-Za-z0-9_+#. -]{0,79}", value)
+                or len(value.split()) > 5 or re.search(r"\d{4,}|_{2,}", value)
+                or re.search(r"\b(?:confidential|secret|password|api[_ ]?key)\b", value, re.I)):
+            continue
+        if value.casefold() not in {item.casefold() for item in values}:
+            values.append(value)
+    return values[:5]

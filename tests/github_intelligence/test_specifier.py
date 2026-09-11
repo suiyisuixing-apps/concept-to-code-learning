@@ -42,10 +42,11 @@ class TestSearchHappyPath:
         assert result.candidates[0].symbol_hint
         assert not result.warnings
 
-    def test_matched_terms_carry_concept_terms(self, searcher):
+    def test_matched_terms_report_only_complete_text_matches(self, searcher):
         query = make_query(concept_terms=["dependency injection", "Depends"])
         result = run(searcher.search(query))
-        assert result.candidates[0].matched_terms == ["dependency injection", "Depends"]
+        # This fixture contains Depends and "dependency", but not "injection".
+        assert result.candidates[0].matched_terms == ["Depends"]
 
 
 class TestSearchAuthorization:

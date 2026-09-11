@@ -1,5 +1,7 @@
 # 完整产品候选交接
 
-以 CONVERSATION_REPAIR.md、FINAL_REVIEW.md 与当前 Draft PR #69 为准。三位成员原始提交已纳入；划选批注之后，继续修复真实代码检索、连续追问、模型选择和等待体验，并简化为阅读/对话双栏。当前完整本机测试为 390 项 Python、30 项前端；历史九条产品故事保留，新增真实 Qwen + GitHub 的标签/预测首问与追问验收。
+当前依据为 CONTEXTUAL_SEARCH.md、CONVERSATION_REPAIR.md 和 FINAL_REVIEW.md。工作分支 feat/full-learning-integration，沿用 Draft PR #69；三位成员的模块与原始提交保持纳入。本轮继续修复选区后的上下文丢失、知识点白名单、错误代码匹配、模型格式失败和重复网络读取。
 
-下一步是核对最终提交的 CI，进行 Lead 人工验收；DGX 和 Windows 的真实用户交互仍需要目标机器。不要把旧 PARTIAL 材料当作当前实现状态，也不要代替用户声明已批准或合并。
+当前本机 423 项 Python、30 项前端通过。最新真实联网验收见 CONTEXTUAL_SEARCH.md，精确安装 Head、CI 和备份以发布清单核对。历史成功样本不能代替新增路径的验收。
+
+DGX/Windows 实机交互与 Mac 验收分别记录。Lead 人工审阅和合并尚未代行；不得把已集成候选视为 main。

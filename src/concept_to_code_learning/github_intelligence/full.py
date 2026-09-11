@@ -29,7 +29,8 @@ from .verifier import SourceVerifier
 
 def build_provider(settings: ProviderSettings) -> SourceProvider:
     """Construct the GitHub source provider from Lead-supplied settings."""
-    client = GitHubRawClient(token=settings.github_token)
+    client = GitHubRawClient(token=settings.github_token,
+                             cache_dir=settings.data_dir / "public-source-cache")
     verifier = SourceVerifier(client)
     searcher = SpecifiedPublicSearcher(client)
     registry = LocalRegistry(settings.authorized_local_roots)
@@ -59,7 +60,7 @@ class GitHubSourceProvider(SourceProvider):
             features=[
                 "specified_public: bounded concept discovery",
                 "specified_public.verify (commit, file, AST, hash, license)",
-                "public_search: approved concept terms only",
+                "public_search: context-derived public technical concepts",
                 "local_authorized: tracked files, hashes and dirty state",
             ],
             status="AVAILABLE",

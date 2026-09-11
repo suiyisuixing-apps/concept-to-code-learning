@@ -32,9 +32,10 @@ export default function Conversation({ turns, current, noteText, setNoteText, sa
           {answer.status === "FIXTURE" && <p className="answer-status">演示回答</p>}
           {answer.answer_sections.map((section, i) => <section key={i}><h3>{section.title}</h3><p><Prose text={section.text}/></p></section>)}
           {answer.comparison && <section><h3>实现比较</h3><p>{answer.comparison.summary}</p><ul>{answer.comparison.tradeoffs.map((text, i) => <li key={i}>{text}</li>)}</ul></section>}
-          {turn.sources?.map((source) => <div key={source.source_id}><SourceCard source={source} expanded={!turns.slice(0, turnIndex).some((previous) => previous.sources?.some((item) => item.source_id === source.source_id))}/>{answer.concept_code_links.filter((link) => link.source_id === source.source_id).map((link, i) => <p key={i} className="code-link-reason"><strong>{link.concept}</strong>：{link.reason}</p>)}</div>)}
+          {turn.sources?.map((source) => <div key={source.source_id}><SourceCard source={source} expanded={!turns.slice(0, turnIndex).some((previous) => previous.sources?.some((item) => item.source_id === source.source_id))}/></div>)}
           {answer.example_blocks.filter((item) => item.provenance_kind !== "SOURCE_EXACT").map((item, index) => <section key={index}><h3>{item.provenance_kind === "ADAPTED_FROM_SOURCE" ? "改编示例" : "AI 生成示例"} · 未运行</h3><pre><code>{item.code}</code></pre><p>{item.explanation}</p></section>)}
           <details className="answer-details"><summary>引用与回答信息</summary>{answer.document_citations.map((item, i) => <blockquote key={i}>{item.quote}</blockquote>)}
+            {answer.concept_code_links.map((link, i) => <p key={`link-${i}`}><strong>{link.concept}</strong>：{link.reason}</p>)}
             {answer.limitations.map((text, i) => <p key={i}>{text}</p>)}
             <p>{answer.provider_info.model_id?.split(/[\\/]/).at(-1) || "测试模型"} · 模型用时 {(answer.metrics.latency_ms / 1000).toFixed(1)} 秒</p>
             <p>输入 {answer.metrics.input_tokens ?? "未知"} / 输出 {answer.metrics.output_tokens ?? "未知"} tokens · {answer.metrics.token_source === "PROVIDER_USAGE" ? "模型报告" : "估算"}</p>

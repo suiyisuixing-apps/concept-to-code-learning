@@ -29,7 +29,7 @@ Current authorization: FULL-DELIVERY-PLAN-1 (2026-09-09), not the old PPTX-only 
 
 Read the complete role task in docs/codex-prompts/full-delivery/ before implementation. The common additive contract is full-delivery-v1; preserve schemas/sprint-1, /api/sprint-1, legacy APIs and old note snapshots. See docs/full-delivery/BASELINE.json and INTERFACES.md. An unmerged candidate is not main.
 
-2026-09-11 takeover authorization: the user directed Lead to review, patch and complete all member modules in the integration branch, then integrate the product. The user also authorized Lead to arrange the missing model; this run uses one pinned free local Qwen model. Keep final human review and merge claims separate.
+2026-09-11 takeover authorization: the user directed Lead to review, patch and complete all member modules in the integration branch, then integrate the product. The user also authorized Lead to arrange the missing model; the initial installation used one pinned free local Qwen model. The subsequent context-search repair adds one pinned free local Coder model under that authorization and retains the original model as a selectable alternative. Keep final human review and merge claims separate.
 
 Ownership for member development: inogi owns apps/web and documents; zch owns github_intelligence; fqf owns tutor/runtime/teaching/evaluation/DGX. Lead owns full_contracts, full_learning, root API, NoteStore, global configuration/dependencies/CI and Skill. Implement your complete module continuously; do not rewrite another member's entire module. Missing upstream modules permit labelled test doubles, never false live acceptance. Backend dependency requests belong in deps/<role>.txt until Lead integration.
 

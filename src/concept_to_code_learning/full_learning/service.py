@@ -117,8 +117,8 @@ class LearningService:
             else:
                 if scope.auto_public_search and not scope.approved_query_terms:
                     terms = public_terms(terms)
-                    require(bool(terms), "QUERY_TERMS_NOT_APPROVED", "sources",
-                            "请在搜索设置里补充一个通用知识点，再找相关代码。")
+                    require(bool(terms), "NO_RELEVANT_SOURCE", "sources",
+                            "没有取得可用于公开检索的内容。")
                     scope.query_terms_approved = True
                     scope.approved_query_terms = terms
                 allowed = {term.casefold() for term in scope.approved_query_terms}
@@ -137,12 +137,15 @@ class LearningService:
             value.pop("auto_public_search")
         return m.digest(canonical(value))
 
-    async def search(self, request: m.SearchRequest) -> m.SearchResult:
+    async def search(self, request: m.SearchRequest, *, repository_hints=(), file_hints=()) -> m.SearchResult:
         session = self.store.session(request.session_id)
         require(session.context_revision == request.context_revision and session.context is not None,
                 "CANCELLED", "context", "检索上下文已变化。", 409)
         capability = await self.provider_capability(self.providers.sources, "sources")
         query = self.make_query(request.scope, request.concept_terms, capability.mode)
+        if query.source_mode == "public_search" and query.auto_public_search:
+            query.repository_hints = list(repository_hints)[:3]
+        query.file_hints = list(file_hints)[:5]
         if query.source_mode == "local_authorized":
             handles = await self.call("sources", self.providers.sources.local_handles)
             require(query.local_handle in handles, "AUTH_REQUIRED", "sources", "本地仓库句柄尚未授权。")
@@ -355,6 +358,12 @@ class LearningService:
         require(context.coverage != "NO_EXTRACTABLE_TEXT", "NO_EXTRACTABLE_TEXT", "document",
                 "当前页可以阅读，但没有可用于讲解的文本。")
         conversation, sources, observations, warnings = [], [], [], []
+        if not request.continue_from:
+            # Selection changes create a new evidence epoch, not a new conversation.
+            # Carry only prose from this document version; never reuse old source IDs.
+            conversation = [item.explanation for item in self.store.history(request.session_id)
+                            if item.explanation.context_snapshot.document_id == context.document_id
+                            and item.explanation.context_snapshot.document_revision == context.document_revision][-6:]
         if request.continue_from:
             require(request.continue_from in session.explanation_ids, "DOCUMENT_VERSION_MISMATCH",
                     "session", "追问不属于当前冻结上下文。", 409)
@@ -386,6 +395,8 @@ class LearningService:
         require(plan.question == request.question.strip() and plan.level == request.level
                 and plan.mode == capability.mode and plan.status == "READY",
                 "MODEL_OUTPUT_INVALID", "tutor", "教学计划改变了问题、难度或执行模式。", 502)
+        if plan.reuse_previous_sources is False and not request.source_ids:
+            sources = []
         if request.source_ids:
             sources = await self.existing_sources(request.session_id, request.source_ids, request.scope)
         elif request.candidate_ids:
@@ -417,7 +428,9 @@ class LearningService:
                 progress("searching")
                 result = await self.search(m.SearchRequest(session_id=request.session_id,
                     context_revision=request.context_revision, question=request.question,
-                    concept_terms=terms, scope=request.scope))
+                    concept_terms=terms, scope=request.scope),
+                    repository_hints=plan.source_query.repository_hints if plan.source_query else (),
+                    file_hints=plan.source_query.file_hints if plan.source_query else ())
                 self.store.check_request(request.request_id)
                 if result.selection_required:
                     return m.ExplanationResult(mode=result.mode, request_id=request.request_id,

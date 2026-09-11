@@ -344,7 +344,10 @@ def test_tutor_plans_explains_and_rejects_unprovided_blocks(tmp_path):
             body = json.loads(request.content)
             seen.append(body)
             data = json.loads(body["messages"][1]["content"])
-            if "verified_sources" in data:
+            # No-code teaching omits source payloads; comparison is a teaching-stage field.
+            if "compare" in data:
+                assert data["question"] == "说明外部提供依赖与依赖注入的关系。"
+                assert data["original_question"] in {"解释这个概念", "再次解释"}
                 block = data["document_blocks"][0]
                 value = {
                     "answer_sections": [{"title": "理解", "text": "依赖由外部提供。"}],
@@ -361,6 +364,7 @@ def test_tutor_plans_explains_and_rejects_unprovided_blocks(tmp_path):
                 value = {
                     "concepts": ["依赖注入"],
                     "query_terms": ["dependency"],
+                    "learning_goal": "说明外部提供依赖与依赖注入的关系。",
                     "needs_code": True,
                     "prerequisites": [],
                     "uncertainties": [],
@@ -385,6 +389,7 @@ def test_tutor_plans_explains_and_rejects_unprovided_blocks(tmp_path):
             plan = await tutor.plan(context, "解释这个概念", level, [])
             answer = await tutor.explain(context, [], plan, [])
             assert answer.level == level and answer.status == "NO_VERIFIED_CODE"
+            assert answer.question == "解释这个概念"
             assert answer.metrics.input_tokens == 200 and answer.metrics.output_tokens == 100
             assert answer.metrics.token_source == "PROVIDER_USAGE"
         bad = True

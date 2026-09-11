@@ -16,10 +16,42 @@ def partial_string(value):
     return ""
 
 
-def preview_sections(raw):
+def plain_preview(raw, code):
+    """Read only top-level prose fields, never keys nested in source metadata."""
+    tail, result, decoder = raw.lstrip(), [], json.JSONDecoder()
+    if not tail.startswith("{"):
+        return []
+    tail = tail[1:]
+    for _ in range(16):
+        tail = tail.lstrip(" \n\r\t,")
+        try:
+            key, length = decoder.raw_decode(tail)
+        except ValueError:
+            break
+        tail = tail[length:].lstrip()
+        if not isinstance(key, str) or not tail.startswith(":"):
+            break
+        tail = tail[1:].lstrip()
+        if key in {"answer", "connection"}:
+            match = re.match(r'^"((?:[^"\\]|\\.)*)', tail)
+            if match and (text := partial_string(match[1])):
+                title = "对应原文" if key == "connection" else "代码怎么实现" if code else "核心意思"
+                result.append({"title": title, "text": text})
+        try:
+            _, length = decoder.raw_decode(tail)
+        except ValueError:
+            break
+        tail = tail[length:]
+    return result
+
+
+def preview_sections(raw, *, code=False):
+    raw = raw.lstrip()
+    if raw.startswith("```json"):
+        raw = raw[7:].lstrip()
     start = re.search(r'"answer_sections"\s*:\s*\[', raw)
     if not start:
-        return []
+        return plain_preview(raw, code)
     tail, result = raw[start.end():], []
     decoder = json.JSONDecoder()
     while tail.strip() and len(result) < 8:

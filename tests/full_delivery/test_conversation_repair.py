@@ -15,7 +15,7 @@ from concept_to_code_learning.learning_concepts import guide_for, guide_for_term
 from concept_to_code_learning.runtime.async_model import AsyncLocalModelAdapter
 from concept_to_code_learning.runtime.local_model import LocalModelConfig
 from concept_to_code_learning.tutor.catalog import TutorCatalog
-from concept_to_code_learning.tutor.full import GroundedTutorProvider
+from concept_to_code_learning.tutor.full import GroundedTutorProvider, PlanOutput
 from concept_to_code_learning.tutor.preview import preview_sections
 
 PREFIX = "/api/learning/v1"
@@ -143,20 +143,22 @@ def test_prediction_guides_and_examples_include_fit_and_predict_not_just_a_docst
     assert start > 70 and end > 90 and "model.fit(X, y)" in code and "model.predict(X)" in code
 
 
-def test_known_concept_planning_does_not_spend_a_generation(client):
+def test_contextual_planning_uses_ai_outside_retrieval_guides(client):
     async def scenario():
         context = m.DocumentContext.model_validate(activate(client)["context"])
-        class NoGeneration:
-            async def generate(self, *args, **kwargs):
-                raise AssertionError("Known retrieval hints do not require a model call")
-        tutor = GroundedTutorProvider(NoGeneration())
-        plan = await tutor.plan(context, "解释输入 X、标签 Y 与预测", "Source-code", [])
-        assert "predict" in plan.source_query.concept_terms and plan.needs_code
-        # An explicit new question outranks the old selected text and guide order.
-        context = context.model_copy(update={"selected_text": "Label Y is the target to predict"})
-        plan = await tutor.plan(context, "现在结合代码解释聚类", "Source-code", [])
-        assert "kmeans" in plan.source_query.concept_terms
-        # A generic continuation keeps the most recent topic, not the older quote.
-        plan = await tutor.plan(context, "继续解释里面的实现", "Source-code", [plan])
-        assert "kmeans" in plan.source_query.concept_terms
+        tutor = GroundedTutorProvider(None)
+        seen = []
+        async def model(prompt, data, schema):
+            seen.append(data)
+            return PlanOutput(concepts=["最短路径"], query_terms=["shortest path", "dijkstra_path"],
+                              needs_code=True, repository_hints=["networkx/networkx"],
+                              file_hints=["networkx/algorithms/shortest_paths/weighted.py"]), None
+        tutor._json = model
+        plan = await tutor.plan(context, "所以 GitHub 上有代码吗？给我看看例子", "Source-code", [])
+        assert plan.source_query.concept_terms == ["shortest path", "dijkstra_path"]
+        assert plan.source_query.repository_hints == ["networkx/networkx"]
+        assert seen[0]["document_blocks"] and seen[0]["question"].endswith("看看例子")
+        query = LearningService.make_query(m.SourceScope(source_mode="public_search",
+            network_authorized=True, auto_public_search=True), plan.source_query.concept_terms, "LIVE")
+        assert query.concept_terms == plan.source_query.concept_terms
     asyncio.run(scenario())

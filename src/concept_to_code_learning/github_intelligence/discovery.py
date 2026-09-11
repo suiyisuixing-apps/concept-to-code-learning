@@ -1,7 +1,9 @@
 """Concept-to-file discovery: bounded text reads and static symbols, never execution."""
 
 import ast
+import math
 import re
+from collections import Counter
 from pathlib import PurePosixPath
 
 from concept_to_code_learning.full_contracts import models as m
@@ -24,14 +26,18 @@ EXTENSIONS = {
 IGNORED = {"node_modules", ".git", ".venv", "venv", "vendor", "dist", "build", "__pycache__"}
 
 
+def tokens(value):
+    value = re.sub(r"([a-z])([A-Z])", r"\1 \2", value)
+    return {word[:-1] if len(word) > 4 and word.endswith("s") else word
+            for word in re.findall(r"[a-z0-9]+", value.casefold())}
+
+
 def matched(text, terms):
-    value = text.casefold()
-    return [
-        term
-        for term in terms
-        if term.casefold() in value
-        or any(len(word) > 3 and word in value for word in re.findall(r"\w+", term.casefold()))
-    ]
+    words, value = tokens(text), text.casefold()
+    # A graph clone is not a weighted-graph or priority-queue implementation.
+    # Match complete concepts/API tokens instead of any common word fragment.
+    return [term for term in terms if (tokens(term) and tokens(term) <= words)
+            or (not tokens(term) and term.casefold() in value)]
 
 
 def ranked_paths(paths, terms, language=None):
@@ -43,12 +49,30 @@ def ranked_paths(paths, terms, language=None):
         and not PurePosixPath(p).name.startswith(".")
         and (not language or EXTENSIONS[PurePosixPath(p).suffix.lower()] == language.lower())
     ]
+    path_words = {path: tokens(path) for path in eligible}
+    frequency = Counter(word for words in path_words.values() for word in words)
+    groups = [tokens(term) for term in terms]
+    query_words = set().union(*groups) if groups else set()
+    weights = {word: math.log(1 + len(eligible) / (1 + frequency[word])) for word in query_words}
+
+    def score(path):
+        # Rare names such as an algorithm/API outrank words shared by the whole
+        # repository. Filename matches outweigh generic directory names.
+        stem = tokens(PurePosixPath(path).stem)
+        total = 0
+        for index, group in enumerate(groups):
+            present = group & path_words[path]
+            whole_concept = 1 if present == group else 0.15
+            total += whole_concept / (index + 1) ** 2 * sum(
+                weights[word] * (3 if word in stem else 1) for word in present)
+        return total
+
     return sorted(
         eligible,
         key=lambda p: (
-            -len(matched(p, terms)),
             PurePosixPath(p).stem in {"__init__", "errors", "exceptions", "version", "_version"},
-            any(x in p.lower().split("/") for x in ("tests", "test", "examples")),
+            any(x in p.lower().split("/") for x in ("tests", "test", "__test__")),
+            -score(p),
             len(p),
             p,
         ),
@@ -90,7 +114,8 @@ def select_symbol(text, path, terms):
         excerpt = "\n".join(lines[start - 1 : end])
         hits = matched(name + " " + excerpt, terms)
         if hits and len(excerpt) <= 12000 and end - start < 180:
-            candidates.append((len(matched(name, terms)) * 4 + len(hits), -(end - start), name))
+            candidates.append((len(matched(name.rsplit(".", 1)[-1], terms)) * 4 + len(hits),
+                               -(end - start), name))
     return max(candidates)[2] if candidates else None
 
 

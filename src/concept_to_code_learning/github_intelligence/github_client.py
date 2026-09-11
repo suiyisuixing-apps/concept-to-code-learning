@@ -1,4 +1,4 @@
-"""Bounded, cancellable public GitHub reads; per-instance cache and no ambient proxy."""
+"""Bounded, cancellable public GitHub reads with public-only caching and no ambient proxy."""
 
 import asyncio
 import base64
@@ -11,6 +11,7 @@ from urllib.parse import quote, urlencode, urlsplit
 import httpx
 
 from .errors import SourceError
+from .public_cache import PublicResponseCache
 
 ALLOWED_HOSTS = frozenset({"raw.githubusercontent.com", "api.github.com"})
 MAX_BODY_BYTES = 1024 * 1024
@@ -37,7 +38,7 @@ def repo_path(owner, name):
 
 
 class GitHubRawClient:
-    def __init__(self, *, token=None, timeout=10.0, retries=1, transport=None):
+    def __init__(self, *, token=None, timeout=10.0, retries=1, transport=None, cache_dir=None):
         self._token = token
         self._timeout = min(30, max(0.1, timeout))
         self._retries = min(1, max(0, retries))
@@ -45,7 +46,9 @@ class GitHubRawClient:
         self._transport = transport
         self._cache = OrderedDict()
         self._cache_size = 0
-        self._blocked_until = 0
+        self._blocked_until = {}
+        self._public_repositories = set()
+        self._public_cache = PublicResponseCache(cache_dir)
 
     async def _ensure_client(self):
         if self._client is None:
@@ -65,25 +68,30 @@ class GitHubRawClient:
             or str(data.get("full_name", "")).casefold() != f"{owner}/{name}".casefold()
         ):
             raise SourceError("REPO_UNAVAILABLE", "repository", "只允许已核实的公开仓库。", 403)
+        self._public_repositories.add(f"{owner}/{name}".casefold())
         return data
 
     async def search_repositories(self, terms, limit, language=None):
-        # Only server-approved concept terms reach this endpoint. Quote search operators.
-        words = ['"' + re.sub(r'["\\\x00-\x1f]', " ", term) + '"' for term in terms[:3]]
-        query = " ".join(words)
-        if language and re.fullmatch(r"[A-Za-z0-9+#._-]{1,30}", language):
-            query += " language:" + language
-        url = "https://api.github.com/search/repositories?" + urlencode(
-            {"q": query + " is:public", "per_page": min(20, limit), "sort": "stars"}
-        )
-        data = await self._get_json(url, stage="search")
-        return [
-            r["full_name"]
-            for r in data.get("items", [])
-            if isinstance(r, dict)
-            and r.get("private") is False
-            and isinstance(r.get("full_name"), str)
-        ][:limit]
+        # A concept and its implementation symbols are alternatives, not mandatory
+        # AND conditions on repository descriptions. Try the primary topic first.
+        topics = list(dict.fromkeys(re.sub(r"\b(?:implementation|implementations|examples?|tutorials?)\b",
+                                          "", term, flags=re.I).strip() for term in terms[:2]))
+        for term in topics:
+            if not term:
+                continue
+            word = re.sub(r'["\\\x00-\x1f]', " ", term)
+            query = '"' + word + '" in:name,description,readme is:public'
+            if language and re.fullmatch(r"[A-Za-z0-9+#._-]{1,30}", language):
+                query += " language:" + language
+            url = "https://api.github.com/search/repositories?" + urlencode(
+                {"q": query, "per_page": min(20, limit), "sort": "stars"})
+            data = await self._get_json(url, stage="search")
+            found = [r["full_name"] for r in data.get("items", []) if isinstance(r, dict)
+                     and r.get("private") is False and isinstance(r.get("full_name"), str)
+                     and re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", r["full_name"])]
+            if found:
+                return found[:limit]
+        return []
 
     async def tree(self, owner, name, commit):
         return await self._get_json(
@@ -175,17 +183,29 @@ class GitHubRawClient:
             raise SourceError("NETWORK_NOT_AUTHORIZED", stage, "地址超出 GitHub 读取范围。", 403)
         now = time.monotonic()
         cache_key = (url, accept or "application/vnd.github+json")
+        immutable = bool(re.search(r"/(?:git/trees|commits)/[0-9a-f]{40}(?:\?|$)", url)
+                         or re.search(r"[?&]ref=[0-9a-f]{40}(?:&|$)", url))
+        repository = re.match(r"/repos/([^/]+/[^/]+)/", parts.path)
+        # Recheck public visibility in this client before reusing persistent bytes.
+        persist = (immutable and repository is not None
+                   and repository[1].casefold() in self._public_repositories)
+        disk_key = "\n".join(cache_key)
         cached = self._cache.get(cache_key)
         if cached and cached[0] > now:
             self._cache.move_to_end(cache_key)
             return httpx.Response(200, content=cached[1])
-        if self._blocked_until > now:
+        if persist and (body := self._public_cache.get(disk_key)) is not None:
+            self._remember(cache_key, body, immutable=True)
+            return httpx.Response(200, content=body)
+        bucket = "search" if parts.path.startswith("/search/") else "core"
+        remaining = max(self._blocked_until.get(bucket, 0), self._blocked_until.get("all", 0)) - now
+        if remaining > 0:
             raise SourceError(
                 "RATE_LIMITED",
                 stage,
-                "GitHub 限流等待窗口尚未结束。",
+                f"GitHub 暂时限制了请求，约 {max(1, int((remaining + 59) // 60))} 分钟后可以重试。",
                 429,
-                needed_action="等待后重试，不需要扩大令牌权限。",
+                needed_action="稍后重试；已打开的来源仍可阅读。",
             )
         headers = {
             "Accept": accept or "application/vnd.github+json",
@@ -216,18 +236,9 @@ class GitHubRawClient:
                                 )
                             chunks.append(chunk)
                         body = b"".join(chunks)
-                previous = self._cache.pop(cache_key, None)
-                if previous:
-                    self._cache_size -= len(previous[1])
-                immutable = bool(re.search(r"/(?:git/trees|commits)/[0-9a-f]{40}(?:\?|$)", url)
-                                 or re.search(r"[?&]ref=[0-9a-f]{40}(?:&|$)", url))
-                self._cache[cache_key] = (
-                    time.monotonic() + (300 if immutable else 30),
-                    body,
-                )
-                self._cache_size += len(body)
-                while self._cache_size > 20 * MAX_BODY_BYTES or len(self._cache) > 100:
-                    self._cache_size -= len(self._cache.popitem(last=False)[1][1])
+                self._remember(cache_key, body, immutable=immutable)
+                if persist:
+                    self._public_cache.put(disk_key, body)
                 return httpx.Response(200, content=body)
             except (httpx.TransportError, TimeoutError):
                 if attempt == self._retries:
@@ -238,6 +249,15 @@ class GitHubRawClient:
                         504,
                         needed_action="检查网络后重试。",
                     ) from None
+
+    def _remember(self, key, body, *, immutable):
+        previous = self._cache.pop(key, None)
+        if previous:
+            self._cache_size -= len(previous[1])
+        self._cache[key] = (time.monotonic() + (86400 if immutable else 120), body)
+        self._cache_size += len(body)
+        while self._cache_size > 20 * MAX_BODY_BYTES or len(self._cache) > 100:
+            self._cache_size -= len(self._cache.popitem(last=False)[1][1])
 
     def _interpret(self, response, *, url, stage, allow_404):
         status = response.status_code
@@ -252,11 +272,17 @@ class GitHubRawClient:
                     delay = max(delay, float(response.headers["x-ratelimit-reset"]) - time.time())
             except ValueError:
                 delay = 60
-            self._blocked_until = time.monotonic() + min(3600, max(1, delay))
+            # Primary search/core quotas are independent. A secondary limit with
+            # Retry-After applies globally, including when quota remains.
+            bucket = "all"
+            if response.headers.get("x-ratelimit-remaining") == "0":
+                bucket = "search" if urlsplit(url).path.startswith("/search/") else "core"
+            delay = min(3600, max(1, delay))
+            self._blocked_until[bucket] = time.monotonic() + delay
             raise SourceError(
                 "RATE_LIMITED",
                 stage,
-                "GitHub 达到速率限制。",
+                f"GitHub 暂时限制了请求，约 {max(1, int((delay + 59) // 60))} 分钟后可以重试。",
                 429,
                 needed_action="等待限流窗口后重试。",
             )
@@ -280,3 +306,4 @@ class GitHubRawClient:
             self._client = None
         self._cache.clear()
         self._cache_size = 0
+        self._public_repositories.clear()

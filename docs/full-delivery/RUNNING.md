@@ -31,11 +31,11 @@ npm --prefix apps/web run build
 
 设置文件为 macOS `~/Library/Application Support/ConceptToCode/desktop.json`、Windows `%LOCALAPPDATA%/ConceptToCode/desktop.json`、Linux `~/.local/share/concept-to-code/desktop.json`。也可通过 `--config 路径` 指定。
 
-Apple Silicon Mac，使用已安装的 MLX 环境与已下载模型，按 `config/desktop-mlx.example.json` 填写实际路径。`model_python` 指向该虚拟环境的 Python；模型文件留在 Git 之外。本次本机验收采用 Qwen3-4B-Instruct-2507 的 MLX 4bit 版本，约 2.3 GB，固定版本和校验记录见审核材料。启动时关闭在线模型下载与遥测，只监听 127.0.0.1。
+Apple Silicon Mac，使用已安装的 MLX 环境与已下载模型，按 `config/desktop-mlx.example.json` 填写实际路径。`model_python` 指向该虚拟环境的 Python；模型文件留在 Git 之外。本次本机验收采用 Qwen3-4B-Instruct-2507 的 MLX 4bit 版本，约 2.3 GB，固定版本和校验记录见审核材料。启动时关闭在线模型下载与遥测，只监听 127.0.0.1。另已核验 Coder 7B 4bit 的本机安装，精确修订和文件校验见 `docs/delivery/lead/CONTEXTUAL_SEARCH.md`。`model_id` 可选，用于从服务实际提供的列表指定默认模型；不填时使用 `model_dir`。
 
 连接已有服务（Windows、Linux 或 Mac）使用 `config/desktop-endpoint.example.json`。服务需要 `/v1/models` 和 `/v1/chat/completions`，支持 Chat Completions 流式请求；接受该请求而返回完整 JSON 的服务也可使用，正文会在完成后显示。模型名必须准确。远程服务需 HTTPS，并且已获授权发送所选文档片段与来源代码，才可设置 `model_network_authorized: true`。SSH 转发到本机的已授权 DGX 可采用 loopback 地址；主机部署见 `deploy/dgx/`。
 
-网页对话顶部可以选择服务实际提供的模型。点击“模型设置”，填写已有的本机兼容服务地址，再点击“连接”；列表来自服务的 `/v1/models`，不会下载模型。当前安装只有 Qwen3-4B-Instruct-2507-4bit，连接提供其他模型的服务后才会出现其他选项。新地址只允许 loopback；已在主机配置中授权的远程服务继续适用原有配置。模型选择保存在当前浏览器，每次请求单独绑定模型，不修改其他页面的默认配置。
+网页对话顶部可以选择服务实际提供的模型。点击“模型设置”，填写已有的本机兼容服务地址，再点击“连接”；列表来自服务的 `/v1/models`，不会下载模型。本次本机已安装 Qwen3-4B-Instruct-2507-4bit 和 Qwen2.5-Coder-7B-Instruct-4bit，默认采用 Coder 7B；首次切换会加载对应权重。新地址只允许 loopback；已在主机配置中授权的远程服务继续适用原有配置。模型选择保存在当前浏览器，每次请求单独绑定模型，不修改其他页面的默认配置。
 
 秘钥仅通过 `C2C_MODEL_API_KEY` / `C2C_GITHUB_TOKEN` 环境变量传入，不写到设置文件或网页。未提供 GitHub token 时仍可读取公开仓库，但受匿名配额限制；限流会明确显示。产品不读取 gh 的管理员凭据。
 
@@ -65,7 +65,11 @@ desktop 入口默认在上述应用目录的 `data/` 保存文档副本与 `lear
 
 对话、批注、笔记在右侧切换。划选原文后可编辑问题或写批注；PDF 默认显示原版，提取文字按需展开。完成的对话从本地数据库恢复，问题草稿保存在当前标签页；关闭标签页可能清除未发送草稿。Enter 发送、Shift+Enter 换行；停止生成保留问题，临时正文不会成为已保存的回答。
 
-“GitHub 找代码”允许使用通用知识点检索公开代码。常见机器学习和编程知识点有检索指引，仓库、路径、版本与代码仍逐次核验。指引未覆盖的主题可在“搜索设置”填写通用关键词，或指定自己的公开仓库。私有课件原文不发送给 GitHub。选择“仅文档”不检索代码。
+“GitHub 找代码”由模型结合当前选区、周围段落和同一文档的历史对话理解问题，再检索公开实现。“继续”“给个代码例子”可以接续上文，不需要填写搜索词。关键词和指定仓库仅用于主动限定范围。模型建议的仓库、路径必须经过实际读取；界面显示固定版本、行号和许可。选择“仅文档”不检索代码。
+
+GitHub 请求只包含模型提炼的简短英文技术概念、仓库和路径线索，不发送文档整页、原句或对话。模型负责去除私有名称，额外格式检查拦截网址、路径、长标识符和明显凭据；这并不是对所有私有术语的识别保证。
+
+固定 commit 的公开源码响应会在 `data/public-source-cache` 缓存最多24小时，限制为48 MiB/128条。每次启动先重新检查仓库公开可读，再复用缓存字节；源码和许可仍校验哈希、范围与引用。缓存不含文档和凭据，可在应用关闭时删除。GitHub 游客配额和网络状态仍会影响新仓库读取，缓存不绕过限流。
 
 ## 常见情况
 
