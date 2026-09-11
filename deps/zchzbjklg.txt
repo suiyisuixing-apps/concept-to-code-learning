@@ -1,0 +1,16 @@
+# zchzbjklg — github_intelligence module dependencies
+
+No additional runtime dependencies beyond the project's existing product deps
+(jsonschema, fastapi, uvicorn) and dev deps (pytest, ruff, PyYAML, httpx).
+
+The source provider uses httpx (already in [project.optional-dependencies].dev)
+for GitHub raw content and refs API calls. No new paid services, tokens, or
+external repositories are required. The GitHub token is read from
+C2C_GITHUB_TOKEN via ProviderSettings (see full_learning/providers.py); it is
+never logged, serialized into exceptions, or persisted to disk by this module.
+
+## Test dependencies
+
+Tests use only the existing dev deps (pytest, httpx). No pytest-asyncio is
+required: async tests are wrapped with asyncio.run() in a fresh event loop,
+keeping pyproject.toml untouched.
