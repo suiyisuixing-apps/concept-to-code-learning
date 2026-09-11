@@ -271,10 +271,30 @@ def test_empty_or_refused_completion_is_visible(serve):
 
 
 def test_redirects_are_never_followed():
+    redirected_requests = []
+    original_bodies = []
+
+    class DestinationHandler(BaseHTTPRequestHandler):
+        def do_GET(self):  # noqa: N802
+            redirected_requests.append(self.path)
+            self.send_response(200)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+
+        do_POST = do_GET
+
+        def log_message(self, *args):
+            pass
+
+    destination = ThreadingHTTPServer(("127.0.0.1", 0), DestinationHandler)
+
     class RedirectHandler(BaseHTTPRequestHandler):
         def do_POST(self):  # noqa: N802
+            # Consume the POST before closing the socket. An unread request body
+            # can reset the connection on Windows instead of delivering the 302.
+            original_bodies.append(self.rfile.read(int(self.headers["Content-Length"])))
             self.send_response(302)
-            self.send_header("Location", "http://127.0.0.1:1/stolen")
+            self.send_header("Location", f"http://127.0.0.1:{destination.server_port}/stolen")
             self.send_header("Content-Length", "0")
             self.end_headers()
 
@@ -282,15 +302,23 @@ def test_redirects_are_never_followed():
             pass
 
     forward = ThreadingHTTPServer(("127.0.0.1", 0), RedirectHandler)
-    threading.Thread(target=forward.serve_forever, daemon=True).start()
+    servers = (destination, forward)
+    threads = [threading.Thread(target=server.serve_forever, daemon=True) for server in servers]
+    for thread in threads:
+        thread.start()
     try:
         result = make(f"http://127.0.0.1:{forward.server_address[1]}/v1").generate(MESSAGES)
         assert not result.ok
         assert result.error_code == ERROR_HTTP  # 3xx surfaces as an error, no follow
         assert "302" in (result.detail or "")
+        assert len(original_bodies) == 1
+        assert json.loads(original_bodies[0])["messages"] == MESSAGES
+        assert redirected_requests == []
     finally:
-        forward.shutdown()
-        forward.server_close()
+        for server, thread in zip(servers, threads, strict=True):
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=5)
 
 
 # -- input/output limits and key hygiene ----------------------------------------

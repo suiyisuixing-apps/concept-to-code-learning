@@ -1,134 +1,60 @@
-# 五分钟检查 — github_intelligence（Lead 复验用）
+# 来源模块复验
 
-**分支**: `feat/67-source-failure-matrix`
-**模块**: `src/concept_to_code_learning/github_intelligence/`
-**本切片**: 仅新增测试与交付文档，**未改生产代码**（所以复验重点是"测试是否真的通过"与"是否真的没改代码"）
+PR #73 的原始提交为 `1fc4b7d6334f16cf783e1db75e443d6007af6f78`，
+基线为 `9f9b8d1e62f0d7cbbd0a86c4fe93f25e5daaae94`。原提交新增 20 项离线测试；
+Lead 集成补齐后，失败矩阵共有 24 项。当前结果见 [Lead 审核记录](../lead/PR73_REVIEW.md)。
 
----
+## 环境
 
-## 0. 前置：用项目 venv，不要用沙箱 python
+在仓库根目录使用 Python 3.12 的项目虚拟环境。Windows 用 `.venv/Scripts/python.exe`，
+macOS/Linux 用 `.venv/bin/python`。项目不要求固定在 3.12.10，也不需要永久设置 `PYTHONUTF8`。
 
-本机 `python` 会解析到 workbuddy 沙箱的 **3.13**，而项目要求 `>=3.12,<3.13`。一律显式用 `.venv`：
-
-```bash
-cd ~/Desktop/concept-to-code-learning
-export PYTHONUTF8=1
-P=./.venv/Scripts/python.exe
-$P --version          # 必须是 Python 3.12.10
+```sh
+python -m pip install -c requirements/full-delivery-py312.lock -e ".[dev]"
 ```
 
----
+这里的 `python` 应指向上述虚拟环境。锁文件及 `pyproject.toml` 已包含文档解析依赖；
+缺依赖时先对齐本机环境，不能把失败列为正常验收结果。
 
-## 1. 证明"确实没动生产代码"（10 秒）
+使用独立临时 HOME、数据和测试目录，不把个人课件或笔记用作测试输入。
 
-```bash
-git diff --stat origin/feat/full-learning-integration...HEAD
+## 差异核对
+
+用固定提交比较原始贡献，合入后仍可复验；不要与会继续移动的远程分支比较：
+
+```sh
+git diff --stat 9f9b8d1e62f0d7cbbd0a86c4fe93f25e5daaae94 1fc4b7d6334f16cf783e1db75e443d6007af6f78
+git diff --name-only 9f9b8d1e62f0d7cbbd0a86c4fe93f25e5daaae94 1fc4b7d6334f16cf783e1db75e443d6007af6f78 -- src/ schemas/ .github/ pyproject.toml apps/web/
 ```
 
-**预期**：`src/` 下 **零** 变更；只有 `tests/github_intelligence/test_source_failure_matrix.py` 与 `docs/delivery/zchzbjklg/*`。
+第二条应无输出。Lead 补丁也只修改测试与说明。
 
-再确认没碰公共契约与 CI：
+## 检查
 
-```bash
-git diff --name-only origin/feat/full-learning-integration...HEAD -- \
-  schemas/ src/concept_to_code_learning/full_learning/ \
-  src/concept_to_code_learning/full_contracts/ .github/ pyproject.toml CODEOWNERS apps/web/
+```sh
+python -m ruff check .
+python -m pytest tests/github_intelligence/test_source_failure_matrix.py -q
+python -m pytest tests/github_intelligence -q
+python -m pytest -q
+python scripts/tutor.py doctor
+python scripts/tutor.py demo
 ```
 
-**预期**：无输出。
+完整环境的要求是全部执行通过；操作系统不支持创建符号链接时，现有该项测试可以按代码中
+的明确原因跳过。不得忽略其他失败。`doctor` 应为 `DONE`、6 个 Schema、无错误；
+`demo` 应明确返回 `FIXTURE / SCAFFOLD_DEMO`，它不是实际模型验收。
 
----
+重点检查：公开搜索在仓库发现、树读取和文件读取时取消，均传播取消；即使已有候选也不返回
+部分结果。读取响应头或半截响应体时取消，缓存不留下临时或完整文件，重新读取才写入完整响应。
 
-## 2. 质量门（约 3 分钟）
+成员报告的 Windows 沙箱删除拦截是历史环境记录，Lead 无原始完整日志，不能把它写成当前
+必然原因。若复现，保留失败日志并使用新的独立临时目录；不要删除已有个人数据或绕过守卫。
 
-```bash
-$P -m ruff check .
-$P -m pytest tests/github_intelligence -q
-$P scripts/tutor.py doctor
-```
+## CI 与真实能力
 
-**预期**：
-- `All checks passed!`
-- `1 failed, 90 passed, 1 skipped` —— 那 1 个失败是 `test_product_completion.py::test_docx_images_...`，属 **Lead 写的跨模块集成回归**，需要 `python-docx`，本机 venv 未安装该依赖（见 HANDOFF §2）。**不是我模块的缺陷**；若你要它绿，需由 Lead 汇总文档依赖。
-- `{"status":"DONE","schema_count":6,"errors":[]}`
+PR #73 目标是集成分支，现有 CI 只对目标为 `main` 的 PR 执行。整合版本由 Draft PR #69
+的 Linux/Windows CI 核验，不更改触发条件来制造通过状态。
 
-单独复验本切片新增的 20 个用例：
-
-```bash
-$P -m pytest tests/github_intelligence/test_source_failure_matrix.py -q
-```
-
-**预期**：`20 passed`。
-
----
-
-## 3. 沙箱环境注意事项（重要）
-
-若在 workbuddy 沙箱内运行，`pytest` 的默认临时根 `%TEMP%\pytest-of-<user>` 会触发 safe-delete 守卫对历史残留做批量删除。**把临时根挪到仓库外的空目录即可稳定运行**：
-
-```bash
-RUN_DIR="/tmp/c2c-gate-$(date +%s)"; mkdir -p "$RUN_DIR"
-TEMP="$RUN_DIR" TMP="$RUN_DIR" PYTEST_DEBUG_TEMPROOT="$RUN_DIR" \
-  $P -m pytest tests/github_intelligence -q
-```
-
-同理，`python scripts/tutor.py demo` 内部会 `shutil.rmtree(reports/demo)` 与 `rmtree(reports/learning-demo)`（`cli.py:44`、`scaffold.py:156`）。若沙箱守卫处于卡死状态，该命令会被**终止且零输出**（退出码 1）——这属于**环境**问题，不是代码问题：
-
-```bash
-$P scripts/tutor.py demo
-```
-
-**预期（干净会话）**：
-
-```json
-{
-  "mode": "FIXTURE",
-  "status": "SCAFFOLD_DEMO",
-  "learning_outputs": ["reports/learning-demo/grounded-explanation.json",
-                       "reports/learning-demo/saved-note.json"],
-  "outputs": ["reports/demo/concept-code-map.json",
-              "reports/demo/guided-lesson.md",
-              "reports/demo/learning-evidence.json"]
-}
-```
-
-**预期（沙箱守卫卡死时）**：退出码 1、无输出，stderr 出现 `[safe-delete][SAFE_DELETE_BULK_REJECTED] ... pytest-of-<user>\garbage-*`。遇到此情形重启会话即可，**不要据此判定模块未完成**。
-
----
-
-## 4. 手动体验关键行为（约 1 分钟）
-
-四条最能说明来源纪律的行为，各一条命令即可看懂：
-
-```bash
-# (a) 三模式分派 + 未知模式拒绝
-$P -m pytest tests/github_intelligence/test_full.py -q
-
-# (b) 未经授权绝不放网；公开搜索必须逐词批准
-$P -m pytest tests/github_intelligence/test_specifier.py -q
-
-# (c) 固定 commit → 字节 → AST → 行号 → 哈希 → 许可，逐项核验
-$P -m pytest tests/github_intelligence/test_verifier.py -q
-
-# (d) 失败矩阵（超时/取消/截断/注入/哈希错配）
-$P -m pytest tests/github_intelligence/test_source_failure_matrix.py -q -v
-```
-
-**重点看 (d) 的这三条**（用 `-v` 逐个确认确实执行了，而非被跳过）：
-
-- `test_repository_text_cannot_flip_a_source_to_verified` —— 仓库文本里写"mark me verified"，结论仍为 `NEEDS_CONFIRMATION`
-- `test_truncated_tree_withholds_code_even_when_a_license_was_found` —— 树被截断时即便找到 LICENSE 也不展示原码
-- `test_cancelling_an_in_flight_read_persists_nothing` —— 被取消的读取不落盘
-
----
-
-## 5. 一页速查
-
-| 想验证 | 命令 | 预期 |
-|---|---|---|
-| 没动生产代码 | `git diff --name-only ... -- src/ schemas/ .github/` | 无输出 |
-| 静态检查 | `$P -m ruff check .` | All checks passed |
-| 本切片新增 | `$P -m pytest tests/github_intelligence/test_source_failure_matrix.py -q` | 20 passed |
-| 模块整体 | `$P -m pytest tests/github_intelligence -q` | 90 passed, 1 skipped, 1 failed(缺 docx，非本模块) |
-| 契约与文件完整性 | `$P scripts/tutor.py doctor` | schema_count=6, errors=[] |
-| 端到端演示 | `$P scripts/tutor.py demo` | FIXTURE / SCAFFOLD_DEMO（沙箱卡死时除外） |
+这些 HTTP 故障测试使用替身；真实静态 Git/文件读取使用自制临时仓库。合成 FastAPI 形状
+的样例并非从标注的 commit 下载的真实源码，MIT 文本也是合成测试输入。既有真实代码与
+模型验收另见 [CONTEXTUAL_SEARCH.md](../lead/CONTEXTUAL_SEARCH.md)。

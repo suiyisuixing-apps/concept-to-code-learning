@@ -5,6 +5,9 @@
 **模块**: `src/concept_to_code_learning/github_intelligence/`
 **测试**: `tests/github_intelligence/`
 
+本表描述集成基线已有生产实现。`REAL` 指真实运行的本地逻辑，HTTP 输入仍使用替身，
+`LOCAL_VERIFIED` 不是实际 GitHub/模型验收。当前集成结果见 [PR73_REVIEW.md](../lead/PR73_REVIEW.md)。
+
 状态口径（三者独立，不合并成一个布尔值）：
 
 - `实现` = 真实代码路径存在且被测试驱动
@@ -29,11 +32,11 @@
 |---|---|---|---|---|
 | `specified_public` search | ✅ | REAL | LOCAL_VERIFIED | 仅 `repository_allowlist`；空 allowlist → `NO_RELEVANT_SOURCE` 422 |
 | `specified_public` verify | ✅ | REAL | LOCAL_VERIFIED | `verifier.verify_specified_public` |
-| `public_search` search | ✅ | REAL | LOCAL_VERIFIED | 需 `network_authorized` + `query_terms_approved` 且批准词覆盖 `concept_terms`，否则 `QUERY_TERMS_NOT_APPROVED` 403 |
+| `public_search` search | ✅ | REAL | LOCAL_VERIFIED | 内部需 `network_authorized` + `query_terms_approved` 且批准词覆盖 `concept_terms`；普通界面在用户授权公开搜索后由 AI 提炼词，不要求用户手填知识点，否则 `QUERY_TERMS_NOT_APPROVED` 403 |
 | `public_search` verify | ✅ | REAL | LOCAL_VERIFIED | 与 specified_public 共用核验路径，但不受 allowlist 限制 |
 | `local_authorized` search | ✅ | REAL | LOCAL_VERIFIED | 只读 Git 已跟踪文件；不联网（`network_authorized` 必须为 False） |
 | `local_authorized` verify | ✅ | REAL | LOCAL_VERIFIED | 校验检索后文件未变更，否则 `SOURCE_MISMATCH` 409 |
-| 只发批准的必要概念词，不带整页文档/私有问题原文 | ✅ | REAL | LOCAL_VERIFIED | 出站查询只由 `concept_terms` 构成；被测试断言（`test_repository_text_never_becomes_an_outbound_request`） |
+| 只发批准的必要概念词，不带整页文档/私有问题原文 | ✅ | REAL | LOCAL_VERIFIED | 出站查询只由 `concept_terms` 构成；被测试断言（`test_hostile_concept_terms_cannot_break_out_of_the_quoted_search_query`；仓库注入另测） |
 | 本地模式只读主机预注册句柄，不接受 web 任意路径 | ✅ | REAL | LOCAL_VERIFIED | `LocalRegistry` 仅由 `ProviderSettings.authorized_local_roots` 构造 |
 | 缺失 token 只阻塞相关接口 | ✅ | REAL | NOT_RUN | 见下方「外部阻塞」 |
 | 未知 `source_mode` → `INVALID_PROVIDER_RESPONSE` 422 | ✅ | REAL | LOCAL_VERIFIED | `full.py:81-92` |
@@ -58,7 +61,7 @@
 | 能力 | 实现 | 真实性 | 实测 | 说明 |
 |---|---|---|---|---|
 | 中英文概念词 → 文件候选 | ✅ | REAL | LOCAL_VERIFIED | `discovery.tokens` 按 camelCase 切分、复数归一 |
-| 概念**整体**匹配优先于零散词 | ✅ | REAL | LOCAL_VERIFIED | `discovery.matched` 要求 `tokens(term) ⊆ tokens(text)`；避免 "graph" 命中 "shortest path" |
+| 概念**整体**匹配优先于零散词 | ✅ | REAL | LOCAL_VERIFIED | `discovery.matched` 要求 `tokens(term) ⊆ tokens(text)`；避免只命中一个常见词便宣称完整概念匹配 |
 | 语言提示过滤 | ✅ | REAL | LOCAL_VERIFIED | `EXTENSIONS` 覆盖 py/js/ts/go/rs/java/c/cpp/cs/rb/swift |
 | 稀有词加权（IDF）+ 文件名加权 | ✅ | REAL | LOCAL_VERIFIED | `ranked_paths` |
 | Python 符号定位（AST，仅静态） | ✅ | REAL | LOCAL_VERIFIED | `python_symbols`；`ast.parse` 失败则退化为文本模式 |
@@ -79,7 +82,7 @@
 | `excerpt_sha256` 绑定展示片段 | ✅ | REAL | LOCAL_VERIFIED | 模型校验器强制 `digest(code_excerpt) == excerpt_sha256` |
 | `file_blob_sha` 与下载字节一致 | ✅ | REAL | LOCAL_VERIFIED | 本地重算 `sha1("blob <len>\0"+raw)` 比对，不符 → `SOURCE_MISMATCH` 502 |
 | `file_sha256` | ✅ | REAL | LOCAL_VERIFIED | |
-| Python 仅静态 AST，不 import | ✅ | REAL | LOCAL_VERIFIED | 无 `importlib`/`exec`/`subprocess` 于核验路径 |
+| Python 仅静态 AST，不 import | ✅ | REAL | LOCAL_VERIFIED | 公开源码仅用 AST；本地核验另有受限 Git 静态读取 |
 | 非 Python 标 AST `NOT_APPLICABLE` | ✅ | REAL | LOCAL_VERIFIED | |
 | 不可变 permalink `blob/<sha>/<path>#Lx-Ly` | ✅ | REAL | LOCAL_VERIFIED | |
 | 许可从相同 commit 读取 | ✅ | REAL | LOCAL_VERIFIED | `_resolve_license` 用同一 `commit` 取树 |
@@ -87,7 +90,7 @@
 | 未知/混合许可默认保留元数据但不展示原码 | ✅ | REAL | LOCAL_VERIFIED | `code_display_allowed=False` → `code_excerpt=""`、`NEEDS_CONFIRMATION` |
 | 不猜 MIT | ✅ | REAL | LOCAL_VERIFIED | `detect_identifier` 只认明确标题/条款特征 |
 | 树截断时强制 UNKNOWN 并附限制说明 | ✅ | REAL | LOCAL_VERIFIED | `verifier.py:223-226` |
-| 不执行第三方代码/Notebook/install 脚本 | ✅ | REAL | LOCAL_VERIFIED | 全模块无代码执行原语 |
+| 不执行第三方代码/Notebook/install 脚本 | ✅ | REAL | LOCAL_VERIFIED | 不执行来源源码；本地模式有受限 Git 静态读取子进程 |
 | Notebook cell 定位 | ❌ 未支持 | — | — | 本切片不声明 Notebook 能力 |
 
 ## C5 · 本地与来源注册表
@@ -123,7 +126,7 @@
 | 持久缓存有限容量 + 过期 + 校验和 + 原子写 | ✅ | REAL | LOCAL_VERIFIED | 48 MiB / 128 项 / 24h；`os.replace` |
 | 复用磁盘字节前重新确认仓库仍公开 | ✅ | REAL | LOCAL_VERIFIED | `_public_repositories` |
 | 缓存损坏/过期/删除后不回退别的仓库 | ✅ | REAL | LOCAL_VERIFIED | 取不到就重新请求，绝不替换来源 |
-| 不把旧缓存标成本次已联网 | ✅ | REAL | LOCAL_VERIFIED | 缓存命中仍走同一 `CodeEvidence` 构造，`retrieved_at` 为本次时间 |
+| 本次取证时间与联网证据分开 | ✅ | REAL | LOCAL_VERIFIED | `retrieved_at` 为本次构造时间，单凭该字段不能证明重新联网；需查看实际请求/缓存记录 |
 | 上下文/文档不进入公共查询 | ✅ | REAL | LOCAL_VERIFIED | 出站查询只由概念词构成 |
 | 仓库内容一律视为不可信材料 | ✅ | REAL | LOCAL_VERIFIED | 有注入用例断言 |
 
@@ -146,6 +149,6 @@
 | symlink | ✅ | `test_product_completion.py`、`test_registry.py` |
 | dirty 本地路径 | ✅ | `test_product_completion.py` |
 | 合成本地 Git 库真实静态读取并记录命令 | ✅ | `test_source_failure_matrix.py`、`test_product_completion.py` |
-| 公开库实测（固定版本 + 最小片段 + 许可 + 时间） | ⚠️ 见 HANDOFF「外部实测」 | 本机未联网实测 |
+| 公开库实测（固定版本 + 最小片段 + 许可 + 时间） | 本切片未新增 | Lead 既有真实证据见 CONTEXTUAL_SEARCH.md，与本次 Mock 分开 |
 | `deps/zchzbjklg.txt` + 依赖说明 | ✅ | `deps/zchzbjklg.txt` |
 | HANDOFF / 五分钟检查 / 真实与 Mock 矩阵 | ✅ | 本目录 |

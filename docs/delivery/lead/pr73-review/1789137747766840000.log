@@ -1,0 +1,13 @@
+{
+  "mode": "FIXTURE",
+  "status": "SCAFFOLD_DEMO",
+  "learning_outputs": [
+    "reports/learning-demo/grounded-explanation.json",
+    "reports/learning-demo/saved-note.json"
+  ],
+  "outputs": [
+    "reports/demo/concept-code-map.json",
+    "reports/demo/guided-lesson.md",
+    "reports/demo/learning-evidence.json"
+  ]
+}

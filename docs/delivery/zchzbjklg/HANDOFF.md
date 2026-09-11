@@ -9,7 +9,17 @@
 
 ---
 
-## 1. 本切片改了什么 / 没改什么
+## Lead 集成复核（2026-09-11）
+
+原始贡献固定于 `1fc4b7d6334f16cf783e1db75e443d6007af6f78`，保留作者与两个原始提交。
+原始 20 项在 Lead 隔离环境全部通过。集成补丁修正测试命名，补齐真实 `public_search` 分派
+三个阶段的取消用例，以及半截响应体取消与缓存正向对照，失败矩阵扩为 24 项。
+另修正模型重定向测试服务：先读完 POST 请求体，并观察真实临时接收端没有收到转发请求。
+
+下面 §2–3 的 Windows 数字是成员历史报告，不是当前集成验收结果；当前结果与证据以
+[PR73_REVIEW.md](../lead/PR73_REVIEW.md) 为准。没有生产代码、Schema 或依赖变动。
+
+## 1. 原始切片改了什么 / 没改什么
 
 ### 改了什么
 
@@ -39,7 +49,7 @@
 | `test_our_own_timeout_bounds_a_stalled_response` | 自有 `asyncio.timeout` 预算；不无限等待 |
 | `test_rate_limit_is_honoured_without_waiting_for_the_window` | 限流；记窗口后立即返回，不阻塞调用方 |
 | `test_cancelling_an_in_flight_read_persists_nothing` | 取消；被取消的读取不得落盘为本次已验证字节 |
-| `test_cancelling_public_search_propagates_instead_of_returning_candidates` | 取消不得被吞成部分结果 |
+| `test_cancelling_specified_search_propagates_instead_of_returning_candidates` | 取消不得被吞成部分结果 |
 | `test_truncated_tree_withholds_code_even_when_a_license_was_found` | 分页/截断树 → 许可覆盖不可知 → 不展示原码 |
 | `test_hostile_concept_terms_cannot_break_out_of_the_quoted_search_query` | 恶意词注入无法逃出引号或追加限定符（6 组参数） |
 | `test_repository_text_never_becomes_an_outbound_request` | 仓库文本是不可信材料，绝不回灌成出站查询 |
@@ -48,12 +58,12 @@
 | `test_evidence_binds_the_exact_range_file_and_permalink` | 证据绑定精确区间/文件哈希/permalink 行锚 |
 | `test_a_full_commit_ref_that_resolves_elsewhere_is_a_source_mismatch` | ref 漂移（声称 40-hex 却解析到别的 commit） |
 | `test_downloaded_bytes_that_disagree_with_the_blob_identity_are_rejected` | 字节与 Git blob 标识不符 |
-| `test_file_modified_after_search_is_rejected_before_being_read` | 本地文件在检索后变更 → 拒绝呈现 |
+| `test_file_modified_after_search_is_rejected_before_being_accepted` | 本地文件在检索后变更 → 拒绝呈现 |
 | `test_local_evidence_never_invents_a_github_permalink` | 本地来源不伪造 GitHub URL；句柄不泄露主机路径 |
 
 ---
 
-## 2. 质量门四连（本机实测）
+## 2. 成员原始环境测试记录（历史）
 
 环境：Windows 11 · Git Bash · 项目 venv `Python 3.12.10` · `PYTHONUTF8=1`
 （**注意**：workbuddy 沙箱的 `python` 解析到 3.13，不是项目环境；必须显式用 `./.venv/Scripts/python.exe`）
@@ -79,9 +89,9 @@
 | # | 失败用例 | 归属 | 性质 |
 |---|---|---|---|
 | 1–4 | `tests/documents/test_full_provider.py`（4 项：office external relationship / real pdf / real pptx / real docx） | @inogi-sama 文档模块 | **本机 venv 未按锁文件装依赖**：实测 `python-docx`/`python-pptx`/`pypdf`/`Pillow` 均 MISSING。但 `requirements/full-delivery-py312.lock`（**CI 使用的锁文件**）**已包含** `python-docx==1.2.0`、`python-pptx==1.0.2`、`pypdf==6.18.0`、`pillow==12.3.0`、`lxml==6.1.3`。**CI 会装齐这些依赖，故这 4 项在 CI 中预计不存在**；本机失败纯属本地环境未对齐锁文件。**非代码缺陷** |
-| 5 | `tests/full_delivery/test_boundaries.py::test_uninstalled_modules_report_partial_without_fixture_fallback` | 集成层（Lead） | 集成边界用例，超出本模块所有权 |
+| 5 | `tests/full_delivery/test_boundaries.py::test_uninstalled_modules_report_partial_without_fixture_fallback` | 集成层（Lead） | 成员未提供该项失败堆栈；它也检查真实文档 Provider 可用性，缺文档依赖可能影响该断言，需要完整环境复验 |
 | 6 | `tests/github_intelligence/test_product_completion.py::test_docx_images_keep_their_section_and_hyperlinks_never_fetch` | **Lead 写的跨模块集成回归**（寄放在我目录下，`git log` 作者为 `suiyisuixing`） | 同一本地缺依赖问题；该文件导入 `documents.full`，测的是文档 provider，不是我模块。CI 装锁文件后预计消除 |
-| 7 | `tests/test_local_model_adapter.py::test_redirects_are_never_followed` | @fqf060420 模型模块 | **顺序依赖抖动**：单独运行 → `1 passed`（已实测）。本切片只新增一个测试文件，无模块级副作用，不可能影响该用例 |
+| 7 | `tests/test_local_model_adapter.py::test_redirects_are_never_followed` | @fqf060420 模型模块 | 成员报告单独运行 `1 passed`；仅凭这次重跑不能确定顺序依赖或排除影响。Lead 检查发现测试服务未读取 POST 请求体，已修正并补充接收端零请求断言；不能由此反推成员那次失败的唯一原因 |
 | 8–9 | `tests/test_text_encoding.py`（2 项 ERROR） | 集成层（Lead） | 采集期错误，见 §3 说明 |
 
 > **如需在本机复现 CI 全绿**：按锁文件重建环境，即
@@ -107,11 +117,11 @@
    ```
 3. 该 5457 文件的目标目录**已被删除**（用户授权后清理完成，`ls` 确认 `removed`）。守卫仍在追这条**过期的待删记录**，导致此后**任何**删除动作都被自动拒绝 —— 包括删除一个 0 文件的空目录（已实测复现）。
 
-**结论**：这是沙箱会话状态卡死，与仓库代码无关。`demo` 在干净的沙箱会话中预期可正常返回 `{"mode":"FIXTURE","status":"SCAFFOLD_DEMO"}`（该输出格式来自 `cli.py:65-72` 与 `docs/delivery/lead/VALIDATION.md` 的记录）。
+**成员报告的诊断**：怀疑沙箱会话状态卡死。Lead 未取得该环境完整日志，无法独立确认此归因。`demo` 在干净的沙箱会话中预期可正常返回 `{"mode":"FIXTURE","status":"SCAFFOLD_DEMO"}`（该输出格式来自 `cli.py:65-72` 与 `docs/delivery/lead/VALIDATION.md` 的记录）。
 
-**同一原因也导致** `tests/test_text_encoding.py` 的 2 个 ERROR：该文件专测 GBK 默认编码下的 UTF-8 行为，其 setup 需要创建/清理临时目录。
+**成员把以下错误归于同一原因，Lead 尚无法由原始日志核验**：`tests/test_text_encoding.py` 的 2 个 ERROR：该文件专测 GBK 默认编码下的 UTF-8 行为，其 setup 需要创建/清理临时目录。
 
-**复验方式**：重启会话清除沙箱状态后重跑第 4 项。见 `FIVE_MINUTE_CHECK.md`。
+**复验方式**：在完整依赖和独立临时数据目录中重跑；保留失败日志，不绕过或清理安全守卫。见 `FIVE_MINUTE_CHECK.md`。
 
 ---
 
@@ -121,17 +131,17 @@
 
 诚实标注，不含混：
 
-- 本模块的**网络路径**（`GitHubRawClient` 的 6 条端点）在本切片中**未经受信网络实测**。
+- 本模块的**网络路径**（`GitHubRawClient` 的仓库、ref、tree、contents、search 五类端点）在本切片中**未经受信网络实测**。
 - 所有超时/限流/重定向/流上限/缓存复用行为均由 `httpx.MockTransport` 以合成响应驱动，属于 **Mock**，见 `REAL_VS_MOCK.md`。
 - **真实**的部分包括：AST 解析、行区间计算、SHA256/SHA1 计算、Git blob 标识重算、许可文本识别、本地 Git 仓库的 `git ls-files` / `git show` 静态读取（`test_source_failure_matrix.py` 与 `test_product_completion.py` 中的合成 Git 库是**真实 Git 进程**）。
-- 固定核验样例沿用仓库既有约定：commit `50113da16fec53b66b80d75e80a89296de4fa5a5` / `fastapi` 依赖注入教程 / `docs_src/dependencies/tutorial001.py` / `read_items` / L11–L14 / MIT。该样例文件与许可文本以**固定字节**存于 `tests/github_intelligence/conftest.py`，测试不访问外网。
+- `conftest.py` 为 **合成样例**：复用历史 commit 字符串、教程路径与最小 MIT 识别文本，没有从该 commit 下载真实字节。合成 `read_items` 为 L12–L14，L11 是装饰器；不能当成真实源码、许可或行号证据。
 - **`公开 API 读取 ≠ 模型讲解实测`**：本模块不产出讲解，讲解由 @fqf060420 的 tutor 侧负责。
 
 ### 外部阻塞清单
 
 | 阻塞项 | 影响的实测 | 未阻塞的部分 |
 |---|---|---|
-| 无 GitHub token（`C2C_GITHUB_TOKEN` 未配置） | 认证接口的实测（提高配额、私有范围的行为） | 公开读取路径的实现与离线验证；本地流程完全不受影响 |
+| 无 GitHub token（`C2C_GITHUB_TOKEN` 未配置） | 可选认证路径实测；当前产品拒绝私有远程仓库 | 公开读取路径的实现与离线验证；本地流程完全不受影响 |
 | 本机未授权外网实测 | 真实端点连通性、真实限流响应 | 全部错误映射逻辑（合成响应已覆盖 401/403/404/429/超时/超限/重定向） |
 
 > 注：沙箱内 `gh` CLI 可用（`D:\Git\gh\bin\gh.exe`，代理 `127.0.0.1:7897`，`GH_CONFIG_DIR=D:\Git\gh-config`），曾用于读取 Issue/PR。**本切片的测试与代码不依赖它**，也未在测试中发起任何真实网络请求。
@@ -201,4 +211,4 @@ CI 按 `requirements/full-delivery-py312.lock` 安装依赖（含文档依赖）
 |---|---|
 | Notebook 静态读取 | C4 提到"若支持"；当前未实现且未声明 |
 | 歧义候选的主动追问 | 字段已就绪，触发点在 Lead 编排层 |
-| 真实端点实测 | 待 Lead 授权外网 / 配置 `C2C_GITHUB_TOKEN` 后执行 |
+| 真实端点实测 | 成员本轮未执行；既有 Lead 真实公开来源证据见 CONTEXTUAL_SEARCH.md。公开读取无需 token，认证测试另列 |

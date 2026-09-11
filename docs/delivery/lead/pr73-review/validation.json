@@ -1,0 +1,129 @@
+{
+  "checked_at": "2026-09-11T14:45:05.690934+00:00",
+  "base_head": "9f9b8d1e62f0d7cbbd0a86c4fe93f25e5daaae94",
+  "member_head": "1fc4b7d6334f16cf783e1db75e443d6007af6f78",
+  "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+  "python": "3.12.14",
+  "node": "v26.6.0",
+  "original_new_tests_passed": 20,
+  "integrated_python_passed": 447,
+  "frontend_passed": 30,
+  "failure_matrix_cases": 24,
+  "checks": [
+    {
+      "command": [
+        ".venv/bin/python",
+        "-m",
+        "pytest",
+        "tests/github_intelligence/test_source_failure_matrix.py",
+        "-q"
+      ],
+      "exit_code": 0,
+      "seconds": 1.37,
+      "log": "1789137398340909000.log",
+      "sandboxed": true,
+      "log_sha256": "19fa5edda96e004920d80a4d355d010a089e418d846d65e95f8d8b7aae6e4c7b"
+    },
+    {
+      "command": [
+        ".venv/bin/python",
+        "-m",
+        "pytest",
+        "-q"
+      ],
+      "exit_code": 0,
+      "seconds": 46.57,
+      "log": "1789137545228721000.log",
+      "sandboxed": true,
+      "log_sha256": "a6ad9b1c04ef57ae6813a7a0f48bca4f2743ae4fa55c38a23683ab9f15485450"
+    },
+    {
+      "command": [
+        ".venv/bin/python",
+        "-m",
+        "ruff",
+        "check",
+        "."
+      ],
+      "exit_code": 0,
+      "seconds": 0.08,
+      "log": "1789137706685984000.log",
+      "sandboxed": true,
+      "log_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    {
+      "command": [
+        ".venv/bin/python",
+        "scripts/tutor.py",
+        "doctor"
+      ],
+      "exit_code": 0,
+      "seconds": 0.15,
+      "log": "1789137734440928000.log",
+      "sandboxed": true,
+      "log_sha256": "8964289675b72c63863c4a2af74f01b17046e189de876e809e2fc35bd1676b94"
+    },
+    {
+      "command": [
+        ".venv/bin/python",
+        "scripts/tutor.py",
+        "demo"
+      ],
+      "exit_code": 0,
+      "seconds": 0.32,
+      "log": "1789137747766840000.log",
+      "sandboxed": true,
+      "log_sha256": "23c62d3ec14ad110f34e5d3ed62b4d9452a5855bdf9a23ead5320618156b3421"
+    },
+    {
+      "command": [
+        ".venv/bin/python",
+        "scripts/export_full_contracts.py",
+        "--check"
+      ],
+      "exit_code": 0,
+      "seconds": 0.55,
+      "log": "1789137761176744000.log",
+      "sandboxed": true,
+      "log_sha256": "491a8622837db27f33381885ed161c2733a0c7e3066967782ded723dad6538d2"
+    },
+    {
+      "command": [
+        "/usr/local/bin/npm",
+        "--prefix",
+        "apps/web",
+        "test"
+      ],
+      "exit_code": 0,
+      "seconds": 1.87,
+      "log": "1789137774582210000.log",
+      "sandboxed": true,
+      "log_sha256": "a0efc651f6c5ab2dda6a046e8ff24a700bb21cee5377ca2bcaf20f0cc90fc9c7"
+    },
+    {
+      "command": [
+        "/usr/local/bin/npm",
+        "--prefix",
+        "apps/web",
+        "run",
+        "build"
+      ],
+      "exit_code": 0,
+      "seconds": 0.94,
+      "log": "1789137812597778000.log",
+      "sandboxed": true,
+      "log_sha256": "54db8a0fe5c502a5a3e83aaa65f58be02c9f390ed333db05a0f460d3eb839089"
+    }
+  ],
+  "runtime": {
+    "runtime_files_compared": 129,
+    "runtime_files_unchanged": true,
+    "installed_head": "9f9b8d1e62f0d7cbbd0a86c4fe93f25e5daaae94",
+    "original_checkout_head": "60d4a5cd8ebbf50341219940f762993975a4781d",
+    "original_checkout_clean": true,
+    "original_fixture_notes_sha256": "0d192e0b230af556b20daf76cf67b6d9f5a5d1b76093e697fec77ae52b9cf1de",
+    "application_restart_needed": false,
+    "production_data_used_by_tests": false
+  },
+  "ci": "Recorded per exact final head in PR #69 and delivery manifest after publication; not asserted by this local evidence."
+}

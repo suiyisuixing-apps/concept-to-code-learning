@@ -19,6 +19,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import hashlib
+import json
 import re
 import subprocess
 import time
@@ -129,24 +130,36 @@ class TestTransportFailures:
 class TestCancellation:
     """C7: cancellation propagates and never turns into a fabricated result."""
 
-    def test_cancelling_an_in_flight_read_persists_nothing(self, tmp_path):
+    @pytest.mark.parametrize("phase", ["headers", "body"])
+    def test_cancelling_an_in_flight_read_persists_nothing(self, tmp_path, phase):
         async def scenario():
             entered, release = asyncio.Event(), asyncio.Event()
             body = b"print('public')\n"
+            reads = []
+            closed = asyncio.Event()
+            payload = json.dumps({
+                "type": "file", "encoding": "base64",
+                "content": base64.b64encode(body).decode(), "sha": "b" * 40,
+            }).encode("utf-8")
+
+            class StallingBody(httpx.AsyncByteStream):
+                async def __aiter__(self):
+                    yield payload[:1]
+                    entered.set()
+                    await release.wait()
+                    yield payload[1:]
+
+                async def aclose(self):
+                    closed.set()
 
             async def handler(request):
                 if "/contents/" in request.url.path:
-                    entered.set()
-                    await release.wait()
-                    return httpx.Response(
-                        200,
-                        json={
-                            "type": "file",
-                            "encoding": "base64",
-                            "content": base64.b64encode(body).decode(),
-                            "sha": "b" * 40,
-                        },
-                    )
+                    reads.append(request.url.path)
+                    if phase == "headers":
+                        entered.set()
+                        await release.wait()
+                        return httpx.Response(200, content=payload)
+                    return httpx.Response(200, stream=StallingBody())
                 return httpx.Response(
                     200, json={"private": False, "full_name": "sample/library"}
                 )
@@ -160,15 +173,25 @@ class TestCancellation:
             )
             await asyncio.wait_for(entered.wait(), 5)
             task.cancel()
-            with pytest.raises(asyncio.CancelledError):
-                await task
-            # A cancelled read must not be stored as this session's verified bytes.
-            assert not list(tmp_path.glob("*.json"))
-            await client.close()
+            try:
+                with pytest.raises(asyncio.CancelledError):
+                    await asyncio.wait_for(task, 5)
+                # Neither partial responses nor temporary cache files survive.
+                assert not list(tmp_path.iterdir())
+                if phase == "body":
+                    assert closed.is_set()
+                # Positive control: a fresh read reaches the transport again and
+                # can persist a complete response in this very same cache.
+                release.set()
+                assert await client.fetch_raw("sample", "library", COMMIT, "example.py") == body
+                assert len(reads) == 2
+                assert len(list(tmp_path.glob("*.json"))) == 1
+            finally:
+                await client.close()
 
         run(scenario())
 
-    def test_cancelling_public_search_propagates_instead_of_returning_candidates(self):
+    def test_cancelling_specified_search_propagates_instead_of_returning_candidates(self):
         async def scenario():
             entered, release = asyncio.Event(), asyncio.Event()
 
@@ -184,6 +207,58 @@ class TestCancellation:
             task.cancel()
             with pytest.raises(asyncio.CancelledError):
                 await task
+
+        run(scenario())
+
+    @pytest.mark.parametrize("phase", ["discovery", "tree", "read"])
+    def test_cancelling_public_search_does_not_return_partial_candidates(self, phase):
+        async def scenario():
+            entered, release = asyncio.Event(), asyncio.Event()
+            completed_reads = []
+
+            async def stall(at):
+                if phase == at:
+                    entered.set()
+                    await release.wait()
+
+            class Stalling(FakeGitHubRawClient):
+                async def search_repositories(self, terms, limit, language=None):
+                    await stall("discovery")
+                    return ["fastapi/fastapi", "sample/later"]
+
+                async def tree(self, owner, name, commit):
+                    if name == "later":
+                        await stall("tree")
+                    return await super().tree(owner, name, commit)
+
+                async def fetch_raw(self, owner, name, commit, path):
+                    if name == "later":
+                        await stall("read")
+                    raw = await super().fetch_raw(owner, name, commit, path)
+                    completed_reads.append(f"{owner}/{name}")
+                    return raw
+
+            client = Stalling()
+            query = m.SourceQuery(
+                mode="LIVE", query_id=m.uid(), question="Explain dependency injection",
+                concept_terms=["dependency injection"], source_mode="public_search",
+                network_authorized=True, query_terms_approved=True,
+                approved_query_terms=["dependency injection"], auto_public_search=False,
+                status="AUTHORIZED", max_sources=2,
+            )
+            task = asyncio.create_task(SpecifiedPublicSearcher(client).search(query))
+            try:
+                await asyncio.wait_for(entered.wait(), 5)
+                if phase != "discovery":
+                    assert "fastapi/fastapi" in completed_reads
+                task.cancel()
+                with pytest.raises(asyncio.CancelledError):
+                    await asyncio.wait_for(task, 5)
+            finally:
+                if not task.done():
+                    task.cancel()
+                    await asyncio.gather(task, return_exceptions=True)
+                await client.close()
 
         run(scenario())
 
@@ -447,7 +522,7 @@ class TestLocalSourceMismatch:
         )
         return root
 
-    def test_file_modified_after_search_is_rejected_before_being_read(self, tmp_path):
+    def test_file_modified_after_search_is_rejected_before_being_accepted(self, tmp_path):
         root = self._repository(tmp_path)
 
         async def scenario():
