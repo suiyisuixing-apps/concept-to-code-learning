@@ -10,6 +10,6 @@ ROOT = Path(__file__).resolve().parents[1]
 def project(tmp_path):
     target = tmp_path / "checkout"
     shutil.copytree(ROOT, target, ignore=shutil.ignore_patterns(
-        ".git", ".venv", "node_modules", "dist", "data", ".impeccable", "__pycache__", ".pytest_cache", ".ruff_cache", "*.egg-info"
+        ".git", ".venv", "node_modules", "dist", "data", "artifacts", ".impeccable", "__pycache__", ".pytest_cache", ".ruff_cache", "*.egg-info"
     ))
     return target

@@ -23,7 +23,11 @@ def test_skill_frontmatter_is_valid_yaml():
 def test_ci_cost_and_permission_constraints():
     workflow = yaml.load((ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
     assert set(workflow["on"]) == {"push", "pull_request"}
-    assert all(trigger["branches"] == ["main"] for trigger in workflow["on"].values())
+    assert workflow["on"]["push"]["branches"] == ["main"]
+    # Windows fixes target the unmerged workspace PR; keep the same bounded checks.
+    assert workflow["on"]["pull_request"]["branches"] == [
+        "main", "feat/repository-learning-workspace",
+    ]
     assert workflow["permissions"] == {"contents": "read"}
     assert workflow["concurrency"]["cancel-in-progress"] == "true"
     assert "github.head_ref" in workflow["concurrency"]["group"]

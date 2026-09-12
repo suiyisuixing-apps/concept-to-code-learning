@@ -12,6 +12,7 @@ from pydantic import Field, ValidationError
 from concept_to_code_learning.full_contracts import models as m
 from concept_to_code_learning.full_learning.errors import LearningError, require
 from concept_to_code_learning.learning_concepts import public_terms
+from concept_to_code_learning.repositories.library import RELATED_CODE_TRUNCATED
 from concept_to_code_learning.runtime.async_model import AsyncLocalModelAdapter
 from concept_to_code_learning.runtime.local_model import LocalModelConfig, is_loopback_host
 from concept_to_code_learning.tutor.preview import preview_sections
@@ -190,7 +191,7 @@ class GroundedTutorProvider:
     @staticmethod
     def pack_context(context, budget=6000):
         if context.source_type == "CODE":
-            packed, truncated = [], False
+            packed, truncated = [], RELATED_CODE_TRUNCATED in context.warnings
             selected = {s.block_id: s for s in context.selection_locator.spans} if context.selection_locator else {}
             ordered = sorted(context.relevant_context_blocks, key=lambda b: b.block_id not in selected)
             for index, block in enumerate(ordered[:3]):
@@ -255,6 +256,15 @@ class GroundedTutorProvider:
             }
             for e in conversation[-3:]
         ]
+
+    @staticmethod
+    def history_truncated(conversation):
+        return len(conversation) > 3 or any(
+            len(e.question) > 300
+            or len("\n".join(s.text for s in e.answer_sections)) > 600
+            or len(e.concept_code_links) > 5
+            for e in conversation[-3:]
+        )
 
     async def _json(self, prompt, data, schema, *, on_text=None, attempts=None):
         messages = [
@@ -373,7 +383,8 @@ query_terms 第一项优先保留材料明确点名的具体算法、定理或AP
                 status="PLANNED",
             ),
         )
-        self._plans[plan.plan_id] = (plan_calls, truncated, output.learning_goal)
+        self._plans[plan.plan_id] = (
+            plan_calls, truncated or self.history_truncated(conversation), output.learning_goal)
         while len(self._plans) > 64:
             self._plans.popitem(last=False)
         return plan
@@ -430,7 +441,7 @@ query_terms 第一项优先保留材料明确点名的具体算法、定理或AP
             }
             for i, s in enumerate(verified_sources)
         ]
-        truncated |= any(s["code_truncated"] for s in source_data) or len(conversation) > 3
+        truncated |= any(s["code_truncated"] for s in source_data) or self.history_truncated(conversation)
         # Resolve presentation aliases into readable labels. Keep literal names
         # that also occur in the supplied material (for example a real B1 variable).
         supplied_text = "\n".join(b["text"] for b in blocks) + "\n" + "\n".join(s["code"] for s in source_data)

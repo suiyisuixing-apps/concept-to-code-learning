@@ -20,22 +20,39 @@ Windows PowerShell：
 ```powershell
 py -3.12 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -c requirements/full-delivery-py312.lock -e ".[dev]"
-npm --prefix apps/web ci --ignore-scripts
-npm --prefix apps/web run build
-.\.venv\Scripts\python.exe scripts\desktop.py
+npm.cmd --prefix apps/web ci --ignore-scripts
+npm.cmd --prefix apps/web run build
+.\.venv\Scripts\python.exe scripts\desktop.py --port 18766
 ```
 
-以后只需运行最后一条。默认打开 http://127.0.0.1:8766 ，按 Ctrl+C 停止本次启动的服务。`--port 8770` 可换端口，`--no-browser` 适合终端检查。模型服务占用应用端口加一。端口已被其他程序使用时启动器会报错，不会关闭其他进程。
+Windows 需要 Python 3.12.x 和 Node 22.13+，优先使用 Node 22。没有 `py` 启动器时，
+用已安装 Python 3.12 的完整路径执行 `-m venv .venv`，无需更换全局解释器或 Conda 环境。
+已有 `.venv` 时先核对它的用途和版本，不覆盖。PowerShell 使用 `npm.cmd`，无需调整执行策略。
+
+安装后可双击仓库根目录的 `Start-ConceptToCode.cmd`，默认打开
+http://127.0.0.1:18766 。它使用本项目 `.venv`，读取下述 `desktop.json`；
+Windows endpoint 模式要求模型服务已单独启动。命令行可追加 `--port 其他端口`
+或 `--config 配置文件`。使用独立验收配置时，同时填写独立 `data_dir`；仅更换配置文件名
+不会自动隔离数据。关闭启动窗口或按 Ctrl+C 结束工作台；外部模型服务由其启动入口管理。
+
+若 Windows 的系统临时目录不允许 pytest 创建测试目录，可在仓库外选择一个**新的**可写目录，
+运行 `.\.venv\Scripts\python.exe -m pytest -q --basetemp 新目录`。不要指向已有资料目录，
+pytest 会管理并清理该临时目录。测试副本排除本地 `artifacts` 验收产物。
+
+以后只需运行启动入口。直接运行 `desktop.py` 且不传 `--port` 时，默认打开
+http://127.0.0.1:8766；上述 Windows 入口使用 18766。按 Ctrl+C 停止本次启动的服务。
+`--port 8770` 可换端口，`--no-browser` 适合终端检查。只有 MLX 托管模式使用应用端口加一；
+endpoint 模式使用配置中的实际模型服务端口。端口已被其他程序使用时启动器会报错，不会关闭其他进程。
 
 ## 模型连接
 
 设置文件为 macOS `~/Library/Application Support/ConceptToCode/desktop.json`、Windows `%LOCALAPPDATA%/ConceptToCode/desktop.json`、Linux `~/.local/share/concept-to-code/desktop.json`。也可通过 `--config 路径` 指定。
 
-Apple Silicon Mac，使用已安装的 MLX 环境与已下载模型，按 `config/desktop-mlx.example.json` 填写实际路径。`model_python` 指向该虚拟环境的 Python；模型文件留在 Git 之外。本次本机验收采用 Qwen3-4B-Instruct-2507 的 MLX 4bit 版本，约 2.3 GB，固定版本和校验记录见审核材料。启动时关闭在线模型下载与遥测，只监听 127.0.0.1。另已核验 Coder 7B 4bit 的本机安装，精确修订和文件校验见 `docs/delivery/lead/CONTEXTUAL_SEARCH.md`。`model_id` 可选，用于从服务实际提供的列表指定默认模型；不填时使用 `model_dir`。
+Apple Silicon Mac，使用已安装的 MLX 环境与已下载模型，按 `config/desktop-mlx.example.json` 填写实际路径。`model_python` 指向该虚拟环境的 Python；模型文件留在 Git 之外。此前 macOS 验收采用 Qwen3-4B-Instruct-2507 的 MLX 4bit 版本，约 2.3 GB，固定版本和校验记录见审核材料。启动时关闭在线模型下载与遥测，只监听 127.0.0.1。另已核验 Coder 7B 4bit 的本机安装，精确修订和文件校验见 `docs/delivery/lead/CONTEXTUAL_SEARCH.md`。`model_id` 可选，用于从服务实际提供的列表指定默认模型；不填时使用 `model_dir`。
 
 连接已有服务（Windows、Linux 或 Mac）使用 `config/desktop-endpoint.example.json`。服务需要 `/v1/models` 和 `/v1/chat/completions`，支持 Chat Completions 流式请求；接受该请求而返回完整 JSON 的服务也可使用，正文会在完成后显示。模型名必须准确。远程服务需 HTTPS，并且已获授权发送所选文档片段与来源代码，才可设置 `model_network_authorized: true`。SSH 转发到本机的已授权 DGX 可采用 loopback 地址；主机部署见 `deploy/dgx/`。
 
-网页对话顶部可以选择服务实际提供的模型。点击“模型设置”，填写已有的本机兼容服务地址，再点击“连接”；列表来自服务的 `/v1/models`，不会下载模型。本次本机已安装 Qwen3-4B-Instruct-2507-4bit 和 Qwen2.5-Coder-7B-Instruct-4bit，默认采用 Coder 7B；首次切换会加载对应权重。新地址只允许 loopback；已在主机配置中授权的远程服务继续适用原有配置。模型选择保存在当前浏览器，每次请求单独绑定模型，不修改其他页面的默认配置。
+网页对话顶部可以选择服务实际提供的模型。点击“模型设置”，填写已有的本机兼容服务地址，再点击“连接”；列表来自服务的 `/v1/models`，不会下载模型。此前 macOS 验收环境安装了 Qwen3-4B-Instruct-2507-4bit 和 Qwen2.5-Coder-7B-Instruct-4bit，默认采用 Coder 7B；首次切换会加载对应权重。新地址只允许 loopback；已在主机配置中授权的远程服务继续适用原有配置。模型选择保存在当前浏览器，每次请求单独绑定模型，不修改其他页面的默认配置。
 
 秘钥仅通过 `C2C_MODEL_API_KEY` / `C2C_GITHUB_TOKEN` 环境变量传入，不写到设置文件或网页。未提供 GitHub token 时仍可读取公开仓库，但受匿名配额限制；限流会明确显示。产品不读取 gh 的管理员凭据。
 
