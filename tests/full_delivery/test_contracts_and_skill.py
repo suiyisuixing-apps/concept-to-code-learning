@@ -86,16 +86,18 @@ def test_member_factories_receive_only_their_role_configuration(monkeypatch, tmp
     monkeypatch.setattr("concept_to_code_learning.full_learning.providers.importlib.import_module", module)
     settings = ProviderSettings(ROOT, tmp_path, github_token="source-only",
         model_base_url="http://127.0.0.1:9000", model_id="test-model", model_api_key="model-only",
-        authorized_local_roots=(tmp_path,))
+        authorized_local_roots=(tmp_path,), model_structured_output=True)
     build_providers(settings)
     document = captured["concept_to_code_learning.documents.full"]
     sources = captured["concept_to_code_learning.github_intelligence.full"]
     tutor = captured["concept_to_code_learning.tutor.full"]
     assert document.github_token is None and document.model_api_key is None
     assert document.authorized_local_roots == () and document.model_base_url is None
+    assert not document.model_structured_output and not sources.model_structured_output
     assert sources.github_token == "source-only" and sources.authorized_local_roots == (tmp_path,)
     assert sources.model_api_key is None and sources.model_base_url is None
     assert tutor.model_api_key == "model-only" and tutor.model_id == "test-model"
+    assert tutor.model_structured_output
     assert tutor.github_token is None and tutor.authorized_local_roots == ()
 
 

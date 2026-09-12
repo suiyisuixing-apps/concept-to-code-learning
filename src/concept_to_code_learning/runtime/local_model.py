@@ -79,6 +79,8 @@ class LocalModelConfig:
     max_output_tokens: int = 1024
     max_retries: int = 1
     allow_remote_endpoint: bool = False
+    # Optional wire extensions for the async workbench adapter only.
+    structured_output: bool = False
 
     def __post_init__(self) -> None:
         for name, value in (("timeout_seconds", self.timeout_seconds),

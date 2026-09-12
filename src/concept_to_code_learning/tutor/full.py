@@ -149,6 +149,7 @@ def build_provider(settings):
             max_output_tokens=2500,
             max_input_chars=24000,
             max_retries=0,
+            structured_output=settings.model_structured_output,
         )
     return GroundedTutorProvider(AsyncLocalModelAdapter(config), config)
 
@@ -276,7 +277,8 @@ class GroundedTutorProvider:
         ]
         if isinstance(self.adapter, AsyncLocalModelAdapter):
             result = await self.adapter.generate(messages, max_tokens=550 if schema is PlanOutput else 1600,
-                                                 on_text=on_text)
+                                                 on_text=on_text,
+                                                 enable_thinking=False if schema is PlanOutput else None)
         else:
             result = await self.adapter.generate(messages)
         if attempts is not None:

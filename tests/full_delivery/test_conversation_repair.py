@@ -92,12 +92,17 @@ def test_concurrent_model_selection_does_not_mutate_the_default(monkeypatch):
             lambda request: httpx.Response(200, json={"data": [{"id": "small"}, {"id": "large"}]})))
     monkeypatch.setattr(module, "AsyncLocalModelAdapter", factory)
     async def scenario():
-        config = LocalModelConfig("http://127.0.0.1:12345/v1", "small")
+        config = LocalModelConfig("http://127.0.0.1:12345/v1", "small", structured_output=True)
         default = GroundedTutorProvider(factory(config), config)
         catalog = TutorCatalog(default)
         small, large = await asyncio.gather(catalog.resolve("small"), catalog.resolve("large"))
         assert small is default and large is not default
         assert default.config.model == "small" and large.config.model == "large"
+        assert default.config.structured_output and large.config.structured_output
+        assert catalog.configuration(config.base_url + "/").structured_output
+        other_endpoint = await catalog.resolve("large", "http://127.0.0.1:12346/v1")
+        assert other_endpoint.config.structured_output is False
+        assert large.config.structured_output and default.config.structured_output
         with pytest.raises(LearningError, match="MODEL_NOT_FOUND"):
             await catalog.resolve("not-served")
         await catalog.close()
