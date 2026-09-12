@@ -17,6 +17,7 @@ from concept_to_code_learning.github_intelligence.verifier import LICENSE_PATHS,
 from .models import OpenFile, Repository, TreeEntry, TreePage
 
 MAX_BYTES = 1024 * 1024
+RELATED_CODE_TRUNCATED = "关联代码较长，本次仅提供文件开头的部分内容。"
 REGULAR = {"100644": "file", "100755": "file", "040000": "folder",
            "120000": "symlink", "160000": "submodule"}
 
@@ -293,6 +294,7 @@ class RepositoryLibrary:
                 lines, count = [], 0
                 for line in related.splitlines():
                     if count + len(line) + 1 > 4000:
+                        warnings.append(RELATED_CODE_TRUNCATED)
                         break
                     lines.append(line)
                     count += len(line) + 1

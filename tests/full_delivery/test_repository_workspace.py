@@ -337,3 +337,69 @@ def test_selecting_a_short_file_keeps_definitions_and_boundaries_in_context(tmp_
     assert packed[0]["text"] == block.text and not truncated
     assert packed[0]["definitions"][0]["symbol"] == "gate"
     assert packed[0]["comparison_facts"][0]["true_at_boundary"] is False
+
+
+def test_related_file_clipping_is_reported_after_snapshot_restart(tmp_path):
+    from concept_to_code_learning.repositories.library import RELATED_CODE_TRUNCATED
+
+    client = GitHubDouble()
+    client.files["src/maths.py"] = (
+        "# related source context\n" * 190 + "def square(x):\n    return x * x\n").encode("utf-8")
+    library = RepositoryLibrary(tmp_path, client)
+    repo = run(library.add(AddRepository(repository="fixture/code")))
+    opened = run(library.open_file(repo.repository_id, "src/main.py"))
+    restarted = RepositoryLibrary(tmp_path, None)
+    restored = run(restarted.open_file(repo.repository_id, "src/main.py"))
+    assert restored == opened
+    unit = restored.units[0]
+    context = resolve_context(restored.document, unit, m.ContextRequest(
+        document_revision=1, unit_id=unit.unit_id))
+    packed, truncated = GroundedTutorProvider.pack_context(context)
+    assert RELATED_CODE_TRUNCATED in context.warnings
+    assert "def square" not in packed[1]["text"]
+    assert len(packed[1]["text"]) < len(client.files["src/maths.py"].decode("utf-8"))
+    assert truncated
+
+
+@pytest.mark.parametrize("question_chars,answer_chars,concept_count,expected", [
+    (300, 600, 5, False), (301, 600, 5, True), (300, 601, 5, True), (300, 600, 6, True),
+])
+def test_per_turn_history_clipping_reaches_explanation_metrics(
+        tmp_path, question_chars, answer_chars, concept_count, expected):
+    from types import SimpleNamespace
+
+    import httpx
+
+    from concept_to_code_learning.runtime.async_model import AsyncLocalModelAdapter
+    from concept_to_code_learning.runtime.local_model import LocalModelConfig
+
+    library, _, repo = make_library(tmp_path)
+    opened = run(library.open_file(repo.repository_id, "src/main.py"))
+    unit = opened.units[0]
+    context = resolve_context(opened.document, unit, m.ContextRequest(document_revision=1, unit_id=unit.unit_id))
+    conversation = [SimpleNamespace(question="q" * question_chars,
+        answer_sections=[m.AnswerSection(title="history", text="a" * answer_chars)],
+        concept_code_links=[SimpleNamespace(concept=f"concept-{i}") for i in range(concept_count)])]
+    sent = []
+
+    def handler(request):
+        sent.append(json.loads(json.loads(request.content)["messages"][1]["content"]))
+        return httpx.Response(200, json={"model": "test-model", "choices": [{
+            "message": {"content": json.dumps({"answer": "result calls square to compute x * x.", "limitations": []})},
+            "finish_reason": "stop"}]})
+
+    async def scenario():
+        config = LocalModelConfig("http://127.0.0.1:12345/v1", "test-model")
+        tutor = GroundedTutorProvider(AsyncLocalModelAdapter(config, transport=httpx.MockTransport(handler)), config)
+        try:
+            plan = await tutor.plan(context, "Explain result and square", "Source-code", conversation)
+            answer = await tutor.explain(context, [], plan, conversation)
+            assert answer.metrics.input_truncated is expected
+            assert bool(answer.metrics.truncation_reason) is expected
+            history = sent[0]["history"][0]
+            assert len(history["question"]) == 300 and len(history["answer"]) == 600
+            assert len(history["code_concepts"]) == 5
+        finally:
+            await tutor.close()
+
+    run(scenario())
