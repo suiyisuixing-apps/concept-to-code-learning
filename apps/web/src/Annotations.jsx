@@ -89,12 +89,13 @@ export function useAnnotations(record, unit, report, notice) {
 
 export default function Annotations({ state, unit, locate }) {
   const input = useRef(null);
+  const code = Boolean(unit?.blocks?.[0]?.code_location);
   useEffect(() => { if (state.editor) input.current?.focus(); }, [state.editor?.key]);
-  return <section className="annotations" aria-label="文档批注">
-    <div className="annotation-heading"><h3>{unit ? `第 ${unit.index} 单元的批注` : "文档批注"}</h3><button disabled={state.loading || !unit} onClick={state.refresh}>刷新批注</button></div>
+  return <section className="annotations" aria-label={code ? "代码批注" : "文档批注"}>
+    <div className="annotation-heading"><h3>{code ? "代码批注" : unit ? `第 ${unit.index} 单元的批注` : "文档批注"}</h3><button disabled={state.loading || !unit} onClick={state.refresh}>刷新批注</button></div>
     {state.editor && <section className="annotation-editor">
       <h3>{state.editor.annotation ? "编辑批注" : "写批注"}</h3>
-      <p className="annotation-location">{state.editor.record.file_name} · 第 {state.editor.unit.index} 单元</p>
+      <p className="annotation-location">{state.editor.record.file_name} · {state.editor.record.source_type === "CODE" ? "代码选区" : `第 ${state.editor.unit.index} 单元`}</p>
       <blockquote>{state.editor.selection.text}</blockquote>
       <label>批注内容<textarea ref={input} aria-label="批注内容" value={state.editor.comment} disabled={state.pending} maxLength={20000} onChange={(e) => state.update(e.target.value)} placeholder="写下疑问、理解，或对这段话的改写…"/></label>
       <div className="row"><button className="primary" disabled={state.pending || !state.editor.comment.trim()} onClick={state.save}>{state.pending ? "正在保存批注…" : "保存批注"}</button>

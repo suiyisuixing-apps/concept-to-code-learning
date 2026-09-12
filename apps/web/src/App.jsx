@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { api, explainStream, hashText, id, json } from "./api.js";
+import RepositoryPane, { Icon } from "./RepositoryPane.jsx";
 import Reader from "./Reader.jsx";
 import ModelPicker from "./ModelPicker.jsx";
-import Conversation, { SourceCard } from "./Conversation.jsx";
+import Conversation, { CodeCitations, SourceCard } from "./Conversation.jsx";
 import Annotations, { useAnnotations } from "./Annotations.jsx";
 import { questionForSelection, selectionKey } from "./selection.js";
 
@@ -15,7 +16,7 @@ function ErrorBox({ error, retry }) {
     {error.code && <details><summary>详细信息</summary><small>{error.code}</small></details>}</div>;
 }
 
-function Notes({ notes, query, setQuery, report, changed, removed }) {
+function Notes({ notes, query, setQuery, report, changed, removed, openSource }) {
   const [active, setActive] = useState(null), [draft, setDraft] = useState({ title: "", user_text: "" });
   const [pending, setPending] = useState(false);
   const opening = useRef(0), mutating = useRef(false);
@@ -46,7 +47,7 @@ function Notes({ notes, query, setQuery, report, changed, removed }) {
     } catch (e) { report(e); } finally { mutating.current = false; setPending(false); }
   }
   return <div className="notes"><input aria-label="搜索笔记" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="搜索笔记"/>{notes.map((note) => <button className="note-row" key={note.note_id} onClick={() => open(note)}><strong>{note.title}</strong><span>修订 {note.revision}</span></button>)}{!notes.length && <p className="empty">没有匹配笔记。</p>}
-    {active && <section className="note-editor"><p>冻结来源 · 修订 {active.revision}</p><input maxLength={160} aria-label="笔记标题" disabled={pending} value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })}/><textarea maxLength={20000} aria-label="个人笔记" disabled={pending} value={draft.user_text} onChange={(e) => setDraft({ ...draft, user_text: e.target.value })}/><div className="row"><button disabled={pending || !draft.title.trim()} onClick={edit}>{pending ? "保存中…" : "保存修改"}</button><a href={`/api/learning/v1/notes/${active.note_id}/export?format=markdown`}>Markdown</a><a href={`/api/learning/v1/notes/${active.note_id}/export?format=json`}>JSON</a><button className="danger" disabled={pending} onClick={remove}>删除</button></div><details><summary>冻结的讲解与来源</summary>{active.explanation_snapshot.answer_sections.map((x) => <p key={x.title}><strong>{x.title}</strong><br/>{x.text}</p>)}{active.code_evidence_snapshot.map((x) => <SourceCard key={x.source_id} source={x}/>)}</details></section>}
+    {active && <section className="note-editor"><p>冻结来源 · 修订 {active.revision}</p><input maxLength={160} aria-label="笔记标题" disabled={pending} value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })}/><textarea maxLength={20000} aria-label="个人笔记" disabled={pending} value={draft.user_text} onChange={(e) => setDraft({ ...draft, user_text: e.target.value })}/><div className="row"><button disabled={pending || !draft.title.trim()} onClick={edit}>{pending ? "保存中…" : "保存修改"}</button><a href={`/api/learning/v1/notes/${active.note_id}/export?format=markdown`}>Markdown</a><a href={`/api/learning/v1/notes/${active.note_id}/export?format=json`}>JSON</a><button className="danger" disabled={pending} onClick={remove}>删除</button></div><details><summary>冻结的讲解与来源</summary>{active.explanation_snapshot.answer_sections.map((x) => <p key={x.title}><strong>{x.title}</strong><br/>{x.text}</p>)}<CodeCitations answer={active.explanation_snapshot} openSource={openSource}/>{active.code_evidence_snapshot.map((x) => <SourceCard key={x.source_id} source={x}/>)}</details></section>}
   </div>;
 }
 
@@ -59,6 +60,9 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [documents, setDocuments] = useState([]);
   const [record, setRecord] = useState(null);
+  const [view, setView] = useState("document");
+  const [repositories, setRepositories] = useState([]), [codeError, setCodeError] = useState(null);
+  const lastDocument = useRef(null), lastCode = useRef(null);
   const [units, setUnits] = useState([]);
   const [unit, setUnit] = useState(null);
   const [selection, setSelection] = useState(null);
@@ -94,7 +98,7 @@ export default function App() {
   const retry = useRef(null);
   const noteEpoch = useRef(0);
   const mounted = useRef(false);
-  const questionInput = useRef(null), questionRef = useRef(""), autoQuestion = useRef("");
+  const questionInput = useRef(null), questionRef = useRef(""), autoQuestion = useRef(draft.current.autoQuestion || "");
   const selectionRequest = useRef("");
   questionRef.current = question;
   const explanation = result?.explanation;
@@ -115,7 +119,7 @@ export default function App() {
           try { previous = await api(draft.current.sessionId ? `/sessions/${draft.current.sessionId}` : "/sessions/recent"); } catch { /* A removed session starts afresh. */ }
           return previous?.session_id ? previous : api("/sessions", { method: "POST" });
         })(), api("/documents"),
-        api("/notes"), api("/sources/local-handles"),
+        api("/notes"), api("/sources/local-handles"), api("/repositories"),
       ]);
       if (!live) return;
       if (loaded[0].status === "fulfilled") setCaps(loaded[0].value);
@@ -127,11 +131,15 @@ export default function App() {
       if (loaded[4].status === "fulfilled" && Array.isArray(loaded[4].value)) {
         setLocalHandles(loaded[4].value); setLocalHandle(loaded[4].value[0] || "");
       }
+      if (loaded[5].status === "fulfilled" && Array.isArray(loaded[5].value)) setRepositories(loaded[5].value);
       const failed = loaded.find((x) => x.status === "rejected");
       if (failed) report(failed.reason, () => window.location.reload());
       if (loaded[1].status === "fulfilled" && loaded[2].status === "fulfilled") {
         const previous = loaded[1].value, context = previous.context;
-        const doc = loaded[2].value.documents.find((item) => item.document_id === context?.document_id);
+        let doc = loaded[2].value.documents.find((item) => item.document_id === context?.document_id);
+        if (context?.source_type === "CODE") {
+          try { doc = await api(`/documents/${context.document_id}`); } catch (e) { if (live) report(e); }
+        }
         if (doc && context) {
           try {
             const [list, target, history] = await Promise.all([
@@ -140,7 +148,14 @@ export default function App() {
             ]);
             if (!live) return;
             setRecord(doc); setUnits(list.units); setUnit(target);
+            setView(doc.source_type === "CODE" ? "code" : "document");
+            const restored = { record: doc, units: list.units, unit: target, selection: context.selected_text ? { text: context.selected_text, spans: context.selection_locator?.spans || [] } : null };
+            (doc.source_type === "CODE" ? lastCode : lastDocument).current = restored;
             setSelection(context.selected_text ? { text: context.selected_text, spans: context.selection_locator?.spans || [] } : null);
+            if (!autoQuestion.current && context.selected_text) {
+              const generated = questionForSelection({ text: context.selected_text }, doc.source_type === "CODE");
+              if (questionRef.current === generated) autoQuestion.current = generated;
+            }
             setTurns(Array.isArray(history) ? history : []);
             const latest = Array.isArray(history) ? history.at(-1) : null;
             if (latest?.context_revision === previous.context_revision) setResult(latest);
@@ -168,7 +183,7 @@ export default function App() {
   useEffect(() => {
     if (restoring.current || !session) return;
     try { window.sessionStorage.setItem("c2c-workspace", JSON.stringify({ sessionId: session.session_id,
-      question, noteText, level, scopeMode, repository, terms })); } catch { /* Storage can be disabled. */ }
+      question, autoQuestion: autoQuestion.current, noteText, level, scopeMode, repository, terms })); } catch { /* Storage can be disabled. */ }
   }, [session, question, noteText, level, scopeMode, repository, terms, record]);
 
   useEffect(() => {
@@ -209,6 +224,7 @@ export default function App() {
         sessionRef.current = next;
         if (epoch === contextEpoch.current && mounted.current) {
           rememberSession(next); setRecord(doc); setUnits(list); setUnit(target);
+          (doc.source_type === "CODE" ? lastCode : lastDocument).current = { record: doc, units: list, unit: target, selection: value };
           setSelection(value); setResult(null); setChosen([]); saveKey.current = null;
           if (!value && questionRef.current === autoQuestion.current) {
             autoQuestion.current = ""; questionRef.current = ""; setQuestion("");
@@ -227,6 +243,7 @@ export default function App() {
   }
   async function openDocument(doc) {
     if (!doc) return;
+    setView("document");
     const epoch = beginContextChange();
     try {
       const list = (await api(`/documents/${doc.document_id}/units`)).units;
@@ -236,6 +253,50 @@ export default function App() {
     } catch (e) {
       if (epoch === contextEpoch.current) { setContextBusy(false); report(e, () => openDocument(doc)); }
     }
+  }
+  function switchView(next) {
+    if (next === view) return;
+    setView(next); setCodeError(null);
+    const epoch = beginContextChange();
+    const saved = (next === "code" ? lastCode : lastDocument).current;
+    if (saved) activate(saved.record, saved.units, saved.unit, saved.selection, epoch);
+    else { setRecord(null); setUnit(null); setUnits([]); setSelection(null); setResult(null); setContextBusy(false); }
+  }
+  async function openCode(repo, path, lineStart, lineEnd) {
+    setView("code"); setCodeError(null);
+    const epoch = beginContextChange();
+    try {
+      const value = await api(`/repositories/${repo.repository_id}/files?path=${encodeURIComponent(path)}`, { method: "POST" });
+      if (epoch === contextEpoch.current) {
+        const target = value.units.find((u) => lineStart && u.blocks[0].code_location.line_start <= lineStart && u.blocks[0].code_location.line_end >= lineStart) || value.units[0];
+        let selected = null;
+        if (lineStart) {
+          const block = target.blocks[0], lines = block.text.split("\n");
+          const first = Math.max(0, lineStart - block.code_location.line_start), last = Math.min(lines.length - 1, (lineEnd || lineStart) - block.code_location.line_start);
+          const text = lines.slice(first, last + 1).join("\n"), start = Array.from(lines.slice(0, first).join("\n")).length + (first ? 1 : 0);
+          if (text && Array.from(text).length <= 10000) selected = { text, spans: [{ block_id: block.block_id, start, end: start + Array.from(text).length }], reveal: true };
+        }
+        await activate(value.document, value.units, target, selected, epoch);
+      }
+    } catch (e) {
+      if (epoch === contextEpoch.current) {
+        setContextBusy(false);
+        setCodeError({ message: e.message, retry: () => openCode(repo, path, lineStart, lineEnd),
+          url: `https://github.com/${repo.repository}/blob/${repo.commit_sha}/${path.split("/").map(encodeURIComponent).join("/")}` });
+      }
+    }
+  }
+  async function openSource(source) {
+    const identity = source.repository || `${source.repository_owner}/${source.repository_name}`;
+    const loaded = repositories.find((repo) => repo.repository.toLowerCase() === identity.toLowerCase() && repo.commit_sha === source.commit_sha);
+    if (loaded) return openCode(loaded, source.file_path, source.line_start, source.line_end);
+    const epoch = beginContextChange();
+    try {
+      const repo = await api("/repositories", json("POST", { repository: identity, ref: source.commit_sha }));
+      if (epoch !== contextEpoch.current) return;
+      setRepositories((old) => [repo, ...old.filter((item) => item.repository_id !== repo.repository_id)]);
+      await openCode(repo, source.file_path, source.line_start, source.line_end);
+    } catch (e) { if (epoch === contextEpoch.current) { setContextBusy(false); report(e, () => openSource(source)); } }
   }
   async function navigate(doc, list, index) {
     if (!list[index]) return;
@@ -253,14 +314,14 @@ export default function App() {
     const next = await activate(record, units, unit, value, epoch);
     if (next && value && epoch === contextEpoch.current) {
       if (!questionRef.current.trim() || questionRef.current === autoQuestion.current) {
-        autoQuestion.current = questionForSelection(value); questionRef.current = autoQuestion.current; setQuestion(autoQuestion.current);
+        autoQuestion.current = questionForSelection(value, record.source_type === "CODE"); questionRef.current = autoQuestion.current; setQuestion(autoQuestion.current);
       }
       setTab("chat");
     }
     return next;
   }
   function editQuestion(replace = false) {
-    if (replace && selection) { autoQuestion.current = questionForSelection(selection); questionRef.current = autoQuestion.current; setQuestion(autoQuestion.current); }
+    if (replace && selection) { autoQuestion.current = questionForSelection(selection, record?.source_type === "CODE"); questionRef.current = autoQuestion.current; setQuestion(autoQuestion.current); }
     questionInput.current?.focus({ preventScroll: true });
     questionInput.current?.scrollIntoView({ block: "center", behavior: "smooth" });
   }
@@ -289,6 +350,8 @@ export default function App() {
     } catch (e) { report(e, () => importFile(file)); } finally { setImporting(false); }
   }
   function scope() {
+    if (record?.source_type === "CODE") return { source_mode: "specified_public",
+      repository_allowlist: [record.code_location.repository], network_authorized: false, max_sources: 1 };
     const values = terms.split(/[,，\n]/).map((x) => x.trim()).filter(Boolean);
     const repos = repository.split(/[,，\n]/).map((x) => x.trim().replace(/^https:\/\/github\.com\//, "").replace(/\/$/, "")).filter(Boolean);
     return { source_mode: scopeMode === "document" ? "specified_public" : scopeMode,
@@ -300,7 +363,7 @@ export default function App() {
       query_terms_approved: values.length > 0, approved_query_terms: values, max_sources: compare ? 2 : 1 };
   }
   async function ask({ followup = true, useCandidates = false } = {}) {
-    if (!question.trim() || !session?.context_revision || !sessionRef.current?.context_revision || contextBusy || active.current) return;
+    if (!record || (record.source_type === "CODE") !== (view === "code") || !question.trim() || !session?.context_revision || !sessionRef.current?.context_revision || contextBusy || active.current) return;
     const requestId = id(), current = sessionRef.current, controller = new AbortController();
     const epoch = contextEpoch.current, sentQuestion = question.trim();
     active.current = { requestId, sessionId: current.session_id, controller };
@@ -311,7 +374,7 @@ export default function App() {
         question: sentQuestion, level, scope: scope(), source_ids: [],
         model_id: model?.id || null, model_base_url: model?.base_url || null,
         candidate_ids: useCandidates ? chosen : [], query_id: useCandidates ? result?.query_id : null,
-        compare, continue_from: followup ? explanation?.explanation_id || null : null,
+        compare: view === "code" ? false : compare, continue_from: followup ? explanation?.explanation_id || null : null,
       }, controller.signal, (next) => {
         if (active.current?.requestId !== requestId) return;
         if (next?.type === "preview") setPreview(next.sections); else setStage(next);
@@ -355,42 +418,46 @@ export default function App() {
     } catch (e) { if (epoch === noteEpoch.current) report(e, moreNotes); }
     finally { loadingMore.current = false; }
   }
-  const disabled = busy || contextBusy || !question.trim() || !session?.context_revision
-    || scopeMode === "specified_public" && !repository.trim() || scopeMode === "local_authorized" && !localHandle;
+  const disabled = busy || contextBusy || !record || (record.source_type === "CODE") !== (view === "code") || !question.trim() || !session?.context_revision
+    || view === "document" && (scopeMode === "specified_public" && !repository.trim() || scopeMode === "local_authorized" && !localHandle);
   const stageLabel = { planning: "正在理解问题…", searching: "正在找相关代码…", verifying: "正在核对代码出处…", answering: "正在回答…" }[stage] || "正在回答…";
   return <>
     <header className="topbar">
       <h1>Concept-to-Code</h1>
-      <select aria-label="切换文档" value={record?.document_id || ""} onChange={(e) => { const doc = documents.find((x) => x.document_id === e.target.value); if (doc) openDocument(doc); }}>
+      <nav className="workspace-modes" aria-label="学习材料"><button aria-pressed={view === "document"} onClick={() => switchView("document")}><Icon name="file"/>文档</button><button aria-pressed={view === "code"} onClick={() => switchView("code")}><Icon name="code"/>代码库</button></nav>
+      {view === "document" ? <select aria-label="切换文档" value={record?.document_id || ""} onChange={(e) => { const doc = documents.find((x) => x.document_id === e.target.value); if (doc) openDocument(doc); }}>
         <option value="">选择文档</option>{documents.map((x) => <option value={x.document_id} key={x.document_id}>{x.file_name}</option>)}
-      </select><span className="local-label">本地工作台</span>
+      </select> : <span className="local-label">本地学习工作台</span>}
     </header>
-    <main className="workspace">
-      <Reader record={record} units={units} unit={unit} navigate={(i) => navigate(record, units, i)} select={chooseSelection} selection={selection} importing={importing} importFile={importFile}
-        annotations={annotations.highlighted} openAnnotation={openAnnotation} annotate={writeAnnotation} editQuestion={() => editQuestion()} report={report}/>
+    <main className={`workspace ${view === "code" ? "code-workspace" : ""}`}>
+      {view === "document" && <Reader record={record} units={units} unit={unit} navigate={(i) => navigate(record, units, i)} select={chooseSelection} selection={selection} importing={importing} importFile={importFile}
+        annotations={annotations.highlighted} openAnnotation={openAnnotation} annotate={writeAnnotation} editQuestion={() => editQuestion()} report={report}/>}
+      <div className="repository-surface" hidden={view !== "code"}><RepositoryPane record={record} unit={unit} units={units} selection={selection} select={chooseSelection}
+        navigate={(i) => navigate(record, units, i)} openFile={openCode} loading={view === "code" && contextBusy} annotations={annotations.highlighted}
+        annotate={writeAnnotation} repositories={repositories} setRepositories={setRepositories} error={codeError} resetError={() => setCodeError(null)}/></div>
       <section className="assistant pane" aria-busy={busy || contextBusy}>
         <nav className="chat-tabs" aria-label="学习记录"><button aria-pressed={tab === "chat"} onClick={() => setTab("chat")}>对话</button><button aria-pressed={tab === "annotations"} onClick={() => setTab("annotations")}>批注 {annotations.total}</button><button aria-pressed={tab === "notes"} onClick={() => setTab("notes")}>笔记 {notes.length}</button></nav>
         <ErrorBox error={error} retry={retry.current}/>
         {notice && <p className="notice" role="status">{notice}</p>}
         <div hidden={tab !== "chat"}><ModelPicker change={(value, interactive) => { if (interactive) stopActive(); setModel(value); }} disabled={busy}/></div>
         {tab === "chat" ? <>
-          <Conversation turns={turns} current={explanation} noteText={noteText} setNoteText={setNoteText} saving={saving} saveNote={saveNote} preview={preview} pendingQuestion={pendingQuestion}/>
+          <Conversation mode={view} record={record} suggest={(text) => { questionRef.current = text; setQuestion(text); questionInput.current?.focus(); }} openSource={openSource} turns={turns.filter((item) => item.explanation?.context_snapshot?.document_id === record?.document_id)} current={explanation} noteText={noteText} setNoteText={setNoteText} saving={saving} saveNote={saveNote} preview={preview} pendingQuestion={pendingQuestion}/>
           {result?.status === "NEEDS_SOURCE_SELECTION" && <section className="candidates"><h3>选择代码来源</h3>{result.candidates.map((x) => <label key={x.candidate_id}><input type="checkbox" checked={chosen.includes(x.candidate_id)} onChange={(e) => setChosen((v) => e.target.checked ? [...v, x.candidate_id] : v.filter((i) => i !== x.candidate_id))}/><strong>{x.repository || x.local_handle}</strong><span>{x.file_hint}</span></label>)}<button disabled={!chosen.length || busy} onClick={() => ask({ useCandidates: true })}>使用所选来源</button></section>}
           <div className="composer">
             {selection && <div className="selection-summary"><blockquote>{selection.text}</blockquote><div className="quote-actions"><button onClick={() => editQuestion(true)}>带入问题</button><button disabled={contextBusy} onClick={writeAnnotation}>写批注</button><button disabled={contextBusy} onClick={() => chooseSelection(null)} aria-label="清除引用">取消引用</button></div></div>}
-            <textarea ref={questionInput} aria-label="学习问题" maxLength={2000} value={question} onChange={(e) => { questionRef.current = e.target.value; setQuestion(e.target.value); setChosen([]); }} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); if (!disabled) ask(); } }} placeholder="问问这段内容…"/>
+            <textarea ref={questionInput} aria-label="学习问题" maxLength={2000} value={question} onChange={(e) => { questionRef.current = e.target.value; setQuestion(e.target.value); setChosen([]); }} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); if (!disabled) ask(); } }} placeholder={view === "code" ? "这段代码，背后是什么原理？" : "问问这段内容…"}/>
             <div className="composer-options">
-              <select aria-label="来源模式" value={scopeMode} onChange={(e) => changeScope(() => setScopeMode(e.target.value))}><option value="public_search">GitHub 找代码</option><option value="specified_public">指定仓库</option><option value="local_authorized">本地仓库</option><option value="document">仅文档</option></select>
+              {view === "code" ? <span className="composer-code-scope"><Icon name="code" size={14}/>当前文件与关联代码</span> : <select aria-label="来源模式" value={scopeMode} onChange={(e) => changeScope(() => setScopeMode(e.target.value))}><option value="public_search">GitHub 找代码</option><option value="specified_public">指定仓库</option><option value="local_authorized">本地仓库</option><option value="document">仅文档</option></select>}
               <select aria-label="解释等级" value={level} onChange={(e) => { stopActive(); setLevel(e.target.value); }}>{Object.entries(levels).map(([value, name]) => <option key={value} value={value}>{name}</option>)}</select>
-              <button className="quiet-button" onClick={() => setAdvanced(!advanced)} aria-expanded={advanced}>搜索设置</button>
+              {view === "document" && <button className="quiet-button" onClick={() => setAdvanced(!advanced)} aria-expanded={advanced}>搜索设置</button>}
               {busy ? <button onClick={cancel}>停止</button> : <button className="primary send" disabled={disabled} onClick={() => ask()}>发送</button>}
             </div>
-            {scopeMode === "specified_public" && <input aria-label="公开仓库" value={repository} onChange={(e) => changeScope(() => setRepository(e.target.value))} placeholder="github.com/owner/repo"/>}
-            {scopeMode === "local_authorized" && <select aria-label="本地句柄" value={localHandle} onChange={(e) => changeScope(() => setLocalHandle(e.target.value))}><option value="">选择已授权仓库</option>{localHandles.map((handle, i) => <option key={handle} value={handle}>本地仓库 {i + 1} · {handle.slice(-6)}</option>)}</select>}
-            {advanced && <div className="search-settings">{scopeMode === "public_search" && <input aria-label="搜索关键词" maxLength={500} value={terms} onChange={(e) => changeScope(() => setTerms(e.target.value))} placeholder="限定关键词（可选）"/>}<label className="check"><input type="checkbox" checked={compare} onChange={(e) => changeScope(() => setCompare(e.target.checked))}/>比较两个仓库</label></div>}
+            {view === "document" && scopeMode === "specified_public" && <input aria-label="公开仓库" value={repository} onChange={(e) => changeScope(() => setRepository(e.target.value))} placeholder="github.com/owner/repo"/>}
+            {view === "document" && scopeMode === "local_authorized" && <select aria-label="本地句柄" value={localHandle} onChange={(e) => changeScope(() => setLocalHandle(e.target.value))}><option value="">选择已授权仓库</option>{localHandles.map((handle, i) => <option key={handle} value={handle}>本地仓库 {i + 1} · {handle.slice(-6)}</option>)}</select>}
+            {view === "document" && advanced && <div className="search-settings">{scopeMode === "public_search" && <input aria-label="搜索关键词" maxLength={500} value={terms} onChange={(e) => changeScope(() => setTerms(e.target.value))} placeholder="限定关键词（可选）"/>}<label className="check"><input type="checkbox" checked={compare} onChange={(e) => changeScope(() => setCompare(e.target.checked))}/>比较两个仓库</label></div>}
             {busy && <p className="working" role="status">{stageLabel}</p>}
           </div>
-        </> : tab === "annotations" ? <Annotations state={annotations} unit={unit} locate={locateAnnotation}/> : <div className="records-panel"><Notes notes={notes} query={noteQuery} setQuery={setNoteQuery} report={report} changed={(value) => setNotes((items) => items.map((x) => x.note_id === value.note_id ? value : x))} removed={(noteId) => setNotes((items) => items.filter((x) => x.note_id !== noteId))}/>{notes.length < noteTotal && <button onClick={moreNotes}>更多笔记</button>}</div>}
+        </> : tab === "annotations" ? <Annotations state={annotations} unit={unit} locate={locateAnnotation}/> : <div className="records-panel"><Notes openSource={openSource} notes={notes} query={noteQuery} setQuery={setNoteQuery} report={report} changed={(value) => setNotes((items) => items.map((x) => x.note_id === value.note_id ? value : x))} removed={(noteId) => setNotes((items) => items.filter((x) => x.note_id !== noteId))}/>{notes.length < noteTotal && <button onClick={moreNotes}>更多笔记</button>}</div>}
       </section>
     </main>
   </>;

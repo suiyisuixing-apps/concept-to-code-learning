@@ -18,12 +18,14 @@ from concept_to_code_learning.full_learning.providers import ProviderSettings
 from concept_to_code_learning.full_learning.providers import build_providers as build_full_providers
 from concept_to_code_learning.full_learning.service import LearningService
 from concept_to_code_learning.full_learning.store import LearningStore
+from concept_to_code_learning.github_intelligence.github_client import GitHubRawClient
 from concept_to_code_learning.integration.api import create_router
 from concept_to_code_learning.integration.contracts import load_contracts
 from concept_to_code_learning.integration.errors import SliceError
 from concept_to_code_learning.integration.providers import ProviderConfig, build_providers
 from concept_to_code_learning.integration.service import VerticalSliceService
 from concept_to_code_learning.integration.store import SnapshotNoteStore
+from concept_to_code_learning.repositories.library import RepositoryLibrary
 from concept_to_code_learning.store import NoteStore
 from concept_to_code_learning.tutor.fixture import FixtureTutor
 
@@ -47,13 +49,16 @@ class SaveRequest(BaseModel):
 
 def create_app(data_dir: Path | None = None, root: Path = ROOT, *,
                provider_config: ProviderConfig | None = None,
-               full_providers: ProviderBundle | None = None) -> FastAPI:
+               full_providers: ProviderBundle | None = None, repository_library=None) -> FastAPI:
     config = provider_config or ProviderConfig.from_env()
     tutor = FixtureTutor(root)
     storage = data_dir or Path(os.environ.get("C2C_DATA_DIR", root / "data/local"))
     store = NoteStore(storage, tutor.schemas)
-    learning = LearningService(full_providers or build_full_providers(ProviderSettings.from_env(root, storage)),
-                               LearningStore(storage))
+    settings = ProviderSettings.from_env(root, storage)
+    repositories = repository_library or RepositoryLibrary(storage, GitHubRawClient(
+        token=settings.github_token, cache_dir=storage / "repository-response-cache"))
+    learning = LearningService(full_providers or build_full_providers(settings),
+                               LearningStore(storage), repositories=repositories)
 
     @asynccontextmanager
     async def lifespan(app):

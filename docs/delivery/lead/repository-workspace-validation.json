@@ -1,0 +1,72 @@
+{
+  "date": "2026-09-12",
+  "branch": "feat/repository-learning-workspace",
+  "base": "f02f65f4e9c6627d4ebd9b6099e8d6d265b74600",
+  "overall": "LOCAL_REVIEW_CANDIDATE",
+  "implementation": "IMPLEMENTED",
+  "python_tests": {
+    "platform": "macOS arm64",
+    "python": "3.12.14",
+    "passed": 486
+  },
+  "frontend_tests": {
+    "passed": 37
+  },
+  "ruff": "PASS",
+  "build": "PASS",
+  "contracts": "CURRENT",
+  "doctor": "PASS",
+  "demo": "PASS_FIXTURE_ONLY",
+  "design_review": {
+    "initial": "fix",
+    "final": "ship",
+    "resolved": 2,
+    "scope": "Listed fixes; desktop and CSS responsive captures; no semantic or physical-device certification"
+  },
+  "live_cases": [
+    {
+      "repository": "karpathy/micrograd",
+      "commit": "7bc720e951fe422b8f8814aa5aa1b64121d26b4c",
+      "path": "micrograd/nn.py",
+      "open_seconds": 1.16,
+      "first_preview_seconds": 6.45,
+      "total_seconds": 19.61,
+      "question": "结合当前文件和实际读取的 Value 实现，解释加权求和与 ReLU，为什么这些运算还能反向传播？请指出具体表达式。",
+      "model": "Qwen2.5-Coder-7B-Instruct-4bit",
+      "request_status": "result",
+      "source_binding": "CODE_GROUNDED",
+      "semantic_review": "PARTIAL: unrelated operator attribution"
+    },
+    {
+      "repository": "karpathy/micrograd",
+      "commit": "7bc720e951fe422b8f8814aa5aa1b64121d26b4c",
+      "path": "micrograd/engine.py",
+      "open_seconds": 0.01,
+      "first_preview_seconds": 2.28,
+      "total_seconds": 14.29,
+      "question": "为什么梯度用 += 而不是直接赋值？结合 __mul__ 和 backward 的实际代码解释链式法则与反向传播顺序。",
+      "model": "Qwen3-4B-Instruct-2507-4bit",
+      "request_status": "result",
+      "source_binding": "CODE_GROUNDED",
+      "semantic_review": "PARTIAL: derivative notation error"
+    },
+    {
+      "repository": "trekhleb/javascript-algorithms",
+      "commit": "85293e3e2b88f4d2ce330d956b139cf628aa1e82",
+      "path": "src/algorithms/graph/dijkstra/dijkstra.js",
+      "open_seconds": 2.86,
+      "first_preview_seconds": 6.19,
+      "total_seconds": 11.12,
+      "question": "这个函数返回了哪些信息？它是否已经生成起点到终点的完整路径数组？请依据实际返回语句解释。",
+      "model": "Qwen2.5-Coder-7B-Instruct-4bit",
+      "request_status": "result",
+      "source_binding": "CODE_GROUNDED",
+      "semantic_review": "PASSED: return object versus reconstructed path"
+    }
+  ],
+  "semantic_quality": "PARTIALLY_VERIFIED",
+  "third_party_code_execution": false,
+  "new_model_downloads": false,
+  "human_approval_claimed": false,
+  "ci": "See current PR head checks"
+}

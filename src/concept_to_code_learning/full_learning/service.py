@@ -17,8 +17,9 @@ from concept_to_code_learning.tutor.full import GroundedTutorProvider
 
 
 class LearningService:
-    def __init__(self, providers: ProviderBundle, store: LearningStore, *, timeout_seconds: float = 120):
+    def __init__(self, providers: ProviderBundle, store: LearningStore, *, timeout_seconds: float = 120, repositories=None):
         self.providers, self.store = providers, store
+        self.repositories = repositories
         self.timeout_seconds = timeout_seconds
         self.active: dict[str, asyncio.Task] = {}
         self.models = TutorCatalog(providers.tutor)
@@ -70,11 +71,26 @@ class LearningService:
                                   "FIXTURE" if fixture else "READY_FOR_LIVE_CHECK"),
                               status="PARTIAL" if not ready else ("FIXTURE" if fixture else "AVAILABLE"))
 
+    async def document_record(self, document_id):
+        if document_id.startswith("code-") and self.repositories:
+            return self.repositories.document(document_id).document
+        return await self.call("document", self.providers.document.get_document, document_id)
+
+    async def document_units(self, document_id):
+        if document_id.startswith("code-") and self.repositories:
+            return self.repositories.document(document_id).units
+        return await self.call("document", self.providers.document.list_units, document_id)
+
+    async def document_unit(self, document_id, unit_id):
+        if document_id.startswith("code-") and self.repositories:
+            value = next((u for u in self.repositories.document(document_id).units if u.unit_id == unit_id), None)
+            require(value is not None, "FILE_NOT_FOUND", "repository", "代码位置不存在。", 404)
+            return value
+        return await self.call("document", self.providers.document.get_unit, document_id, unit_id)
+
     async def context(self, document_id: str, request: m.ContextRequest) -> m.DocumentContext:
-        record = m.DocumentRecord.model_validate(await self.call(
-            "document", self.providers.document.get_document, document_id))
-        unit = m.DocumentUnit.model_validate(await self.call(
-            "document", self.providers.document.get_unit, document_id, request.unit_id))
+        record = m.DocumentRecord.model_validate(await self.document_record(document_id))
+        unit = m.DocumentUnit.model_validate(await self.document_unit(document_id, request.unit_id))
         require(record.document_id == document_id, "DOCUMENT_VERSION_MISMATCH", "document",
                 "返回了不同文档。", 409)
         return resolve_context(record, unit, request)
@@ -309,7 +325,7 @@ class LearningService:
             require(bool(answer.provider_info.model_id) and answer.provider_info.status == "AVAILABLE"
                     and answer.provider_info.endpoint_kind in {"loopback", "authorized_remote"},
                     "MODEL_OUTPUT_INVALID", "tutor", "真实模型调用缺少模型身份。", 502)
-            require(answer.status == ("GROUNDED" if answer.code_source_ids else "NO_VERIFIED_CODE"),
+            require(answer.status == ("CODE_GROUNDED" if context.source_type == "CODE" else "GROUNDED" if answer.code_source_ids else "NO_VERIFIED_CODE"),
                     "MODEL_OUTPUT_INVALID", "tutor", "回答状态与代码覆盖不一致。", 502)
         else:
             require(answer.status == "FIXTURE", "MODEL_OUTPUT_INVALID", "tutor", "替身回答必须明确标注。", 502)
@@ -397,7 +413,15 @@ class LearningService:
                 "MODEL_OUTPUT_INVALID", "tutor", "教学计划改变了问题、难度或执行模式。", 502)
         if plan.reuse_previous_sources is False and not request.source_ids:
             sources = []
-        if request.source_ids:
+        if context.source_type == "CODE":
+            require(context.code_location is not None and not request.source_ids and not request.candidate_ids
+                    and not request.compare and request.scope.source_mode == "specified_public"
+                    and request.scope.repository_allowlist == [context.code_location.repository],
+                    "SOURCE_MISMATCH", "repository", "讲解范围应为当前代码文件所在的仓库。", 409)
+            # Code and literal dependencies are already frozen in the server context.
+            # Never search a different repository or transmit the user's question to GitHub.
+            sources = []
+        elif request.source_ids:
             sources = await self.existing_sources(request.session_id, request.source_ids, request.scope)
         elif request.candidate_ids:
             require(request.query_id is not None, "SOURCE_MISMATCH", "sources", "候选缺少检索 ID。")
@@ -465,7 +489,7 @@ class LearningService:
         if request.compare:
             require(len({(s.repository_url, s.local_handle) for s in sources}) >= 2,
                     "NO_RELEVANT_SOURCE", "sources", "尚无两个不同仓库的核验证据，无法进行真实比较。")
-        if not sources:
+        if not sources and context.source_type != "CODE":
             warnings.append("NO_VERIFIED_CODE")
         plan.uncertainties = plan.uncertainties + list(dict.fromkeys(warnings))
         progress("answering")
@@ -487,6 +511,8 @@ class LearningService:
             task.cancel()
         if tasks:
             await asyncio.gather(*tasks, return_exceptions=True)
+        if self.repositories:
+            await self.repositories.close()
         await self.models.close()
         await asyncio.gather(*(provider.close() for provider in (
             self.providers.document, self.providers.sources, self.providers.tutor)), return_exceptions=True)

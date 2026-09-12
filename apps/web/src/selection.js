@@ -78,8 +78,8 @@ export function capturePdf(unit, root, selection = window.getSelection()) {
     offsetIn(root, range.endContainer, range.endOffset));
 }
 
-export function questionForSelection(value) {
+export function questionForSelection(value, code = false) {
   let quote = "";
   for (const char of value.text) { if (quote.length + char.length > 1600) break; quote += char; }
-  return `请解释这段原文：\n${quote}${quote.length < value.text.length ? "…" : ""}`;
+  return `请解释这段${code ? "代码及其背后的知识" : "原文"}：\n${quote}${quote.length < value.text.length ? "…" : ""}`;
 }

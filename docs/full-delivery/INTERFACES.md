@@ -162,3 +162,44 @@ SQLite connection context仅处理事务，closing负责关闭；本实现不在
 
 
 2026-09-11 引用绑定修复：默认模型内部协议改为 `NarrativeOutput`（answer、可选 comparison/tradeoffs、limitations）。服务端在生成前固定输入包，回答的文档引用绑定实际给出的选区块或首个上下文块，源码引用绑定给出的已核验片段。模型不生成仓库身份、行范围或来源 ID。`PlainTeachingOutput` 和原 `TeachingOutput` 仍可读；凡响应声明了引用，必须通过原有逐项校验，不能删掉错误引用后降级发布。生成预览不保存，最终输出仍经过来源、范围、原始字节、引用和代码相关性检查。`GROUNDED` 不等于逐句语义正确，来源卡片表明本次输入依据。公共 DTO、已有笔记、历史回答及旧接口保持原样。
+
+## Repository reading extension (2026-09-12)
+
+`/api/learning/v1/repositories` adds explicit public GitHub imports. `POST` accepts
+`repository` (owner/repo or a canonical HTTPS GitHub repository URL) and an optional
+`ref`; the response fixes a commit and an application repository ID. `GET /search?q=`
+searches only the user's submitted repository name. `GET /{id}/tree` takes a directory,
+optional filename query, offset and limit (at most 500). It returns all entry kinds;
+truncated GitHub trees fall back to lazily resolved, nonrecursive directory trees.
+Search over a partial tree explicitly covers only directories already loaded.
+`POST /{id}/files?path=` opens a file from that tree; client-supplied file bytes, blob
+hashes, verification flags and host paths are never accepted.
+
+The additive `CODE` document type uses ordinary section units with a `CodeLocation`
+(repo ID, identity, fixed commit, path, Git blob and inclusive line range). UTF-8/BOM
+and CRLF are normalized for reading while original bytes retain their SHA-256 and
+Git blob identity. Files up to 1 MiB are divided into sections of at most 240 lines /
+16,000 characters. Overlong individual lines, binary files, symlinks and submodules
+remain visible entries with a GitHub fallback. Source display still requires the
+existing observed-license policy; this is not universal license recognition.
+
+A code unit can freeze up to two `supporting_blocks`, resolved from literal Python
+or relative JavaScript/TypeScript imports in the same repository and commit. This
+is bounded context, not an assertion that the entire repository has been understood.
+Python definition boundaries are obtained with static AST parsing only. Files are
+never cloned, imported, executed or installed. No OAuth/admin credentials are read;
+public metadata is checked before new network reads, using only `C2C_GITHUB_TOKEN`
+when explicitly configured. A previously opened local snapshot can be read offline.
+
+Code teaching sends the current file and frozen dependencies to the selected model,
+without a second GitHub search or a model search-planning call. Source scope must
+match the current repository. `CODE_GROUNDED` distinguishes this reading path from
+`GROUNDED` (separately verified search evidence) and `NO_VERIFIED_CODE` (document-only
+teaching). Citation IDs, quotes, source locations and hashes are server-owned;
+these checks do not certify every semantic claim made by a language model.
+
+`code_location`, `code_license` and `supporting_blocks` are additive optional fields.
+Absent values are omitted during serialization, preserving old document, annotation
+and note fingerprints. Existing Sprint 1 schemas and APIs are unchanged. Code notes
+freeze the same context and export fixed source/observed-license links. Repository
+storage uses a separate SQLite file and never migrates or rewrites existing notes.

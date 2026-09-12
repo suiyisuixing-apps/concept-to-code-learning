@@ -1,5 +1,6 @@
 """Real two-stage grounded teaching through one explicitly configured local model."""
 
+import ast
 import json
 import re
 import time
@@ -89,6 +90,52 @@ class PlainTeachingOutput(m.Value):
         )
 
 
+def code_definitions(text, first_line):
+    """Give small models actual lexical scopes, including nested callbacks. Never import code."""
+    try:
+        tree = ast.parse(text)
+    except (SyntaxError, ValueError, RecursionError):
+        return []
+    definitions = []
+
+    pending, inspected = [(tree, [])], 0
+    while pending and len(definitions) < 40 and inspected < 4000:
+        node, parents = pending.pop()
+        inspected += 1
+        scope = parents
+        if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
+            scope = [*parents, node.name]
+            definitions.append({"symbol": ".".join(scope), "line_start": first_line + node.lineno - 1,
+                                "line_end": first_line + node.end_lineno - 1})
+        pending.extend((child, scope) for child in reversed(list(ast.iter_child_nodes(node))))
+    return definitions
+
+
+def comparison_facts(text):
+    """Static boundary facts for simple comparisons; never evaluate repository code."""
+    try:
+        tree = ast.parse(text)
+    except (SyntaxError, ValueError, RecursionError):
+        return []
+    facts = []
+    for node in ast.walk(tree):
+        if len(facts) >= 12:
+            break
+        if (isinstance(node, ast.Compare) and len(node.ops) == 1
+                and isinstance(node.left, (ast.Name, ast.Attribute))
+                and isinstance(node.comparators[0], ast.Constant)
+                and type(node.comparators[0].value) in (int, float)
+                and isinstance(node.ops[0], (ast.Lt, ast.Gt, ast.LtE, ast.GtE, ast.Eq, ast.NotEq))):
+            expression = ast.get_source_segment(text, node)
+            tested = ast.get_source_segment(text, node.left)
+            if expression and tested and len(expression) <= 200:
+                facts.append({"expression": expression, "tested_value": tested,
+                    "boundary": node.comparators[0].value,
+                    "true_at_boundary": isinstance(node.ops[0], (ast.LtE, ast.GtE, ast.Eq)),
+                    "basis": "静态比较逻辑，未运行源码；仅判断 tested_value，不判断其他变量的符号。"})
+    return facts
+
+
 def build_provider(settings):
     config = None
     if settings.model_base_url and settings.model_id:
@@ -142,6 +189,30 @@ class GroundedTutorProvider:
 
     @staticmethod
     def pack_context(context, budget=6000):
+        if context.source_type == "CODE":
+            packed, truncated = [], False
+            selected = {s.block_id: s for s in context.selection_locator.spans} if context.selection_locator else {}
+            ordered = sorted(context.relevant_context_blocks, key=lambda b: b.block_id not in selected)
+            for index, block in enumerate(ordered[:3]):
+                if not block.text or not block.code_location:
+                    continue
+                cap = 6000 if index == 0 else 4000
+                start = max(0, selected[block.block_id].start - 800) if block.block_id in selected and len(block.text) > cap else 0
+                # Begin at an actual line boundary so displayed source coordinates remain exact.
+                start = block.text.rfind("\n", 0, start) + 1
+                end = min(len(block.text), start + cap)
+                boundary = block.text.rfind("\n", start, end)
+                if end < len(block.text) and boundary > start:
+                    end = boundary
+                text = block.text[start:end]
+                location = block.code_location.model_dump(mode="json")
+                location["line_start"] += block.text[:start].count("\n")
+                location["line_end"] = location["line_start"] + text.count("\n")
+                packed.append({"block_id": block.block_id, "text": text, "location": location,
+                               "definitions": code_definitions(text, location["line_start"]) if location["file_path"].endswith(".py") else [],
+                               "comparison_facts": comparison_facts(text) if location["file_path"].endswith(".py") else []})
+                truncated |= start > 0 or end < len(block.text)
+            return packed, truncated or len(ordered) > len(packed)
         selected = (
             set(s.block_id for s in context.selection_locator.spans)
             if context.selection_locator
@@ -208,7 +279,7 @@ class GroundedTutorProvider:
                 "模型未能完成本次回答；输入仍保留。",
                 503,
                 retryable=result.error_code
-                in {"MODEL_TIMEOUT", "MODEL_OFFLINE", "MODEL_RATE_LIMITED"},
+                in {"MODEL_TIMEOUT", "MODEL_OFFLINE", "MODEL_RATE_LIMITED", "MODEL_OUTPUT_TRUNCATED"},
                 needed_action="检查模型连接；超时可缩小选区或稍后重试。",
             )
         text = result.text.strip()
@@ -238,6 +309,12 @@ class GroundedTutorProvider:
         return output, result
 
     async def plan(self, context, question, level, conversation):
+        if context.source_type == "CODE":
+            # The user already chose the repository and file. A search-planning
+            # generation would add latency and could send this question elsewhere.
+            return m.TeachingPlan(mode=context.mode, plan_id=m.uid(), question=question,
+                level=level, concepts=["代码中的知识"], needs_code=True,
+                reuse_previous_sources=False, status="READY")
         blocks, truncated = self.pack_context(context, 4500)
         prompt = """结合当前问题、所选原文、周围段落和历史对话，规划这次教学。
 ‘这个/继续/给个例子/GitHub上有代码吗’必须从上下文解析成具体学习主题，不能把 GitHub、example、code 当作学习主题。
@@ -335,7 +412,7 @@ query_terms 第一项优先保留材料明确点名的具体算法、定理或AP
         blocks, truncated = self.pack_context(context, 2200 if context.selected_text else 4500)
         block_aliases = {f"B{i + 1}": b["block_id"] for i, b in enumerate(blocks)}
         blocks = [
-            {"block_id": alias, "text": blocks[i]["text"]} for i, alias in enumerate(block_aliases)
+            {**blocks[i], "block_id": alias} for i, alias in enumerate(block_aliases)
         ]
         source_aliases = {
             f"S{i + 1}": source.source_id for i, source in enumerate(verified_sources)
@@ -379,6 +456,20 @@ verified_sources 是本次已实际找到的代码；repository和file_path给�
             prompt = """仅根据所给原文，用中文解释当前学习问题。不复述问题，不编造代码例子。
 只输出JSON：{"answer":"完整讲解","limitations":[]}。不要输出引用编号、document_ids、source_notes、标题或网址。
 原文摘录由界面附上。没有影响理解的实际局限则limitations为空。"""
+        if context.source_type == "CODE":
+            prompt = """这次从真实仓库代码学习知识。document_blocks 是服务端逐字读取的固定版本源码，location 给出文件与行范围。
+只输出 JSON：{"answer":"完整中文讲解","limitations":[]}。不要输出引用编号、标题或网址。
+先直接回答问题，再以当前选中的代码为线索讲清背后的概念、为什么这样写、输入怎样经过关键步骤得到输出。
+引用至少两处实际出现的表达式或符号，用反引号标出，并解释它们和知识点的具体对应。根据 level 调整深度，用代码中的值举例，不添加生活类比；不能只给术语定义或逐行翻译。
+严格区分程序实际做了什么和设计动机。不要把数值的正负、真假等同于正确错误或有无意义，也不要编造过滤某种数值的好处。
+comparison_facts 给出简单比较的静态边界事实，不能将 > 解释成 >=，也不能将输入或激活值的符号判断说成对梯度符号的判断。解释条件时必须引用真实比较表达式，并说明等于阈值时的分支。
+definitions 是静态解析得到的完整符号名和所属范围；描述某个方法的实现时使用这个名称，严格区分同名的嵌套回调和外层方法。
+逐个核对函数定义中的条件、运算和返回式，不要把相邻函数的实现混到一起。区分语言内置函数与当前代码的重载方法；只把功能归给真正实现它的方法。
+其他文件仅在提供了它们的实际代码时才能解释调用关系。不要由文件名猜未提供的实现、依赖版本或整个项目架构。
+用户的选区可能是残片，结合当前文件、实际读到的导入模块和历史追问解释。不要求用户再输入搜索知识点。
+讲清常见误解；如果用户询问的实现不在已提供代码中，明确指出缺少哪个部分，并只解释可见部分。此源码未执行，不声称测量结果。
+优先用代码中的真实运算解释数学关系，只有问题明确要求公式、证明或推导时才添加额外公式。需要公式时统一符号，区分局部导数和最终目标对变量的导数；每个量都要对应实际表达式。
+answer 用两到四个清楚的短段，避免无关安装说明和重复免责声明。limitations 只列影响当前结论的证据缺口。"""
         if compare:
             prompt += "\n另外输出comparison字符串说明这些实现的异同，以及tradeoffs字符串数组说明权衡。"
         if repair:
@@ -395,7 +486,9 @@ verified_sources 是本次已实际找到的代码；repository和file_path给�
                 "concepts": plan.concepts,
                 "selected_text": context.selected_text[:1500],
                 "compare": compare,
-                "level": LEVELS[plan.level],
+                "level": ({"Beginner": "面向初学者，先解释术语，用代码中的简单输入值说明步骤与边界。",
+                           "University": "面向大学课程，解释概念、前提、代码体现的原理和常见误解。"}.get(plan.level, LEVELS[plan.level])
+                          if context.source_type == "CODE" else LEVELS[plan.level]),
                 "original_question": plan.question,
                 "question": learning_goal or plan.question,
             },
@@ -409,9 +502,9 @@ verified_sources 是本次已实际找到的代码；repository和file_path给�
             # strict validation path below and cannot fall back to this format.
             selected_blocks = {span.block_id for span in context.selection_locator.spans} if context.selection_locator else set()
             cited_blocks = [alias for alias, bid in block_aliases.items() if bid in selected_blocks]
-            cited_blocks = cited_blocks or list(block_aliases)
+            cited_blocks = list(block_aliases) if context.source_type == "CODE" else cited_blocks or list(block_aliases)
             output = TeachingOutput(
-                answer_sections=[m.AnswerSection(title="代码怎么实现" if source_data else "核心意思",
+                answer_sections=[m.AnswerSection(title="从代码理解" if context.source_type == "CODE" else "代码怎么实现" if source_data else "核心意思",
                                                  text=output.answer)],
                 document_citations=[Quote(block_id=alias) for alias in cited_blocks[:10]],
                 concept_code_links=[m.ConceptCodeLink(concept=plan.concepts[0], source_id=alias,
@@ -478,12 +571,15 @@ verified_sources 是本次已实际找到的代码；repository和file_path给�
                 source_aliases[sid] for sid in output.comparison.source_ids
             ]
         used = list(dict.fromkeys(link.source_id for link in output.concept_code_links))
-        if verified_sources:
+        code_reading = context.source_type == "CODE" and context.file_name.endswith((".py", ".js", ".jsx", ".ts", ".tsx", ".java", ".go", ".rs", ".c", ".cpp"))
+        if verified_sources or code_reading:
             keywords = {"def", "class", "return", "self", "super", "from", "import", "for", "while",
                         "and", "not", "true", "false", "none", "null", "function", "const", "let",
                         "var", "export", "default", "this", "else", "with", "raise", "pass"}
             code = "\n".join(line for source in source_data for line in source["code"].splitlines()
                              if not line.strip().startswith(("#", "//", "*")))
+            if code_reading:
+                code = "\n".join(block["text"] for block in blocks)
             # Short names such as X/y are central to many teaching examples.
             names = {name.casefold() for name in re.findall(r"[A-Za-z_][A-Za-z0-9_]*", code)} - keywords
             prose = " ".join(section.text for section in output.answer_sections).casefold()
@@ -580,7 +676,7 @@ verified_sources 是本次已实际找到的代码；repository和file_path给�
                 status="AVAILABLE",
             ),
             metrics=metrics,
-            status=("GROUNDED" if used else "NO_VERIFIED_CODE") if live else "FIXTURE",
+            status=("CODE_GROUNDED" if context.source_type == "CODE" else "GROUNDED" if used else "NO_VERIFIED_CODE") if live else "FIXTURE",
         )
 
     async def close(self):
