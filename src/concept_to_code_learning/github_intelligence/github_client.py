@@ -93,9 +93,10 @@ class GitHubRawClient:
                 return found[:limit]
         return []
 
-    async def tree(self, owner, name, commit):
+    async def tree(self, owner, name, commit, *, recursive=True):
         return await self._get_json(
-            repo_path(owner, name) + f"/git/trees/{quote(commit, safe='')}?recursive=1",
+            repo_path(owner, name) + f"/git/trees/{quote(commit, safe='')}"
+            + ("?recursive=1" if recursive else ""),
             stage="tree",
         )
 

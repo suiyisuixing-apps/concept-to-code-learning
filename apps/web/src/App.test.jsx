@@ -142,6 +142,7 @@ function readyWorkspace(hook = () => undefined) {
 }
 function answer(question = "最初的问题") {
   return { status: "COMPLETE", sources: [], explanation: {
+    context_snapshot: { document_id: "doc-live", file_name: "material.md", source_type: "MARKDOWN", unit_locator: { index: 1 } },
     explanation_id: "explanation-1", question, status: "NO_VERIFIED_CODE", level: "Beginner",
     answer_sections: [{ title: "解释结果", text: "只属于当前请求的回答" }], document_citations: [],
     concept_code_links: [], example_blocks: [], limitations: [], provider_info: { model_id: "local-model" },

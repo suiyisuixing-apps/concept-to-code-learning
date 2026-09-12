@@ -1,0 +1,79 @@
+{
+  "$defs": {
+    "TreeEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "folder",
+            "file",
+            "symlink",
+            "submodule"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "path": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "sha": {
+          "pattern": "^[a-f0-9]{40}$",
+          "title": "Sha",
+          "type": "string"
+        },
+        "size": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Size",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "path",
+        "sha",
+        "kind"
+      ],
+      "title": "TreeEntry",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "complete_tree": {
+      "title": "Complete Tree",
+      "type": "boolean"
+    },
+    "directory": {
+      "title": "Directory",
+      "type": "string"
+    },
+    "entries": {
+      "items": {
+        "$ref": "#/$defs/TreeEntry"
+      },
+      "title": "Entries",
+      "type": "array"
+    },
+    "offset": {
+      "title": "Offset",
+      "type": "integer"
+    },
+    "total": {
+      "title": "Total",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "entries",
+    "directory",
+    "total",
+    "offset",
+    "complete_tree"
+  ],
+  "title": "TreePage",
+  "type": "object"
+}

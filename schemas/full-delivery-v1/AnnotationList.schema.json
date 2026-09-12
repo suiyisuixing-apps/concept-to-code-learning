@@ -65,6 +65,17 @@
     "AnnotationAnchor": {
       "additionalProperties": false,
       "properties": {
+        "code_location": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CodeLocation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "document_id": {
           "maxLength": 200,
           "minLength": 1,
@@ -105,7 +116,8 @@
             "PDF",
             "PPTX",
             "DOCX",
-            "MARKDOWN"
+            "MARKDOWN",
+            "CODE"
           ],
           "title": "Source Type",
           "type": "string"
@@ -134,6 +146,61 @@
         "selection_locator"
       ],
       "title": "AnnotationAnchor",
+      "type": "object"
+    },
+    "CodeLocation": {
+      "additionalProperties": false,
+      "properties": {
+        "blob_sha": {
+          "pattern": "^[a-f0-9]{40}$",
+          "title": "Blob Sha",
+          "type": "string"
+        },
+        "commit_sha": {
+          "pattern": "^[a-f0-9]{40}$",
+          "title": "Commit Sha",
+          "type": "string"
+        },
+        "file_path": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "File Path",
+          "type": "string"
+        },
+        "line_end": {
+          "minimum": 1,
+          "title": "Line End",
+          "type": "integer"
+        },
+        "line_start": {
+          "minimum": 1,
+          "title": "Line Start",
+          "type": "integer"
+        },
+        "repository": {
+          "maxLength": 200,
+          "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$",
+          "title": "Repository",
+          "type": "string"
+        },
+        "repository_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Repository Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "repository_id",
+        "repository",
+        "commit_sha",
+        "file_path",
+        "blob_sha",
+        "line_start",
+        "line_end"
+      ],
+      "title": "CodeLocation",
       "type": "object"
     },
     "SelectionLocator": {

@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "ref": {
+      "anyOf": [
+        {
+          "maxLength": 200,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Ref"
+    },
+    "repository": {
+      "maxLength": 300,
+      "minLength": 1,
+      "title": "Repository",
+      "type": "string"
+    }
+  },
+  "required": [
+    "repository"
+  ],
+  "title": "AddRepository",
+  "type": "object"
+}

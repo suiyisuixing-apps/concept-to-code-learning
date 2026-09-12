@@ -4,6 +4,7 @@ import App from "./App.jsx";
 import "./styles.css";
 import "./workspace.css";
 import "./conversation.css";
+import "./repository.css";
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>

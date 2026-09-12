@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "commit_sha": {
+      "pattern": "^[a-f0-9]{40}$",
+      "title": "Commit Sha",
+      "type": "string"
+    },
+    "complete_tree": {
+      "title": "Complete Tree",
+      "type": "boolean"
+    },
+    "contract_version": {
+      "const": "full-delivery-v1",
+      "default": "full-delivery-v1",
+      "title": "Contract Version",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "description": {
+      "default": "",
+      "title": "Description",
+      "type": "string"
+    },
+    "mode": {
+      "enum": [
+        "LIVE",
+        "FIXTURE",
+        "UNAVAILABLE"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "ref": {
+      "title": "Ref",
+      "type": "string"
+    },
+    "repository": {
+      "maxLength": 200,
+      "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$",
+      "title": "Repository",
+      "type": "string"
+    },
+    "repository_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_.:-]+$",
+      "title": "Repository Id",
+      "type": "string"
+    },
+    "revision": {
+      "default": 1,
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "tree_sha": {
+      "pattern": "^[a-f0-9]{40}$",
+      "title": "Tree Sha",
+      "type": "string"
+    }
+  },
+  "required": [
+    "mode",
+    "repository_id",
+    "repository",
+    "ref",
+    "commit_sha",
+    "tree_sha",
+    "complete_tree",
+    "created_at"
+  ],
+  "title": "Repository",
+  "type": "object"
+}

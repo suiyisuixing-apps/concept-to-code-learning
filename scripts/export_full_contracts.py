@@ -12,12 +12,14 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from concept_to_code_learning.full_contracts import annotations as a  # noqa: E402
 from concept_to_code_learning.full_contracts import models as m  # noqa: E402
+from concept_to_code_learning.repositories import models as r  # noqa: E402
 
 MODELS = [m.DocumentRecord, m.DocumentUnit, m.DocumentContext, m.ContextRequest, m.ActivateContext,
           m.SourceScope, m.SourceQuery, m.SearchCandidate, m.SearchResult, m.CodeEvidence,
           m.TeachingPlan, m.GroundedExplanation, m.ExplanationRequest, m.ExplanationResult,
           m.SessionRecord, m.SearchRequest, m.VerifyRequest, m.SaveNoteRequest, m.EditNoteRequest,
           m.DeleteNoteRequest, m.SavedNote, m.NoteList, m.Capabilities, m.LearningErrorResponse]
+MODELS += [r.AddRepository, r.Repository, r.TreeEntry, r.TreePage, r.OpenFile]
 MODELS += [a.AnnotationAnchor, a.CreateAnnotationRequest, a.EditAnnotationRequest,
            a.Annotation, a.AnnotationList]
 

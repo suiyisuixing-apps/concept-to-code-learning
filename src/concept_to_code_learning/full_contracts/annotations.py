@@ -6,6 +6,7 @@ from pydantic import AfterValidator, Field, model_validator
 
 from .models import (
     ID,
+    CodeLocation,
     ContextRequest,
     Hash,
     Positive,
@@ -39,6 +40,7 @@ class AnnotationAnchor(Value):
     selected_text: Annotated[str, Field(min_length=1, max_length=10000)]
     selected_text_hash: Hash
     selection_locator: SelectionLocator
+    code_location: CodeLocation | None = Field(default=None, exclude_if=lambda value: value is None)
 
     @model_validator(mode="after")
     def exact_quote(self):

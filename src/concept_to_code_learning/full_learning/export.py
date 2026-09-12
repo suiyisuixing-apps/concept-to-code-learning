@@ -3,6 +3,7 @@
 import html
 import json
 import re
+from urllib.parse import quote
 
 from concept_to_code_learning.full_contracts.models import SavedNote
 
@@ -22,7 +23,21 @@ def export_note(note: SavedNote, format: str) -> tuple[str, str]:
     lines += ["## 文档来源", "", f"{esc(context.file_name)} · {context.unit_locator.unit_type} "
               f"{context.unit_locator.index} · 文档修订 {context.document_revision}",
               f"原文件 SHA-256：{context.original_sha256}", ""]
+    if context.code_location:
+        location = context.code_location
+        lines += [f"仓库：{esc(location.repository)} · Commit：{location.commit_sha}",
+                  f"文件：{esc(location.file_path)} · Git blob：{location.blob_sha}", ""]
     for citation in note.explanation_snapshot.document_citations:
+        block = next((b for b in context.relevant_context_blocks if b.block_id == citation.block_id), None)
+        if block and block.code_location:
+            location = block.code_location
+            start = location.line_start + block.text[:block.text.index(citation.quote)].count("\n")
+            end = start + citation.quote.count("\n")
+            link = f"https://github.com/{location.repository}/blob/{location.commit_sha}/{quote(location.file_path, safe='/')}#L{start}-L{max(start, end)}"
+            lines += [f"[源文件 {esc(location.file_path)} L{start}–{max(start, end)}]({link})", ""]
+            for license_file in (block.code_license.files if block.code_license else []):
+                lines += [f"许可：{esc(license_file.identifier or '未识别')} · {esc(license_file.path)} · {license_file.content_sha256}",
+                          f"[固定版本许可]({license_file.permalink})", ""]
         lines += [f"块 {esc(citation.block_id)} · {citation.quote_sha256}", "", esc(citation.quote), ""]
     lines += ["## 代码来源快照", ""]
     for source in note.code_evidence_snapshot:

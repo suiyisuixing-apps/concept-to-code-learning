@@ -16,6 +16,7 @@ from concept_to_code_learning.full_learning.annotations import AnnotationStore
 from concept_to_code_learning.full_learning.errors import LearningError, require
 from concept_to_code_learning.full_learning.export import export_note
 from concept_to_code_learning.full_learning.ports import DocumentUpload
+from concept_to_code_learning.repositories.api import repository_router
 from concept_to_code_learning.tutor.catalog import ModelEndpoint, ModelList
 
 PREFIX = "/api/learning/v1"
@@ -25,6 +26,8 @@ ERROR_RESPONSES = {status: {"model": m.LearningErrorResponse} for status in (400
 def create_router(service, legacy_store, sprint_store) -> APIRouter:
     router = APIRouter(prefix=PREFIX, tags=["Full delivery v1"], responses=ERROR_RESPONSES)
     annotations = AnnotationStore(service.store.path.parent)
+    if service.repositories:
+        router.include_router(repository_router(service.repositories))
 
     @router.get("/capabilities", response_model=m.Capabilities)
     async def capabilities():
@@ -84,15 +87,19 @@ def create_router(service, legacy_store, sprint_store) -> APIRouter:
         capability = await service.provider_capability(service.providers.document, "document")
         return m.DocumentList(mode=capability.mode, documents=items)
 
+    @router.get("/documents/{document_id}", response_model=m.DocumentRecord)
+    async def document_record(document_id: m.ID):
+        return await service.document_record(document_id)
+
     @router.get("/documents/{document_id}/units", response_model=m.UnitList)
     async def units(document_id: m.ID):
-        items = await service.call("document", service.providers.document.list_units, document_id)
+        items = await service.document_units(document_id)
         capability = await service.provider_capability(service.providers.document, "document")
-        return m.UnitList(mode=capability.mode, document_id=document_id, units=items)
+        return m.UnitList(mode="LIVE" if document_id.startswith("code-") else capability.mode, document_id=document_id, units=items)
 
     @router.get("/documents/{document_id}/units/{unit_id}", response_model=m.DocumentUnit)
     async def unit(document_id: m.ID, unit_id: m.ID):
-        return await service.call("document", service.providers.document.get_unit, document_id, unit_id)
+        return await service.document_unit(document_id, unit_id)
 
     @router.post("/documents/{document_id}/context", response_model=m.DocumentContext)
     async def context(document_id: m.ID, body: m.ContextRequest):

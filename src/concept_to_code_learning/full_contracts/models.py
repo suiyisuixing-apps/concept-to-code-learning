@@ -24,7 +24,7 @@ Nonnegative = Annotated[int, Field(ge=0, strict=True)]
 Mode = Literal["LIVE", "FIXTURE", "UNAVAILABLE"]
 Level = Literal["Beginner", "University", "Engineering", "Source-code"]
 SourceMode = Literal["specified_public", "public_search", "local_authorized"]
-SourceType = Literal["PDF", "PPTX", "DOCX", "MARKDOWN"]
+SourceType = Literal["PDF", "PPTX", "DOCX", "MARKDOWN", "CODE"]
 Repo = Annotated[str, Field(pattern=r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", max_length=200)]
 Text = Annotated[str, Field(max_length=100000)]
 
@@ -52,6 +52,24 @@ class Record(Value):
     mode: Mode
 
 
+class CodeLocation(Value):
+    repository_id: ID
+    repository: Repo
+    commit_sha: Commit
+    file_path: Annotated[str, Field(min_length=1, max_length=1000)]
+    blob_sha: Commit
+    line_start: Positive
+    line_end: Positive
+
+    @model_validator(mode="after")
+    def relative_location(self):
+        path = PurePosixPath(self.file_path)
+        if (path.is_absolute() or ".." in path.parts or "\\" in self.file_path
+                or any(ord(c) < 32 for c in self.file_path) or self.line_end < self.line_start):
+            raise ValueError("Code location requires a relative path and inclusive line range")
+        return self
+
+
 class SourceLocator(Value):
     unit_type: Literal["page", "slide", "section"]
     index: Positive
@@ -67,6 +85,8 @@ class Block(Value):
     table_rows: list[list[str]] = Field(default_factory=list, max_length=1000)
     bbox: tuple[float, float, float, float] | None = None
     image_asset_id: ID | None = None
+    code_license: "LicenseObservation | None" = Field(default=None, exclude_if=lambda value: value is None)
+    code_location: CodeLocation | None = Field(default=None, exclude_if=lambda value: value is None)
 
 
 class Preview(Value):
@@ -86,6 +106,8 @@ class DocumentRecord(Record):
     capabilities: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     created_at: UTCDate
+    code_location: CodeLocation | None = Field(default=None, exclude_if=lambda value: value is None)
+    code_license: "LicenseObservation | None" = Field(default=None, exclude_if=lambda value: value is None)
 
     @model_validator(mode="after")
     def display_name_only(self):
@@ -106,6 +128,7 @@ class DocumentUnit(Record):
     preview: Preview
     extraction_status: Literal["READY", "PARTIAL", "NO_EXTRACTABLE_TEXT", "UNSUPPORTED"]
     warnings: list[str] = Field(default_factory=list)
+    supporting_blocks: list[Block] = Field(default_factory=list, max_length=2, exclude_if=lambda value: not value)
 
     @model_validator(mode="after")
     def unique_blocks(self):
@@ -158,6 +181,8 @@ class DocumentContext(Record):
     coverage: Literal["TEXT", "PARTIAL", "NO_EXTRACTABLE_TEXT"]
     warnings: list[str] = Field(default_factory=list)
     status: Literal["READY", "PARTIAL", "NO_EXTRACTABLE_TEXT"]
+    code_location: CodeLocation | None = Field(default=None, exclude_if=lambda value: value is None)
+    code_license: "LicenseObservation | None" = Field(default=None, exclude_if=lambda value: value is None)
 
     @model_validator(mode="after")
     def selection_digest(self):
@@ -409,7 +434,7 @@ class GroundedExplanation(Record):
     unsupported_claims: list[str] = Field(default_factory=list)
     provider_info: ProviderInfo
     metrics: Metrics
-    status: Literal["GROUNDED", "NO_VERIFIED_CODE", "FIXTURE"]
+    status: Literal["GROUNDED", "CODE_GROUNDED", "NO_VERIFIED_CODE", "FIXTURE"]
 
 
 class ExplanationRequest(Value):
