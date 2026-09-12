@@ -1,5 +1,10 @@
 # 完整产品候选交接
 
+2026-09-12 Windows 最新补充见 [WINDOWS_RUNTIME_AUDIT.md](WINDOWS_RUNTIME_AUDIT.md)
+和 [WINDOWS_FIRST_INSTALL.md](WINDOWS_FIRST_INSTALL.md)。用户要求本地模型与工作台保持停止，
+等待比赛方算力；Windows 运行修补已完成本机回归，模型内容验收仍为部分通过。
+以下 PR #73 的整合说明保留为历史记录，不代表当前 Windows 分支状态。
+
 最新协作整合见 [PR73_REVIEW.md](PR73_REVIEW.md)：纳入 @zchzbjklg 的 PR #73 原始 20 项
 来源失败测试，Lead 补齐后共 24 项，并纠正交付证据。生产功能继承 CONTEXTUAL_SEARCH.md、
 CONVERSATION_REPAIR.md 和 FINAL_REVIEW.md，原始成员提交均保留在集成历史。

@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main, feat/repository-learning-workspace]
+    branches: [main, feat/repository-learning-workspace, codex/windows-first-install]
 
 permissions:
   contents: read

@@ -122,7 +122,7 @@ class AsyncLocalModelAdapter(LocalModelAdapter):
             return _failure("MODEL_NOT_FOUND", "The configured model is not served here.")
         return result
 
-    async def generate(self, messages, *, max_tokens=None, on_text=None):
+    async def generate(self, messages, *, max_tokens=None, on_text=None, enable_thinking=None):
         prepared = self._prepare("/v1/chat/completions")
         if isinstance(prepared, AdapterResult):
             return prepared
@@ -130,6 +130,14 @@ class AsyncLocalModelAdapter(LocalModelAdapter):
             prompt_chars, _ = self._validate_messages(messages)
         except ValueError as exc:
             return _failure(str(exc).split(":", 1)[0], str(exc))
+        extensions = {}
+        if self._config.structured_output:
+            extensions["response_format"] = {
+                "type": "json_schema",
+                "json_schema": {"name": "c2c_object", "schema": {"type": "object"}},
+            }
+            if enable_thinking is not None:
+                extensions["chat_template_kwargs"] = {"enable_thinking": enable_thinking}
         payload, result = await self._fetch(
             "/v1/chat/completions",
             {
@@ -144,6 +152,7 @@ class AsyncLocalModelAdapter(LocalModelAdapter):
                 # token. Stop at ChatML's turn boundary instead of leaking it into JSON.
                 **({"stop": ["<|im_end|>"]} if "qwen" in self._config.model.casefold() else {}),
                 **({"stream_options": {"include_usage": True}} if on_text else {}),
+                **extensions,
             },
             on_text=on_text,
         )

@@ -1,5 +1,11 @@
 # 候选状态
 
+2026-09-12 最新 Windows 状态见 [WINDOWS_RUNTIME_AUDIT.md](WINDOWS_RUNTIME_AUDIT.md)。
+本机分支 `codex/windows-model-quality` 承接 PR #76 的 `codex/windows-first-install`；
+PR #75、#76 复核时均未合并。用户已暂停模型工作，等待比赛方算力，不自动重启或继续下载。
+源码、模型和原始验证证据保留；恢复时先核实新的用户授权、端点与远端状态。
+以下记录为更早的 PR #73 背景，不能覆盖本条暂停决定或当作当前运行状态。
+
 最新增量为 PR #73，见 PR73_REVIEW.md 和 pr73-review/validation.json。保留成员原始
 Head 1fc4b7d6334f16cf783e1db75e443d6007af6f78；Lead 补丁修正取消覆盖、重定向测试及文档。
 本机 447 项 Python、30 项前端通过。最终精确 Head/CI 见 Draft PR #69 和本次整合清单。

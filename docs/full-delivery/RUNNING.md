@@ -64,11 +64,19 @@ Apple Silicon Mac，使用已安装的 MLX 环境与已下载模型，按 `confi
 | C2C_MODEL_BASE_URL / C2C_MODEL_ID | 模型 API base URL（可带 /v1）和服务提供的准确模型名 |
 | C2C_MODEL_API_KEY | 可选模型凭据，只用于模型请求 |
 | C2C_MODEL_NETWORK_AUTHORIZED=1 | 明确允许向已选非本机模型发送数据；不授权费用 |
+| C2C_MODEL_STRUCTURED_OUTPUT=1 | 为已确认支持的模型端点启用 JSON schema 请求；默认关闭 |
 | C2C_GITHUB_TOKEN | 可选专用 GitHub 凭据，仅发给 GitHub API |
 | C2C_LOCAL_ROOTS_JSON | 已授权本地 Git 仓库目录的 JSON 数组 |
 | C2C_DEV_ORIGIN | 开发前端的明确本机 Origin |
 
 `.env.example` 只是模板，不自动加载。
+
+对支持 `response_format` JSON schema 和 `chat_template_kwargs.enable_thinking` 的端点，
+可在工作台 endpoint 模式的 desktop.json 中设置 `model_structured_output: true`。
+此选项用于异步工作台适配器，旧同步适配器不支持该扩展。启用后，
+规划请求使用 JSON 对象约束并显式关闭思考；教学请求使用相同对象约束，思考开关沿用服务设置。
+同一端点内切换模型保留此选项，网页连接新端点时默认关闭；不支持这些参数的服务应保持默认 false。
+此选项不改变输出预算或超时，也不代表生成内容已经通过事实检查。
 
 ## 本地仓库
 

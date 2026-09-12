@@ -156,6 +156,8 @@ def main(argv=None):
             env.update(C2C_MODEL_BASE_URL=endpoint, C2C_MODEL_ID=selected_model)
         elif config.get("model_base_url"):
             env.update(C2C_MODEL_BASE_URL=config["model_base_url"], C2C_MODEL_ID=config["model_id"])
+            if config.get("model_structured_output") is True:
+                env["C2C_MODEL_STRUCTURED_OUTPUT"] = "1"
             if config.get("model_network_authorized") is True:
                 env["C2C_MODEL_NETWORK_AUTHORIZED"] = "1"
         app_log = (logdir / "application.log").open("a", encoding="utf-8")
@@ -176,8 +178,7 @@ def main(argv=None):
         )
         if not args.no_browser:
             webbrowser.open(url)
-        processes[-1].wait()
-        return 0
+        return processes[-1].wait()
     except KeyboardInterrupt:
         return 0
     except (OSError, ValueError, KeyError) as exc:

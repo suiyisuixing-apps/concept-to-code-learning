@@ -24,9 +24,9 @@ def test_ci_cost_and_permission_constraints():
     workflow = yaml.load((ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
     assert set(workflow["on"]) == {"push", "pull_request"}
     assert workflow["on"]["push"]["branches"] == ["main"]
-    # Windows fixes target the unmerged workspace PR; keep the same bounded checks.
+    # Windows quality changes stack on the unmerged first-install PR.
     assert workflow["on"]["pull_request"]["branches"] == [
-        "main", "feat/repository-learning-workspace",
+        "main", "feat/repository-learning-workspace", "codex/windows-first-install",
     ]
     assert workflow["permissions"] == {"contents": "read"}
     assert workflow["concurrency"]["cancel-in-progress"] == "true"

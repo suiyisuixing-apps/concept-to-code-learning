@@ -24,6 +24,7 @@ class ProviderSettings:
     model_api_key: str | None = field(default=None, repr=False)
     model_network_authorized: bool = False
     authorized_local_roots: tuple[Path, ...] = field(default=(), repr=False)
+    model_structured_output: bool = False
 
     @classmethod
     def from_env(cls, root: Path, data_dir: Path):
@@ -52,7 +53,8 @@ class ProviderSettings:
         return cls(root, data_dir, github_token=os.environ.get("C2C_GITHUB_TOKEN") or None,
                    model_base_url=endpoint, model_id=os.environ.get("C2C_MODEL_ID") or None,
                    model_api_key=os.environ.get("C2C_MODEL_API_KEY") or None,
-                   model_network_authorized=authorized, authorized_local_roots=roots)
+                   model_network_authorized=authorized, authorized_local_roots=roots,
+                   model_structured_output=os.environ.get("C2C_MODEL_STRUCTURED_OUTPUT") == "1")
 
 
 class UnavailableProvider:
@@ -92,6 +94,7 @@ def build_providers(settings: ProviderSettings) -> ProviderBundle:
                 model_api_key=settings.model_api_key if role == "tutor" else None,
                 model_id=settings.model_id if role == "tutor" else None,
                 model_network_authorized=settings.model_network_authorized if role == "tutor" else False,
+                model_structured_output=settings.model_structured_output if role == "tutor" else False,
                 authorized_local_roots=settings.authorized_local_roots if role == "sources" else ())
             providers[role] = module.build_provider(scoped)
         except ModuleNotFoundError as exc:
