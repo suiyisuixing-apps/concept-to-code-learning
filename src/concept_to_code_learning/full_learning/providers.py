@@ -8,6 +8,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from concept_to_code_learning.full_contracts.models import ProviderCapability
+from concept_to_code_learning.full_learning.diagnostics import report_error
 from concept_to_code_learning.full_learning.errors import LearningError
 from concept_to_code_learning.full_learning.ports import ProviderBundle
 
@@ -72,7 +73,7 @@ class UnavailableProvider:
 
     def __getattr__(self, name):
         async def unavailable(*args, **kwargs):
-            code = "MODEL_NOT_CONFIGURED" if self.role == "tutor" else self.code
+            code = "MODEL_NOT_CONFIGURED" if self.role == "tutor" and self.code == "MODULE_NOT_DELIVERED" else self.code
             raise LearningError(code, self.role, "对应真实模块尚未接入或未完成配置。", 503,
                                 needed_action="检查 capabilities；接入模块后重试。")
         return unavailable
@@ -100,6 +101,12 @@ def build_providers(settings: ProviderSettings) -> ProviderBundle:
         except ModuleNotFoundError as exc:
             providers[role] = UnavailableProvider(role, "MODULE_NOT_DELIVERED" if (
                 exc.name == module_name) else "DEPENDENCY_MISSING")
-        except Exception:
+        except LearningError as exc:
+            providers[role] = UnavailableProvider(role, exc.code)
+        except ValueError as exc:
+            report_error(role + ".configuration", exc)
+            providers[role] = UnavailableProvider(role, "INVALID_CONFIGURATION")
+        except Exception as exc:
+            report_error(role + ".load", exc)
             providers[role] = UnavailableProvider(role, "PROVIDER_LOAD_FAILED")
     return ProviderBundle(**providers)

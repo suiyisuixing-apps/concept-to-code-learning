@@ -18,6 +18,7 @@ beforeEach(() => {
     calls.push([url, options]); let value;
     const body = options.body ? JSON.parse(options.body) : {};
     if (url.endsWith("/capabilities")) value = { tutor: { available: false } };
+    else if (url.endsWith("/models")) value = { models: [{ id: "fixture-model", name: "Fixture model" }] };
     else if (url.endsWith("/sessions")) value = { session_id: "reading-session", context_revision: 0 };
     else if (url.endsWith("/documents")) value = { documents: [record] };
     else if (url.endsWith("/units")) value = { units };

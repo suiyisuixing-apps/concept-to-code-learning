@@ -4,6 +4,7 @@
     "version": "0.0.5",
     "requires_python": ">=3.9",
     "license_observation": "MIT",
+    "license_classifiers": [],
     "source": "installed distribution METADATA"
   },
   {
@@ -11,6 +12,9 @@
     "version": "0.8.0",
     "requires_python": ">=3.10",
     "license_observation": "MIT",
+    "license_classifiers": [
+      "License :: OSI Approved :: MIT License"
+    ],
     "source": "installed distribution METADATA"
   },
   {
@@ -18,6 +22,7 @@
     "version": "4.15.1",
     "requires_python": ">=3.10",
     "license_observation": "MIT",
+    "license_classifiers": [],
     "source": "installed distribution METADATA"
   },
   {
@@ -25,6 +30,7 @@
     "version": "26.1.0",
     "requires_python": ">=3.9",
     "license_observation": "MIT",
+    "license_classifiers": [],
     "source": "installed distribution METADATA"
   },
   {
@@ -32,6 +38,9 @@
     "version": "2026.7.22",
     "requires_python": ">=3.7",
     "license_observation": "MPL-2.0",
+    "license_classifiers": [
+      "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)"
+    ],
     "source": "installed distribution METADATA"
   },
   {
@@ -39,13 +48,23 @@
     "version": "8.5.0",
     "requires_python": ">=3.10",
     "license_observation": "BSD-3-Clause",
+    "license_classifiers": [],
     "source": "installed distribution METADATA"
+  },
+  {
+    "name": "colorama",
+    "version": "0.4.6",
+    "marker": "sys_platform == \"win32\"",
+    "license_observation": "BSD-3-Clause",
+    "source": "PyPI release metadata, not installed on this macOS host",
+    "metadata_url": "https://pypi.org/pypi/colorama/0.4.6/json"
   },
   {
     "name": "fastapi",
     "version": "0.141.1",
     "requires_python": ">=3.10",
     "license_observation": "MIT",
+    "license_classifiers": [],
     "source": "installed distribution METADATA"
   },
   {
@@ -53,6 +72,9 @@
     "version": "0.16.0",
     "requires_python": ">=3.8",
     "license_observation": "MIT",
+    "license_classifiers": [
+      "License :: OSI Approved :: MIT License"
+    ],
     "source": "installed distribution METADATA"
   },
   {
@@ -60,6 +82,9 @@
     "version": "1.0.9",
     "requires_python": ">=3.8",
     "license_observation": "BSD-3-Clause",
+    "license_classifiers": [
+      "License :: OSI Approved :: BSD License"
+    ],
     "source": "installed distribution METADATA"
   },
   {
@@ -67,6 +92,9 @@
     "version": "0.28.1",
     "requires_python": ">=3.8",
     "license_observation": "BSD-3-Clause",
+    "license_classifiers": [
+      "License :: OSI Approved :: BSD License"
+    ],
     "source": "installed distribution METADATA"
   },
   {
@@ -74,6 +102,7 @@
     "version": "3.19",
     "requires_python": ">=3.9",
     "license_observation": "BSD-3-Clause",
+    "license_classifiers": [],
     "source": "installed distribution METADATA"
   },
   {
@@ -81,13 +110,7 @@
     "version": "2.3.0",
     "requires_python": ">=3.10",
     "license_observation": "MIT",
-    "source": "installed distribution METADATA"
-  },
-  {
-    "name": "jsonschema",
-    "version": "4.26.0",
-    "requires_python": ">=3.10",
-    "license_observation": "MIT",
+    "license_classifiers": [],
     "source": "installed distribution METADATA"
   },
   {
@@ -95,6 +118,23 @@
     "version": "2025.9.1",
     "requires_python": ">=3.9",
     "license_observation": "MIT",
+    "license_classifiers": [],
+    "source": "installed distribution METADATA"
+  },
+  {
+    "name": "jsonschema",
+    "version": "4.26.0",
+    "requires_python": ">=3.10",
+    "license_observation": "MIT",
+    "license_classifiers": [],
+    "source": "installed distribution METADATA"
+  },
+  {
+    "name": "lxml",
+    "version": "6.1.3",
+    "requires_python": ">=3.8",
+    "license_observation": "BSD-3-Clause",
+    "license_classifiers": [],
     "source": "installed distribution METADATA"
   },
   {
@@ -102,6 +142,15 @@
     "version": "26.3",
     "requires_python": ">=3.9",
     "license_observation": "Apache-2.0 OR BSD-2-Clause",
+    "license_classifiers": [],
+    "source": "installed distribution METADATA"
+  },
+  {
+    "name": "pillow",
+    "version": "12.3.0",
+    "requires_python": ">=3.10",
+    "license_observation": "MIT-CMU",
+    "license_classifiers": [],
     "source": "installed distribution METADATA"
   },
   {
@@ -109,6 +158,9 @@
     "version": "1.6.0",
     "requires_python": ">=3.9",
     "license_observation": "MIT",
+    "license_classifiers": [
+      "License :: OSI Approved :: MIT License"
+    ],
     "source": "installed distribution METADATA"
   },
   {
@@ -116,6 +168,7 @@
     "version": "2.13.5",
     "requires_python": ">=3.9",
     "license_observation": "MIT",
+    "license_classifiers": [],
     "source": "installed distribution METADATA"
   },
   {
@@ -123,6 +176,7 @@
     "version": "2.46.5",
     "requires_python": ">=3.9",
     "license_observation": "MIT",
+    "license_classifiers": [],
     "source": "installed distribution METADATA"
   },
   {
@@ -130,6 +184,15 @@
     "version": "2.21.0",
     "requires_python": ">=3.9",
     "license_observation": "BSD-2-Clause",
+    "license_classifiers": [],
+    "source": "installed distribution METADATA"
+  },
+  {
+    "name": "pypdf",
+    "version": "6.18.0",
+    "requires_python": ">=3.9",
+    "license_observation": "BSD-3-Clause",
+    "license_classifiers": [],
     "source": "installed distribution METADATA"
   },
   {
@@ -137,6 +200,27 @@
     "version": "9.1.1",
     "requires_python": ">=3.10",
     "license_observation": "MIT",
+    "license_classifiers": [],
+    "source": "installed distribution METADATA"
+  },
+  {
+    "name": "python-docx",
+    "version": "1.2.0",
+    "requires_python": ">=3.9",
+    "license_observation": "MIT",
+    "license_classifiers": [
+      "License :: OSI Approved :: MIT License"
+    ],
+    "source": "installed distribution METADATA"
+  },
+  {
+    "name": "python-pptx",
+    "version": "1.0.2",
+    "requires_python": ">=3.8",
+    "license_observation": "MIT",
+    "license_classifiers": [
+      "License :: OSI Approved :: MIT License"
+    ],
     "source": "installed distribution METADATA"
   },
   {
@@ -144,6 +228,9 @@
     "version": "6.0.3",
     "requires_python": ">=3.8",
     "license_observation": "MIT",
+    "license_classifiers": [
+      "License :: OSI Approved :: MIT License"
+    ],
     "source": "installed distribution METADATA"
   },
   {
@@ -151,6 +238,7 @@
     "version": "0.37.0",
     "requires_python": ">=3.10",
     "license_observation": "MIT",
+    "license_classifiers": [],
     "source": "installed distribution METADATA"
   },
   {
@@ -158,6 +246,7 @@
     "version": "2026.6.3",
     "requires_python": ">=3.11",
     "license_observation": "MIT",
+    "license_classifiers": [],
     "source": "installed distribution METADATA"
   },
   {
@@ -165,6 +254,7 @@
     "version": "0.16.6",
     "requires_python": ">=3.7",
     "license_observation": "MIT",
+    "license_classifiers": [],
     "source": "installed distribution METADATA"
   },
   {
@@ -172,6 +262,7 @@
     "version": "1.6.0",
     "requires_python": ">=3.10",
     "license_observation": "BSD-3-Clause",
+    "license_classifiers": [],
     "source": "installed distribution METADATA"
   },
   {
@@ -179,6 +270,7 @@
     "version": "0.4.4",
     "requires_python": ">=3.10",
     "license_observation": "MIT",
+    "license_classifiers": [],
     "source": "installed distribution METADATA"
   },
   {
@@ -186,6 +278,7 @@
     "version": "4.16.0",
     "requires_python": ">=3.9",
     "license_observation": "PSF-2.0",
+    "license_classifiers": [],
     "source": "installed distribution METADATA"
   },
   {
@@ -193,6 +286,17 @@
     "version": "0.52.4",
     "requires_python": ">=3.10",
     "license_observation": "BSD-3-Clause",
+    "license_classifiers": [],
+    "source": "installed distribution METADATA"
+  },
+  {
+    "name": "xlsxwriter",
+    "version": "3.2.9",
+    "requires_python": ">=3.8",
+    "license_observation": "BSD-2-Clause",
+    "license_classifiers": [
+      "License :: OSI Approved :: BSD License"
+    ],
     "source": "installed distribution METADATA"
   }
 ]

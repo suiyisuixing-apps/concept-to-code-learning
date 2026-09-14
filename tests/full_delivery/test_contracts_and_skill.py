@@ -13,13 +13,14 @@ import zipfile
 
 import pytest
 import uvicorn
-from conftest import ROOT, activate, explain_body
 from jsonschema import Draft202012Validator
 
 from concept_to_code_learning.full_contracts import models as m
 from concept_to_code_learning.full_contracts.compat import from_sprint_context, to_sprint_context
 from concept_to_code_learning.full_learning.errors import LearningError
 from concept_to_code_learning.full_learning.providers import ProviderSettings, build_providers
+
+from .conftest import ROOT, activate, explain_body
 
 
 def test_generated_contracts_and_openapi_match_the_python_models():

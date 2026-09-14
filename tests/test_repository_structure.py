@@ -24,9 +24,10 @@ def test_ci_cost_and_permission_constraints():
     workflow = yaml.load((ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
     assert set(workflow["on"]) == {"push", "pull_request"}
     assert workflow["on"]["push"]["branches"] == ["main"]
-    # Windows quality changes stack on the unmerged first-install PR.
+    # Audit fixes stack on the unmerged Windows model-quality PR.
     assert workflow["on"]["pull_request"]["branches"] == [
         "main", "feat/repository-learning-workspace", "codex/windows-first-install",
+        "codex/windows-model-quality",
     ]
     assert workflow["permissions"] == {"contents": "read"}
     assert workflow["concurrency"]["cancel-in-progress"] == "true"
@@ -40,6 +41,7 @@ def test_ci_cost_and_permission_constraints():
         assert "strategy" not in job
         assert "permissions" not in job
         commands = [step["run"] for step in job["steps"] if "run" in step]
+        assert "ruff check ." in commands
         assert "pytest -q" in commands and "npm test" in commands and "npm run build" in commands
         for step in job["steps"]:
             if step.get("uses", "").startswith("actions/checkout@"):

@@ -1,0 +1,235 @@
+{
+  "status": 200,
+  "seconds": 17.638,
+  "response": {
+    "contract_version": "full-delivery-v1",
+    "revision": 1,
+    "mode": "LIVE",
+    "request_id": "f93b1801-7611-4a30-bb01-6cedc1292261",
+    "session_id": "0b7548b5-955f-4ffe-8d05-cce320f5f62f",
+    "context_revision": 1,
+    "status": "COMPLETE",
+    "explanation": {
+      "contract_version": "full-delivery-v1",
+      "revision": 1,
+      "mode": "LIVE",
+      "explanation_id": "186c983b-135a-4973-8ea2-e95adaf52fae",
+      "question": "解释依赖注入，并寻找给定搜索词对应的实现。",
+      "context_snapshot": {
+        "contract_version": "full-delivery-v1",
+        "revision": 1,
+        "mode": "LIVE",
+        "document_id": "doc-0e5f6d22317c5a9ee7ae0422",
+        "document_revision": 1,
+        "original_sha256": "eb54fda71ec66a6b4fa0ce4074dcb4afd276d945a60a6e546581686e2502ee57",
+        "source_type": "MARKDOWN",
+        "file_name": "依赖注入.md",
+        "unit_id": "section-1",
+        "unit_locator": {
+          "unit_type": "section",
+          "index": 1,
+          "heading_path": [
+            "依赖注入"
+          ],
+          "block_id": null
+        },
+        "visible_text": "依赖注入\n对象通过外部获得依赖，便于替换具体实现和测试。不同框架可以用不同机制声明依赖。",
+        "selected_text": "",
+        "selected_text_hash": null,
+        "selection_locator": null,
+        "relevant_context_blocks": [
+          {
+            "block_id": "section-1-block-1",
+            "kind": "paragraph",
+            "text": "依赖注入",
+            "source_locator": {
+              "unit_type": "section",
+              "index": 1,
+              "heading_path": [
+                "依赖注入"
+              ],
+              "block_id": "section-1-block-1"
+            },
+            "table_rows": [],
+            "bbox": null,
+            "image_asset_id": null
+          },
+          {
+            "block_id": "section-1-block-2",
+            "kind": "paragraph",
+            "text": "对象通过外部获得依赖，便于替换具体实现和测试。不同框架可以用不同机制声明依赖。",
+            "source_locator": {
+              "unit_type": "section",
+              "index": 1,
+              "heading_path": [
+                "依赖注入"
+              ],
+              "block_id": "section-1-block-2"
+            },
+            "table_rows": [],
+            "bbox": null,
+            "image_asset_id": null
+          }
+        ],
+        "coverage": "TEXT",
+        "warnings": [],
+        "status": "READY"
+      },
+      "level": "Beginner",
+      "answer_sections": [
+        {
+          "title": "什么是依赖注入？",
+          "text": "依赖注入就像请别人帮你做家务。你不需要自己去买扫把、买拖把，而是请家政公司来提供工具和服务。这样你只需要说‘需要扫地’，别人就直接给你安排了，不用自己动手找工具。"
+        },
+        {
+          "title": "为什么用它？",
+          "text": "用依赖注入可以让程序更灵活。比如，你写个程序要发邮件，可以换成发短信或发微信，只要改一个配置，不用改整个代码。这就像换家政公司，服务不同，但调用方式一样。"
+        },
+        {
+          "title": "如何实现？",
+          "text": "在代码中，对象不自己创建依赖，而是由外部（比如框架）注入。比如，通过配置告诉系统：‘请给我一个邮件发送器’，系统就自动提供一个，而不是自己去造。"
+        },
+        {
+          "title": "好处是什么？",
+          "text": "它让代码更简单、可测试。测试时可以替换成模拟对象，比如用假的邮件发送器，避免真正发邮件。同时，不同环境（开发、生产）也能轻松切换实现。"
+        }
+      ],
+      "document_citations": [
+        {
+          "block_id": "section-1-block-1",
+          "quote": "依赖注入",
+          "quote_sha256": "bf38f828e0b413177c248d5f20a04119c1f59a9546beff1eb7a2098ef75829fe"
+        },
+        {
+          "block_id": "section-1-block-2",
+          "quote": "对象通过外部获得依赖，便于替换具体实现和测试。不同框架可以用不同机制声明依赖。",
+          "quote_sha256": "dbf121bd8d316078aa3bc6d90b96a8f617f7f53706d008f404cdb156ad42ceed"
+        }
+      ],
+      "code_source_ids": [
+        "f7406c32-a98a-4da9-8694-59e8e2b15676"
+      ],
+      "concept_code_links": [
+        {
+          "concept": "依赖注入",
+          "source_id": "f7406c32-a98a-4da9-8694-59e8e2b15676",
+          "symbol": "SchemaProcessorV1._setup_injections",
+          "reason": "该函数通过解析配置，将依赖项（如邮件服务）注入到对象中，体现依赖注入的核心机制。"
+        },
+        {
+          "concept": "对象依赖",
+          "source_id": "f7406c32-a98a-4da9-8694-59e8e2b15676",
+          "symbol": null,
+          "reason": "代码中通过配置指定依赖项，如'container.email'，说明对象不自行创建依赖，而是由外部提供。"
+        },
+        {
+          "concept": "可测试性",
+          "source_id": "f7406c32-a98a-4da9-8694-59e8e2b15676",
+          "symbol": null,
+          "reason": "通过注入不同实现（如模拟邮件服务），可在测试中替换真实服务，提升测试灵活性。"
+        }
+      ],
+      "example_blocks": [
+        {
+          "provenance_kind": "SOURCE_EXACT",
+          "source_id": "f7406c32-a98a-4da9-8694-59e8e2b15676",
+          "language": "python",
+          "code": "    def _setup_injections(  # noqa: C901\n        self,\n        provider_schema: ProviderSchema,\n        container: Optional[containers.Container] = None,\n    ) -> None:\n        if container is None:\n            container = self._container\n\n        for provider_name, data in provider_schema.items():\n            provider = getattr(container, provider_name)\n            args = []\n            kwargs = {}\n\n            provides = data.get(\"provides\")\n            if provides:\n                if isinstance(provides, str) and provides.startswith(\"container.\"):\n                    provides = self._resolve_provider(provides[len(\"container.\") :])\n                else:\n                    provides = _import_string(provides)\n                provider.set_provides(provides)\n\n            arg_injections = data.get(\"args\")\n            if arg_injections:\n                for arg in arg_injections:\n                    injection = None\n\n                    if isinstance(arg, str) and arg.startswith(\"container.\"):\n                        injection = self._resolve_provider(arg[len(\"container.\") :])\n\n                    # TODO: refactoring\n                    if isinstance(arg, dict):\n                        provider_args = []\n                        provider_type = _get_provider_cls(arg.get(\"provider\"))\n                        provides = arg.get(\"provides\")\n                        if provides:\n                            if isinstance(provides, str) and provides.startswith(\n                                \"container.\"\n                            ):\n                                provides = self._resolve_provider(\n                                    provides[len(\"container.\") :]\n                                )\n                            else:\n                                provides = _import_string(provides)\n                            provider_args.append(provides)\n                        for provider_arg in arg.get(\"args\", []):\n                            if isinstance(\n                                provider_arg, str\n                            ) and provider_arg.startswith(\"container.\"):\n                                provider_args.append(\n                                    self._resolve_provider(\n                                        provider_arg[len(\"container.\") :]\n                                    ),\n                                )\n                        injection = provider_type(*provider_args)\n\n                    if not injection:\n                        injection = arg\n\n                    args.append(injection)\n            if args:\n                provider.add_args(*args)\n\n            kwarg_injections = data.get(\"kwargs\")\n            if kwarg_injections:\n                for name, arg in kwarg_injections.items():\n                    injection = None\n\n                    if isinstance(arg, str) and arg.startswith(\"container.\"):\n                        injection = self._resolve_provider(arg[len(\"container.\") :])\n\n                    # TODO: refactoring\n                    if isinstance(arg, dict):\n                        provider_args = []\n                        provider_type = _get_provider_cls(arg.get(\"provider\"))\n                        provides = arg.get(\"provides\")\n                        if provides:\n                            if isinstance(provides, str) and provides.startswith(\n                                \"container.\"\n                            ):\n                                provides = self._resolve_provider(\n                                    provides[len(\"container.\") :]\n                                )\n                            else:\n                                provides = _import_string(provides)\n                            provider_args.append(provides)\n                        for provider_arg in arg.get(\"args\", []):\n                            if isinstance(\n                                provider_arg, str\n                            ) and provider_arg.startswith(\"container.\"):\n                                provider_args.append(\n                                    self._resolve_provider(\n                                        provider_arg[len(\"container.\") :]\n                                    ),\n                                )\n                        injection = provider_type(*provider_args)\n\n                    if not injection:\n                        injection = arg\n\n                    kwargs[name] = injection\n            if kwargs:\n                provider.add_kwargs(**kwargs)\n\n            if isinstance(provider, providers.Container):\n                self._setup_injections(provider_schema=data, container=provider)",
+          "explanation": "已核验的原始片段；未运行。",
+          "execution_status": "NOT_RUN"
+        }
+      ],
+      "comparison": null,
+      "limitations": [
+        "代码片段不完整，无法验证完整注入流程，仅能推断核心逻辑。",
+        "未提供完整依赖关系图，无法判断注入顺序和依赖图结构。"
+      ],
+      "unsupported_claims": [],
+      "provider_info": {
+        "provider_id": "local-openai-compatible",
+        "model_id": "Qwen3-4B-Instruct-2507-4bit (local path redacted)",
+        "mode": "LIVE",
+        "endpoint_kind": "loopback",
+        "status": "AVAILABLE"
+      },
+      "metrics": {
+        "latency_ms": 16047.0,
+        "input_tokens": 1503,
+        "output_tokens": 672,
+        "token_source": "PROVIDER_USAGE",
+        "input_truncated": true,
+        "truncation_reason": "按选区优先保留材料；长文本、源码或较早对话已裁剪。"
+      },
+      "status": "GROUNDED"
+    },
+    "sources": [
+      {
+        "contract_version": "full-delivery-v1",
+        "revision": 1,
+        "mode": "LIVE",
+        "source_id": "f7406c32-a98a-4da9-8694-59e8e2b15676",
+        "source_mode": "public_search",
+        "repository_owner": "ets-labs",
+        "repository_name": "python-dependency-injector",
+        "repository_url": "https://github.com/ets-labs/python-dependency-injector",
+        "visibility": "public",
+        "local_handle": null,
+        "dirty": false,
+        "commit_sha": "b2c7e3e3c80b9cc6e9748795b07f4aee1bf3fb55",
+        "requested_ref": "b2c7e3e3c80b9cc6e9748795b07f4aee1bf3fb55",
+        "file_path": "src/dependency_injector/schema.py",
+        "language": "python",
+        "symbol": "SchemaProcessorV1._setup_injections",
+        "symbol_kind": "function",
+        "line_start": 59,
+        "line_end": 163,
+        "code_excerpt": "    def _setup_injections(  # noqa: C901\n        self,\n        provider_schema: ProviderSchema,\n        container: Optional[containers.Container] = None,\n    ) -> None:\n        if container is None:\n            container = self._container\n\n        for provider_name, data in provider_schema.items():\n            provider = getattr(container, provider_name)\n            args = []\n            kwargs = {}\n\n            provides = data.get(\"provides\")\n            if provides:\n                if isinstance(provides, str) and provides.startswith(\"container.\"):\n                    provides = self._resolve_provider(provides[len(\"container.\") :])\n                else:\n                    provides = _import_string(provides)\n                provider.set_provides(provides)\n\n            arg_injections = data.get(\"args\")\n            if arg_injections:\n                for arg in arg_injections:\n                    injection = None\n\n                    if isinstance(arg, str) and arg.startswith(\"container.\"):\n                        injection = self._resolve_provider(arg[len(\"container.\") :])\n\n                    # TODO: refactoring\n                    if isinstance(arg, dict):\n                        provider_args = []\n                        provider_type = _get_provider_cls(arg.get(\"provider\"))\n                        provides = arg.get(\"provides\")\n                        if provides:\n                            if isinstance(provides, str) and provides.startswith(\n                                \"container.\"\n                            ):\n                                provides = self._resolve_provider(\n                                    provides[len(\"container.\") :]\n                                )\n                            else:\n                                provides = _import_string(provides)\n                            provider_args.append(provides)\n                        for provider_arg in arg.get(\"args\", []):\n                            if isinstance(\n                                provider_arg, str\n                            ) and provider_arg.startswith(\"container.\"):\n                                provider_args.append(\n                                    self._resolve_provider(\n                                        provider_arg[len(\"container.\") :]\n                                    ),\n                                )\n                        injection = provider_type(*provider_args)\n\n                    if not injection:\n                        injection = arg\n\n                    args.append(injection)\n            if args:\n                provider.add_args(*args)\n\n            kwarg_injections = data.get(\"kwargs\")\n            if kwarg_injections:\n                for name, arg in kwarg_injections.items():\n                    injection = None\n\n                    if isinstance(arg, str) and arg.startswith(\"container.\"):\n                        injection = self._resolve_provider(arg[len(\"container.\") :])\n\n                    # TODO: refactoring\n                    if isinstance(arg, dict):\n                        provider_args = []\n                        provider_type = _get_provider_cls(arg.get(\"provider\"))\n                        provides = arg.get(\"provides\")\n                        if provides:\n                            if isinstance(provides, str) and provides.startswith(\n                                \"container.\"\n                            ):\n                                provides = self._resolve_provider(\n                                    provides[len(\"container.\") :]\n                                )\n                            else:\n                                provides = _import_string(provides)\n                            provider_args.append(provides)\n                        for provider_arg in arg.get(\"args\", []):\n                            if isinstance(\n                                provider_arg, str\n                            ) and provider_arg.startswith(\"container.\"):\n                                provider_args.append(\n                                    self._resolve_provider(\n                                        provider_arg[len(\"container.\") :]\n                                    ),\n                                )\n                        injection = provider_type(*provider_args)\n\n                    if not injection:\n                        injection = arg\n\n                    kwargs[name] = injection\n            if kwargs:\n                provider.add_kwargs(**kwargs)\n\n            if isinstance(provider, providers.Container):\n                self._setup_injections(provider_schema=data, container=provider)",
+        "excerpt_sha256": "86e3bbb759c34f7a1ca1b8c3366f5a039e63bcbcd9637b3afdcd14d2a5318d9d",
+        "file_blob_sha": "1c6f0e39d8375289425020decc09ae76cf505bd1",
+        "file_sha256": "b4dc1ba2556903af551f06720fcf0d5430d803467d40046d4cd08239eaa8f0d4",
+        "permalink": "https://github.com/ets-labs/python-dependency-injector/blob/b2c7e3e3c80b9cc6e9748795b07f4aee1bf3fb55/src/dependency_injector/schema.py#L59-L163",
+        "license_observation": {
+          "status": "DETECTED",
+          "files": [
+            {
+              "path": "LICENSE.rst",
+              "commit_sha": "b2c7e3e3c80b9cc6e9748795b07f4aee1bf3fb55",
+              "content_sha256": "a2ed9e0a9dc0a034388b0b9ce852e149c9f094564eb6cddc010fe663f9452c6a",
+              "permalink": "https://github.com/ets-labs/python-dependency-injector/blob/b2c7e3e3c80b9cc6e9748795b07f4aee1bf3fb55/LICENSE.rst",
+              "identifier": "BSD-3-Clause"
+            }
+          ],
+          "limitations": [
+            "记录已读取的许可文件；保留作者和许可声明。未对所有依赖或例外进行法律审查。"
+          ],
+          "code_display_allowed": true
+        },
+        "retrieved_at": "2026-09-11T03:59:37.640698Z",
+        "verification_checks": {
+          "public_repository": "PASSED",
+          "commit": "PASSED",
+          "file": "PASSED",
+          "line_range": "PASSED",
+          "excerpt_hash": "PASSED",
+          "scope": "PASSED",
+          "license": "PASSED",
+          "python_symbol": "PASSED"
+        },
+        "provenance_kind": "SOURCE_EXACT",
+        "verification_status": "VERIFIED",
+        "execution_status": "NOT_RUN",
+        "relevance": {
+          "status": "CANDIDATE",
+          "reason": "固定文件与符号已核验；概念词匹配只提供相关性线索，不证明教学结论。",
+          "basis": [
+            "dependency injection"
+          ]
+        }
+      }
+    ],
+    "source_observations": [],
+    "candidates": [],
+    "query_id": null,
+    "warnings": []
+  }
+}

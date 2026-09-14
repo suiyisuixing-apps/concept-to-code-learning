@@ -13,6 +13,7 @@ from concept_to_code_learning.full_contracts.models import (
     SearchResult,
     SourceQuery,
 )
+from concept_to_code_learning.full_learning.io import run_io
 from concept_to_code_learning.full_learning.ports import (
     SourceProvider,
     VerificationReceipt,
@@ -52,20 +53,22 @@ class GitHubSourceProvider(SourceProvider):
         self._local = LocalSources(registry)
 
     async def capabilities(self) -> ProviderCapability:
+        local = bool(await self.local_handles())
+        public, reason = self._client.network_health()
         return ProviderCapability(
             provider_id=self.PROVIDER_ID,
             implemented=True,
-            available=True,
+            available=local or public,
             mode="LIVE",
             features=[
                 "specified_public: bounded concept discovery",
                 "specified_public.verify (commit, file, AST, hash, license)",
                 "public_search: context-derived public technical concepts",
-                "local_authorized: tracked files, hashes and dirty state",
-            ],
-            status="AVAILABLE",
-            reason_code=None,
-            needed_action=None,
+            ] + (["local_authorized: tracked files, hashes and dirty state"] if local else []),
+            status="AVAILABLE" if local or public else "UNAVAILABLE",
+            reason_code=reason,
+            needed_action=("选择公开仓库后检查连接。" if reason == "GITHUB_NOT_CHECKED"
+                           else "检查 GitHub 连接或配置授权的本地仓库。" if not public else None),
             data_flow=[
                 "search: authorized scope → file tree → concept matching → static symbols",
                 "verify: ref→commit → raw bytes → static AST → SHA256 → license → CodeEvidence",
@@ -93,7 +96,7 @@ class GitHubSourceProvider(SourceProvider):
 
     async def local_handles(self) -> list[str]:
         # INTERFACES.md: handles are host-configured, never accepted from HTTP.
-        return self._registry.handles()
+        return await run_io(self._registry.handles)
 
     async def close(self) -> None:
         await self._client.close()

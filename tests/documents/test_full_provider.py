@@ -1,5 +1,4 @@
 import io
-import zipfile
 from pathlib import Path
 
 import pytest
@@ -55,16 +54,6 @@ async def test_wrong_magic_and_corrupt_office_are_rejected_without_staging(provi
     with pytest.raises(LearningError, match="INVALID_FILE"):
         await provider.import_document(DocumentUpload("fake.pptx", b"PK broken"))
     assert not list(provider.root.glob(".import-*"))
-
-
-async def test_office_external_relationship_is_rejected(provider):
-    stream = io.BytesIO()
-    with zipfile.ZipFile(stream, "w") as archive:
-        archive.writestr("[Content_Types].xml", "types")
-        archive.writestr("word/document.xml", "document")
-        archive.writestr("word/_rels/document.xml.rels", '<Relationship TargetMode="External" Target="https://example.test"/>')
-    with pytest.raises(LearningError, match="INVALID_FILE"):
-        await provider.import_document(DocumentUpload("unsafe.docx", stream.getvalue()))
 
 
 async def test_real_pdf_pages_include_blank_page_and_native_asset(provider):

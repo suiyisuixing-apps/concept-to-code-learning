@@ -7,6 +7,7 @@ import shutil
 from pathlib import PurePosixPath
 
 from concept_to_code_learning.full_contracts import models as m
+from concept_to_code_learning.full_learning.io import run_io
 from concept_to_code_learning.full_learning.ports import VerificationReceipt
 
 from .discovery import EXTENSIONS, candidate, matched, ranked_paths, result
@@ -80,7 +81,7 @@ class LocalSources:
             : query.scope_limit.files
         ]:
             try:
-                raw = self.registry.read(query.local_handle, path)
+                raw = await run_io(self.registry.read, query.local_handle, path)
                 text = raw.decode("utf-8")
             except (OSError, UnicodeError, SourceError):
                 warnings.append("一个不可安全读取的本地文件已跳过。")
@@ -98,7 +99,7 @@ class LocalSources:
         if candidate.local_handle != query.local_handle or candidate.query_id != query.query_id:
             raise SourceError("SOURCE_MISMATCH", "local", "本地候选与检索不匹配。", 409)
         path = candidate.file_hint
-        raw = self.registry.read(query.local_handle, path)
+        raw = await run_io(self.registry.read, query.local_handle, path)
         file_hash = hashlib.sha256(raw).hexdigest()
         if candidate.ref_hint != "sha256:" + file_hash:
             raise SourceError("SOURCE_MISMATCH", "local", "文件在检索后发生变化，请重新检索。", 409)
@@ -121,11 +122,12 @@ class LocalSources:
             str(folder / name) for folder in folders for name in LICENSE_PATHS
         ):
             try:
-                content = self.registry.read(query.local_handle, item)
+                content = await run_io(self.registry.read, query.local_handle, item)
             except (OSError, SourceError):
                 continue
             entries.append((item, content, None, None))
         license = license_observation(entries)
+        hits = matched(code, query.concept_terms)
         displayed = code if license.code_display_allowed else ""
         checks = {k: "PASSED" for k in ("scope", "file", "line_range", "excerpt_hash")}
         checks.update(
@@ -144,7 +146,7 @@ class LocalSources:
             commit_sha=commit,
             requested_ref=candidate.ref_hint,
             file_path=path,
-            language=EXTENSIONS.get(PurePosixPath(path).suffix, "text"),
+            language=EXTENSIONS.get(PurePosixPath(path).suffix.lower(), "text"),
             symbol=candidate.symbol_hint,
             symbol_kind=kind,
             line_start=start,
@@ -158,9 +160,9 @@ class LocalSources:
             provenance_kind="SOURCE_EXACT",
             verification_status="VERIFIED" if displayed else "NEEDS_CONFIRMATION",
             relevance=m.Relevance(
-                status="CANDIDATE",
-                reason="本地原始文件已核验；未执行该代码。",
-                basis=matched(code, query.concept_terms),
+                status="CANDIDATE" if hits else "UNCERTAIN",
+                reason="本地原始文件已核验；未执行该代码。" if hits else "文件字节已核验，但片段未匹配当前知识点。",
+                basis=hits,
             ),
         )
         return VerificationReceipt(query.query_id, candidate.candidate_id, scope_sha256, evidence)

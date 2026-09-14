@@ -1,3 +1,5 @@
+> 历史记录（2026-09-09）。保留原有结果与限制，不用于声明当前候选已验收；当前范围见 [REVIEW_CORRECTIONS.md](REVIEW_CORRECTIONS.md)。
+
 # 功能与证据矩阵
 
 所有“通过”均限定到下列实际观测。测试替身位于 tests/full_delivery/conftest.py，文件头和所有能力/结果明确标为 FIXTURE；没有注册进生产工厂。

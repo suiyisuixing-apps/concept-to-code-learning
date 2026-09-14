@@ -157,6 +157,8 @@ components:
 
 # Design System: Concept-to-Code Learning
 
+> Scope correction, 2026-09-14: the frontmatter tokens and detailed record below describe the archived Phase 0.5 surface. They are not the current UI specification. The current document/code workspace is recorded in [repository-workspace.md](docs/design/repository-workspace.md), and implemented in [App.jsx](apps/web/src/App.jsx), [workspace.css](apps/web/src/workspace.css), [conversation.css](apps/web/src/conversation.css) and [repository.css](apps/web/src/repository.css). Current behavior includes real four-format imports, model selection, folder-based source reading, annotations and revisioned notes. Verification and Fixture state must remain visibly accurate.
+
 ## Overview
 
 **Creative North Star: "Warm paper learning workspace"**

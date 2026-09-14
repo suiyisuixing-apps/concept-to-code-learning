@@ -8,7 +8,9 @@ from pydantic import ValidationError
 
 from concept_to_code_learning.full_contracts import models as m
 from concept_to_code_learning.full_learning.context import resolve_context
+from concept_to_code_learning.full_learning.diagnostics import report_error
 from concept_to_code_learning.full_learning.errors import LearningError, require
+from concept_to_code_learning.full_learning.io import run_commit, run_io
 from concept_to_code_learning.full_learning.ports import ProviderBundle, VerificationReceipt
 from concept_to_code_learning.full_learning.store import LearningStore, canonical
 from concept_to_code_learning.learning_concepts import guide_for, public_terms
@@ -22,6 +24,7 @@ class LearningService:
         self.repositories = repositories
         self.timeout_seconds = timeout_seconds
         self.active: dict[str, asyncio.Task] = {}
+        self.request_sessions: dict[str, str] = {}
         self.models = TutorCatalog(providers.tutor)
 
     async def call(self, stage, action, *args, **kwargs):
@@ -38,9 +41,13 @@ class LearningService:
             raise LearningError("MODEL_OUTPUT_INVALID" if stage == "tutor" else "SOURCE_MISMATCH",
                                 stage, "模块返回的数据不符合公共合同。", 502) from exc
         except Exception as exc:
-            raise LearningError("MODEL_UNAVAILABLE" if stage == "tutor" else "PROVIDER_UNAVAILABLE",
-                                stage, "模块调用失败；未使用替身或云端作为回退。", 503,
-                                retryable=True) from exc
+            report_error(stage, exc)
+            if isinstance(exc, OSError):
+                raise LearningError("PROVIDER_UNAVAILABLE", stage,
+                                    "模块读取失败，请检查本地存储或服务连接。", 503,
+                                    retryable=True) from exc
+            raise LearningError("INTERNAL_ERROR", stage,
+                                "应用处理失败，错误位置已记录在本机日志中。", 500) from exc
 
     async def provider_capability(self, provider, stage: str) -> m.ProviderCapability:
         try:
@@ -52,7 +59,8 @@ class LearningService:
                 require(not capability.available or capability.mode != "UNAVAILABLE",
                         "INVALID_CAPABILITY", stage, "模块尚不可用。", 503)
                 return capability
-        except (Exception, TimeoutError):
+        except Exception as exc:
+            report_error(stage + ".capabilities", exc)
             return m.ProviderCapability(provider_id=stage, implemented=False, available=False,
                                         mode="UNAVAILABLE", features=[], status="UNAVAILABLE",
                                         reason_code="HEALTH_CHECK_FAILED",
@@ -73,17 +81,18 @@ class LearningService:
 
     async def document_record(self, document_id):
         if document_id.startswith("code-") and self.repositories:
-            return self.repositories.document(document_id).document
+            return (await run_io(self.repositories.document, document_id)).document
         return await self.call("document", self.providers.document.get_document, document_id)
 
     async def document_units(self, document_id):
         if document_id.startswith("code-") and self.repositories:
-            return self.repositories.document(document_id).units
+            return (await run_io(self.repositories.document, document_id)).units
         return await self.call("document", self.providers.document.list_units, document_id)
 
     async def document_unit(self, document_id, unit_id):
         if document_id.startswith("code-") and self.repositories:
-            value = next((u for u in self.repositories.document(document_id).units if u.unit_id == unit_id), None)
+            units = (await run_io(self.repositories.document, document_id)).units
+            value = next((u for u in units if u.unit_id == unit_id), None)
             require(value is not None, "FILE_NOT_FOUND", "repository", "代码位置不存在。", 404)
             return value
         return await self.call("document", self.providers.document.get_unit, document_id, unit_id)
@@ -96,23 +105,23 @@ class LearningService:
         return resolve_context(record, unit, request)
 
     async def activate(self, session_id: str, request: m.ActivateContext) -> m.SessionRecord:
-        self.store.session(session_id)
+        (await run_io(self.store.session, session_id))
         context = await self.context(request.document_id, m.ContextRequest.model_validate(
             request.model_dump(exclude={"document_id", "expected_context_revision"})))
-        result = self.store.activate(session_id, context, request.expected_context_revision)
+        result = (await run_io(self.store.activate, session_id, context, request.expected_context_revision))
         # The transaction invalidates earlier epochs before workers are interrupted.
         for request_id, task in list(self.active.items()):
             try:
-                self.store.check_request(request_id)
+                (await run_io(self.store.check_request, request_id))
             except LearningError:
                 task.cancel()
         return result
 
     async def cancel(self, session_id: str, request_id: str):
-        self.store.cancel(session_id, request_id)
         task = self.active.get(request_id)
-        if task:
+        if task and self.request_sessions.get(request_id) == session_id:
             task.cancel()
+        (await run_io(self.store.cancel, session_id, request_id))
 
     @staticmethod
     def make_query(scope: m.SourceScope, terms: list[str], mode: m.Mode) -> m.SourceQuery:
@@ -154,7 +163,7 @@ class LearningService:
         return m.digest(canonical(value))
 
     async def search(self, request: m.SearchRequest, *, repository_hints=(), file_hints=()) -> m.SearchResult:
-        session = self.store.session(request.session_id)
+        session = (await run_io(self.store.session, request.session_id))
         require(session.context_revision == request.context_revision and session.context is not None,
                 "CANCELLED", "context", "检索上下文已变化。", 409)
         capability = await self.provider_capability(self.providers.sources, "sources")
@@ -186,12 +195,12 @@ class LearningService:
                             "sources", "候选超出指定仓库范围。", 502)
         require(len(repos) <= query.scope_limit.repositories, "SOURCE_MISMATCH", "sources",
                 "候选仓库数量超出本次限制。", 502)
-        self.store.put_query(request.session_id, request.context_revision, query,
-                             self.scope_hash(request.scope), result)
+        (await run_io(self.store.put_query, request.session_id, request.context_revision, query,
+                             self.scope_hash(request.scope), result))
         return result
 
     async def verify(self, request: m.VerifyRequest) -> m.CodeEvidence:
-        query, result, scope_hash = self.store.query(request.session_id, request.query_id)
+        query, result, scope_hash = (await run_io(self.store.query, request.session_id, request.query_id))
         candidate = next((c for c in result.candidates if c.candidate_id == request.candidate_id), None)
         require(candidate is not None and candidate.discovery_status != "REJECTED", "SOURCE_MISMATCH",
                 "sources", "候选不属于本次服务端检索。", 404)
@@ -243,14 +252,14 @@ class LearningService:
                 require(license_file.commit_sha == evidence.commit_sha
                         and license_file.permalink == prefix + quote(license_file.path, safe="/"),
                         "SOURCE_MISMATCH", "sources", "许可记录没有绑定相同固定版本。", 502)
-        self.store.put_source(request.session_id, query.query_id, evidence)
+        (await run_io(self.store.put_source, request.session_id, query.query_id, evidence))
         return evidence
 
     @staticmethod
     def usable(source: m.CodeEvidence) -> bool:
         return (source.verification_status == "VERIFIED" and bool(source.code_excerpt)
                 and source.license_observation.code_display_allowed
-                and source.relevance.status != "NOT_RELEVANT")
+                and source.relevance.status in {"CANDIDATE", "SUPPORTED"})
 
     async def existing_sources(self, session_id: str, source_ids: list[str], scope: m.SourceScope):
         require(len(set(source_ids)) == len(source_ids) and len(source_ids) <= scope.max_sources,
@@ -260,7 +269,7 @@ class LearningService:
             handles = await self.call("sources", self.providers.sources.local_handles)
             require(scope.local_handle in handles, "AUTH_REQUIRED", "sources", "本地仓库授权已失效。", 403)
         for source_id in source_ids:
-            source, _, scope_hash = self.store.source(session_id, source_id)
+            source, _, scope_hash = (await run_io(self.store.source, session_id, source_id))
             require(scope_hash == self.scope_hash(scope), "SOURCE_MISMATCH", "sources",
                     "来源的原授权范围与当前请求不同，请重新检索。", 409)
             require(self.usable(source), "SOURCE_MISMATCH", "sources", "来源尚不能作为代码证据。")
@@ -332,37 +341,52 @@ class LearningService:
 
     async def explain(self, request: m.ExplanationRequest, *, progress=None) -> m.ExplanationResult:
         require(bool(request.question.strip()), "INVALID_QUESTION", "request", "请输入问题。")
-        previous = self.store.begin(request)
-        if previous:
+        owned = False
+
+        def begin():
+            nonlocal owned
+            previous = self.store.begin(request)
+            owned = previous is None
             return previous
-        self.active[request.request_id] = asyncio.current_task()
+
         try:
+            previous = await run_io(begin)
+            if previous:
+                return previous
+            self.active[request.request_id] = asyncio.current_task()
+            self.request_sessions[request.request_id] = request.session_id
             async with asyncio.timeout(self.timeout_seconds):
                 result = await self._explain(request, progress=progress)
-                self.store.complete(result)
+                await run_commit(self.store.complete, result)
                 return result
         except asyncio.CancelledError as exc:
-            self.store.fail(request.request_id, "CANCELLED")
+            if owned:
+                await run_io(self.store.fail, request.request_id, "CANCELLED")
             raise LearningError("CANCELLED", "request", "请求已取消，未保存迟到讲解。", 409) from exc
         except TimeoutError as exc:
-            self.store.fail(request.request_id)
+            if owned:
+                await run_io(self.store.fail, request.request_id)
             raise LearningError("PROVIDER_TIMEOUT", "request", "讲解超时，请检查模块连接后重试。", 504,
                                 retryable=True) from exc
         except ValidationError as exc:
-            self.store.fail(request.request_id)
+            if owned:
+                await run_io(self.store.fail, request.request_id)
             raise LearningError("INVALID_PROVIDER_RESPONSE", "request", "这次回答未能完成，请重试。", 502,
                                 retryable=True) from exc
         except Exception:
-            self.store.fail(request.request_id)
+            if owned:
+                await run_io(self.store.fail, request.request_id)
             raise
         finally:
-            self.active.pop(request.request_id, None)
+            if self.active.get(request.request_id) is asyncio.current_task():
+                self.active.pop(request.request_id, None)
+                self.request_sessions.pop(request.request_id, None)
 
     async def _explain(self, request: m.ExplanationRequest, *, progress=None) -> m.ExplanationResult:
         progress = progress or (lambda stage: None)
         progress("planning")
         tutor = await self.models.resolve(request.model_id, request.model_base_url)
-        session = self.store.session(request.session_id)
+        session = (await run_io(self.store.session, request.session_id))
         context = session.context.model_copy(deep=True)
         current = await self.context(context.document_id, m.ContextRequest(
             document_revision=context.document_revision, unit_id=context.unit_id,
@@ -370,14 +394,17 @@ class LearningService:
             selection_locator=context.selection_locator))
         require(current == context, "DOCUMENT_VERSION_MISMATCH", "document",
                 "服务端文档内容已变化，请重新选择当前文档。", 409)
-        self.store.check_request(request.request_id)
+        (await run_io(self.store.check_request, request.request_id))
         require(context.coverage != "NO_EXTRACTABLE_TEXT", "NO_EXTRACTABLE_TEXT", "document",
                 "当前页可以阅读，但没有可用于讲解的文本。")
-        conversation, sources, observations, warnings = [], [], [], []
+        conversation, sources, observations, warnings = [], [], [], list(context.warnings)
         if not request.continue_from:
             # Selection changes create a new evidence epoch, not a new conversation.
             # Carry only prose from this document version; never reuse old source IDs.
-            conversation = [item.explanation for item in self.store.history(request.session_id)
+            history = await run_io(self.store.history, request.session_id)
+            if history.skipped_count:
+                warnings.append("HISTORY_PARTIAL")
+            conversation = [item.explanation for item in history
                             if item.explanation.context_snapshot.document_id == context.document_id
                             and item.explanation.context_snapshot.document_revision == context.document_revision][-6:]
         if request.continue_from:
@@ -385,12 +412,19 @@ class LearningService:
                     "session", "追问不属于当前冻结上下文。", 409)
             index = session.explanation_ids.index(request.continue_from)
             for explanation_id in session.explanation_ids[max(0, index - 5):index + 1]:
-                previous = self.store.explanation(request.session_id, explanation_id)
+                try:
+                    previous = await run_io(self.store.explanation, request.session_id, explanation_id)
+                except ValidationError as exc:
+                    report_error("history.follow_up", exc)
+                    require(explanation_id != request.continue_from, "HISTORY_UNREADABLE", "session",
+                            "这条历史记录无法读取，原记录已保留。请重新提问。", 409)
+                    warnings.append("HISTORY_PARTIAL")
+                    continue
                 require(previous.context_revision == request.context_revision,
                         "DOCUMENT_VERSION_MISMATCH", "session", "追问版本已变化。", 409)
                 conversation.append(previous.explanation)
             if not request.source_ids:
-                previous = self.store.explanation(request.session_id, request.continue_from)
+                previous = (await run_io(self.store.explanation, request.session_id, request.continue_from))
                 previous_ids = previous.explanation.code_source_ids
                 prior_guide = (guide_for(previous.explanation.question)
                                or guide_for(context.selected_text or ""))
@@ -398,16 +432,16 @@ class LearningService:
                 changed_topic = current_guide and prior_guide and current_guide != prior_guide
                 # Keep the conversation, but search afresh if its scope or concept
                 # changes. Stored evidence integrity is checked before considering reuse.
-                compatible_scope = len(previous_ids) <= request.scope.max_sources and all(
-                    self.store.source(request.session_id, sid)[2] == self.scope_hash(request.scope)
-                    for sid in previous_ids)
+                compatible_scope = len(previous_ids) <= request.scope.max_sources and all([
+                    (await run_io(self.store.source, request.session_id, sid))[2] == self.scope_hash(request.scope)
+                    for sid in previous_ids])
                 if compatible_scope and not changed_topic:
                     sources = await self.existing_sources(request.session_id, previous_ids, request.scope)
         capability = await self.provider_capability(tutor, "tutor")
         plan = m.TeachingPlan.model_validate(await self.call(
             "tutor", tutor.plan, context.model_copy(deep=True), request.question.strip(),
             request.level, deepcopy(conversation)))
-        self.store.check_request(request.request_id)
+        (await run_io(self.store.check_request, request.request_id))
         require(plan.question == request.question.strip() and plan.level == request.level
                 and plan.mode == capability.mode and plan.status == "READY",
                 "MODEL_OUTPUT_INVALID", "tutor", "教学计划改变了问题、难度或执行模式。", 502)
@@ -425,7 +459,7 @@ class LearningService:
             sources = await self.existing_sources(request.session_id, request.source_ids, request.scope)
         elif request.candidate_ids:
             require(request.query_id is not None, "SOURCE_MISMATCH", "sources", "候选缺少检索 ID。")
-            query, _, scope_hash = self.store.query(request.session_id, request.query_id)
+            query, _, scope_hash = (await run_io(self.store.query, request.session_id, request.query_id))
             require(scope_hash == self.scope_hash(request.scope), "SOURCE_MISMATCH", "sources",
                     "候选的授权范围已变化。", 409)
             require(len(set(request.candidate_ids)) == len(request.candidate_ids)
@@ -455,7 +489,7 @@ class LearningService:
                     concept_terms=terms, scope=request.scope),
                     repository_hints=plan.source_query.repository_hints if plan.source_query else (),
                     file_hints=plan.source_query.file_hints if plan.source_query else ())
-                self.store.check_request(request.request_id)
+                (await run_io(self.store.check_request, request.request_id))
                 if result.selection_required:
                     return m.ExplanationResult(mode=result.mode, request_id=request.request_id,
                         session_id=request.session_id, context_revision=request.context_revision,
@@ -472,7 +506,7 @@ class LearningService:
                             raise
                         warnings.append(exc.code)
                         continue
-                    self.store.check_request(request.request_id)
+                    (await run_io(self.store.check_request, request.request_id))
                     if self.usable(source):
                         sources.append(source)
                     else:
@@ -497,7 +531,7 @@ class LearningService:
             "tutor", tutor.explain, context.model_copy(deep=True), deepcopy(sources),
             plan.model_copy(deep=True), deepcopy(conversation), compare=request.compare,
             **({"progress": progress} if isinstance(tutor, GroundedTutorProvider) else {})))
-        self.store.check_request(request.request_id)
+        (await run_io(self.store.check_request, request.request_id))
         self.validate_answer(answer, context, sources, plan, request.compare, capability.mode)
         used = [source for source in sources if source.source_id in answer.code_source_ids]
         return m.ExplanationResult(mode=answer.mode, request_id=request.request_id,

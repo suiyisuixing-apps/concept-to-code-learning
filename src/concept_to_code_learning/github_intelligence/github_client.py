@@ -10,6 +10,8 @@ from urllib.parse import quote, urlencode, urlsplit
 
 import httpx
 
+from concept_to_code_learning.full_learning.io import run_io
+
 from .errors import SourceError
 from .public_cache import PublicResponseCache
 
@@ -49,6 +51,12 @@ class GitHubRawClient:
         self._blocked_until = {}
         self._public_repositories = set()
         self._public_cache = PublicResponseCache(cache_dir)
+        self._network_observation = None
+
+    def network_health(self):
+        if self._network_observation is None or time.monotonic() - self._network_observation[0] > 60:
+            return False, "GITHUB_NOT_CHECKED"
+        return self._network_observation[1:]
 
     async def _ensure_client(self):
         if self._client is None:
@@ -195,7 +203,7 @@ class GitHubRawClient:
         if cached and cached[0] > now:
             self._cache.move_to_end(cache_key)
             return httpx.Response(200, content=cached[1])
-        if persist and (body := self._public_cache.get(disk_key)) is not None:
+        if persist and (body := await run_io(self._public_cache.get, disk_key)) is not None:
             self._remember(cache_key, body, immutable=True)
             return httpx.Response(200, content=body)
         bucket = "search" if parts.path.startswith("/search/") else "core"
@@ -221,6 +229,8 @@ class GitHubRawClient:
             try:
                 async with asyncio.timeout(self._timeout):
                     async with client.stream(method, url, headers=headers) as response:
+                        self._network_observation = (time.monotonic(), response.status_code == 200,
+                                                     None if response.status_code == 200 else "GITHUB_READ_FAILED")
                         self._interpret(response, url=url, stage=stage, allow_404=allow_404)
                         cap = (
                             8 if stage == "tree" else 2 if stage == "contents" else 1
@@ -239,9 +249,10 @@ class GitHubRawClient:
                         body = b"".join(chunks)
                 self._remember(cache_key, body, immutable=immutable)
                 if persist:
-                    self._public_cache.put(disk_key, body)
+                    await run_io(self._public_cache.put, disk_key, body)
                 return httpx.Response(200, content=body)
             except (httpx.TransportError, TimeoutError):
+                self._network_observation = (time.monotonic(), False, "GITHUB_UNREACHABLE")
                 if attempt == self._retries:
                     raise SourceError(
                         "PROVIDER_TIMEOUT",

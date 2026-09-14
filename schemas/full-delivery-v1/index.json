@@ -1,6 +1,6 @@
 {
   "artifacts": {
-    "docs/full-delivery/openapi.json": "9b4c5df617d8b5fdfbf6f97928fadbd4963aab4166b85e88d0e6dd6043c99f6b",
+    "docs/full-delivery/openapi.json": "485d2dc768067a5882232d380bbc82e2ce907cb605b0528a5e39cfe068e9ff30",
     "schemas/full-delivery-v1/ActivateContext.schema.json": "d494751a156b790115d0a427d0f7eed5734f3824e1043922caf8bfee5e788048",
     "schemas/full-delivery-v1/AddRepository.schema.json": "f43966d6dc4c1dcd2f6fcae95fd5d43ed13baedd8155dc4bc715745e32d65818",
     "schemas/full-delivery-v1/Annotation.schema.json": "563bf2b3d5b9d9d2c747583066ea5f3fbd7f745036094f8b476b5864fe9bb712",

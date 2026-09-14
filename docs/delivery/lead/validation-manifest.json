@@ -153,5 +153,7 @@
     "evidence/ui-final.ax.txt": "b9c5c83827d1a4031433e58879585d38f70dcb05eeaf9feb758e6847e5e29cb5",
     "evidence/ui-final.png": "7b310fe4275bb6200de5c14f6f92b6a6a99a2466d4cc4e26be2c12212a9641be",
     "evidence/ui-server-final.log": "e3d0eaa10e737e37b10775093fb5cbff0d5179006b89a5206026003f6dae9b7c"
-  }
+  },
+  "record_scope": "Historical 2026-09-09 snapshot at code_head; original artifact hashes remain unchanged.",
+  "superseded_by": "REVIEW_CORRECTIONS.md"
 }

@@ -1,10 +1,11 @@
 """Contextual search regressions use controlled providers and synthetic documents."""
 
 import pytest
-from conftest import activate, explain_body
 
 from concept_to_code_learning.full_contracts import models as m
 from concept_to_code_learning.full_learning.service import LearningService
+
+from .conftest import activate, explain_body
 
 PREFIX = "/api/learning/v1"
 

@@ -1,3 +1,5 @@
+> 历史记录（2026-09-09）。保留原有结果与限制，不用于声明当前候选已验收；当前范围见 [REVIEW_CORRECTIONS.md](REVIEW_CORRECTIONS.md)。
+
 # 实际验证记录
 
 运行代码Head：`53dc7bb187307cd84cc2c9f92903e0e959986361`；检查完成UTC：2026-09-09T08:04:56.171051+00:00。Python3.12.14/macOS；现有Node26.6.0，项目允许该版本；远端CI使用原定Python3.12/Node20。最终代码的ruff、完整pytest和Schema漂移检查在最后边界修复后重跑。前端源码/依赖未变，5项test/build结果沿用同一候选的成功运行。

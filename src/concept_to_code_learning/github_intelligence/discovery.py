@@ -122,7 +122,7 @@ def select_symbol(text, path, terms):
 def candidate(query, repo, handle, ref, path, text):
     if not text.strip():
         return None
-    if PurePosixPath(path).suffix == ".py":
+    if PurePosixPath(path).suffix.lower() == ".py":
         try:
             body = ast.parse(text).body
             if not any(not (isinstance(node, ast.Expr) and isinstance(node.value, ast.Constant)

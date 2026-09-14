@@ -51,13 +51,14 @@ class TestBuildProvider:
 
 
 class TestCapabilities:
-    def test_reports_implemented_and_available(self, provider):
+    def test_reports_implemented_without_claiming_untested_connectivity(self, provider):
         caps = run(provider.capabilities())
         assert caps.provider_id == "github-intelligence"
         assert caps.implemented is True
-        assert caps.available is True
+        assert caps.available is False
         assert caps.mode == "LIVE"
-        assert caps.status == "AVAILABLE"
+        assert caps.status == "UNAVAILABLE"
+        assert caps.reason_code == "GITHUB_NOT_CHECKED"
 
     def test_features_list_specified_public(self, provider):
         caps = run(provider.capabilities())

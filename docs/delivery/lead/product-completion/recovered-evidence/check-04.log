@@ -1,0 +1,16 @@
+
+> concept-to-code-learning-web@0.2.0-dev.0 build
+> node scripts/prepare_pdf_assets.mjs && vite build
+
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 35 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                              1.25 kB │ gzip:   0.76 kB
+dist/assets/pdf.worker.min-Dswkl-cV.mjs  1,265.41 kB
+dist/assets/index-B69geDeK.css               7.34 kB │ gzip:   2.34 kB
+dist/assets/pdf.worker.min-CWpYdfRJ.js       0.07 kB │ gzip:   0.09 kB
+dist/assets/index-DsghWT8w.js              221.06 kB │ gzip:  70.80 kB
+dist/assets/pdf-YYBQA8p7.js                437.74 kB │ gzip: 131.10 kB
+✓ built in 548ms

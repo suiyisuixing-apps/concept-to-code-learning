@@ -46,10 +46,12 @@ class LocalRegistry:
         if (
             root is None
             or not requested_path
+            or not path.parts
             or path.is_absolute()
             or ".." in path.parts
             or "\\" in requested_path
             or "\x00" in requested_path
+            or (os.name == "nt" and any(":" in part for part in path.parts))
         ):
             return True
         current = root
@@ -63,8 +65,12 @@ class LocalRegistry:
         root = self.root_for(handle)
         if root is None or self.rejects_escape(handle, path):
             raise SourceError("AUTH_REQUIRED", "local", "源码路径超出授权范围或包含符号链接。", 403)
-        target = root / path
-        # O_NOFOLLOW defends the final component, repeated canonical check defends parents.
+        if os.name == "nt":
+            from .windows_files import open_authorized
+
+            with open_authorized(root, PurePosixPath(path).parts, self._identities[handle]) as fd:
+                return self._read_descriptor(fd)
+        # Anchor every POSIX component to its parent descriptor as well.
         parent_fds = []
         try:
             if os.open in os.supports_dir_fd:
@@ -80,22 +86,24 @@ class LocalRegistry:
                     parent_fds.append(current)
                 fd = os.open(parts[-1], os.O_RDONLY | os.O_NOFOLLOW, dir_fd=current)
             else:
-                fd = os.open(target, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+                raise SourceError("AUTH_REQUIRED", "local", "当前系统不支持安全的本地源码读取。", 503)
         finally:
             for parent_fd in reversed(parent_fds):
                 os.close(parent_fd)
         try:
-            info = os.fstat(fd)
-            if not stat.S_ISREG(info.st_mode) or info.st_size > 1024 * 1024:
-                raise SourceError(
-                    "FILE_NOT_FOUND", "local", "仅支持不超过 1 MiB 的普通源码文件。", 422
-                )
             if self.rejects_escape(handle, path):
                 raise SourceError("AUTH_REQUIRED", "local", "本地路径在读取时发生变化。", 403)
-            with os.fdopen(fd, "rb", closefd=False) as source:
-                raw = source.read(1024 * 1024 + 1)
-            if len(raw) > 1024 * 1024:
-                raise SourceError("FILE_NOT_FOUND", "local", "文件超过读取上限。", 413)
-            return raw
+            return self._read_descriptor(fd)
         finally:
             os.close(fd)
+
+    @staticmethod
+    def _read_descriptor(fd):
+        info = os.fstat(fd)
+        if not stat.S_ISREG(info.st_mode) or info.st_size > 1024 * 1024:
+            raise SourceError("FILE_NOT_FOUND", "local", "仅支持不超过 1 MiB 的普通源码文件。", 422)
+        with os.fdopen(fd, "rb", closefd=False) as source:
+            raw = source.read(1024 * 1024 + 1)
+        if len(raw) > 1024 * 1024:
+            raise SourceError("FILE_NOT_FOUND", "local", "文件超过读取上限。", 413)
+        return raw

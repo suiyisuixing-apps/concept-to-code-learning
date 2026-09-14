@@ -48,7 +48,12 @@ def resolve_context(record: DocumentRecord, unit: DocumentUnit,
     require(request.selected_text_hash is None or request.selected_text_hash == digest(selected),
             "SELECTION_MISMATCH", "document", "选区内容哈希不匹配。")
     visible = "\n".join(block.text for block in unit.blocks if block.text)
+    shortened = len(visible) > 100000
+    # The overview has a contract limit; source blocks and selection offsets
+    # retain their original bytes for citations and the tutor's bounded packing.
+    visible = visible[:100000]
     empty = not visible.strip()
+    partial = shortened or unit.extraction_status != "READY"
     return DocumentContext(
         mode=record.mode, document_id=record.document_id, document_revision=record.revision,
         original_sha256=record.original_sha256, source_type=record.source_type,
@@ -59,7 +64,7 @@ def resolve_context(record: DocumentRecord, unit: DocumentUnit,
         relevant_context_blocks=unit.blocks + unit.supporting_blocks,
         code_location=record.code_location, code_license=record.code_license,
         coverage="NO_EXTRACTABLE_TEXT" if empty else (
-            "TEXT" if unit.extraction_status == "READY" else "PARTIAL"),
-        warnings=record.warnings + unit.warnings,
+            "PARTIAL" if partial else "TEXT"),
+        warnings=record.warnings + unit.warnings + (["CONTEXT_OVERVIEW_TRUNCATED"] if shortened else []),
         status="NO_EXTRACTABLE_TEXT" if empty else (
-            "READY" if unit.extraction_status == "READY" else "PARTIAL"))
+            "PARTIAL" if partial else "READY"))

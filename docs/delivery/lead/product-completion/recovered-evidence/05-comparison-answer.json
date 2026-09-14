@@ -1,0 +1,319 @@
+{
+  "status": 200,
+  "seconds": 25.913,
+  "response": {
+    "contract_version": "full-delivery-v1",
+    "revision": 1,
+    "mode": "LIVE",
+    "request_id": "5115e5b8-9e59-422b-b287-333ce8cbc63a",
+    "session_id": "d828962f-a887-4599-a746-05b033429da4",
+    "context_revision": 1,
+    "status": "COMPLETE",
+    "explanation": {
+      "contract_version": "full-delivery-v1",
+      "revision": 1,
+      "mode": "LIVE",
+      "explanation_id": "4e42cb66-4720-4e2e-bf4e-2333085bf142",
+      "question": "比较这两个仓库如何声明 dependency injection。仅说明各自给出的代码，证据不够的部分标明未知。",
+      "context_snapshot": {
+        "contract_version": "full-delivery-v1",
+        "revision": 1,
+        "mode": "LIVE",
+        "document_id": "doc-0e5f6d22317c5a9ee7ae0422",
+        "document_revision": 1,
+        "original_sha256": "eb54fda71ec66a6b4fa0ce4074dcb4afd276d945a60a6e546581686e2502ee57",
+        "source_type": "MARKDOWN",
+        "file_name": "依赖注入.md",
+        "unit_id": "section-1",
+        "unit_locator": {
+          "unit_type": "section",
+          "index": 1,
+          "heading_path": [
+            "依赖注入"
+          ],
+          "block_id": null
+        },
+        "visible_text": "依赖注入\n对象通过外部获得依赖，便于替换具体实现和测试。不同框架可以用不同机制声明依赖。",
+        "selected_text": "",
+        "selected_text_hash": null,
+        "selection_locator": null,
+        "relevant_context_blocks": [
+          {
+            "block_id": "section-1-block-1",
+            "kind": "paragraph",
+            "text": "依赖注入",
+            "source_locator": {
+              "unit_type": "section",
+              "index": 1,
+              "heading_path": [
+                "依赖注入"
+              ],
+              "block_id": "section-1-block-1"
+            },
+            "table_rows": [],
+            "bbox": null,
+            "image_asset_id": null
+          },
+          {
+            "block_id": "section-1-block-2",
+            "kind": "paragraph",
+            "text": "对象通过外部获得依赖，便于替换具体实现和测试。不同框架可以用不同机制声明依赖。",
+            "source_locator": {
+              "unit_type": "section",
+              "index": 1,
+              "heading_path": [
+                "依赖注入"
+              ],
+              "block_id": "section-1-block-2"
+            },
+            "table_rows": [],
+            "bbox": null,
+            "image_asset_id": null
+          }
+        ],
+        "coverage": "TEXT",
+        "warnings": [],
+        "status": "READY"
+      },
+      "level": "Engineering",
+      "answer_sections": [
+        {
+          "title": "核心意思",
+          "text": "B1描述了依赖注入的核心理念：对象通过外部获取依赖，便于替换实现和测试。FastAPI中使用Depends装饰器将依赖函数作为参数注入，实现HTTP或WebSocket请求中的值提取。"
+        },
+        {
+          "title": "实现方式对比",
+          "text": "S1使用FastAPI的Depends机制，将HTTP或WebSocket连接中的状态值通过函数提取并注入到路由函数中，实现依赖的动态获取。S2使用@inject和Closing、Provide语法，但具体框架和上下文未明确，无法验证其实际行为和边界。"
+        },
+        {
+          "title": "边界与输入输出",
+          "text": "S1的输入为HTTP或WebSocket请求，输出为提取的值（如42），依赖来源于请求上下文中的app.state。S2的输入为上下文资源，输出为资源对象，但缺乏具体调用流程和外部依赖说明，边界模糊。"
+        },
+        {
+          "title": "可测试性与解耦",
+          "text": "S1通过TestClient可验证请求流程，支持单元测试，解耦明确。S2使用抽象语法，依赖框架内部机制，测试路径不透明，解耦程度依赖外部框架实现，未提供可验证的测试案例。"
+        }
+      ],
+      "document_citations": [
+        {
+          "block_id": "section-1-block-1",
+          "quote": "依赖注入",
+          "quote_sha256": "bf38f828e0b413177c248d5f20a04119c1f59a9546beff1eb7a2098ef75829fe"
+        },
+        {
+          "block_id": "section-1-block-2",
+          "quote": "对象通过外部获得依赖，便于替换具体实现和测试。不同框架可以用不同机制声明依赖。",
+          "quote_sha256": "dbf121bd8d316078aa3bc6d90b96a8f617f7f53706d008f404cdb156ad42ceed"
+        }
+      ],
+      "code_source_ids": [
+        "cada8b09-8956-46e3-8a5a-287a8626b007",
+        "a3ae867d-b77e-43eb-8c35-8f10ea2fdac0"
+      ],
+      "concept_code_links": [
+        {
+          "concept": "依赖注入",
+          "source_id": "cada8b09-8956-46e3-8a5a-287a8626b007",
+          "symbol": null,
+          "reason": "S1通过Depends函数将外部状态注入路由，体现依赖注入的核心机制。"
+        },
+        {
+          "concept": "外部依赖管理",
+          "source_id": "a3ae867d-b77e-43eb-8c35-8f10ea2fdac0",
+          "symbol": "async_injection_with_closing_context_local_resources",
+          "reason": "S2使用Closing和Provide语法管理本地资源，但具体依赖管理逻辑未明确，无法验证其外部可替换性。"
+        },
+        {
+          "concept": "可测试性",
+          "source_id": "cada8b09-8956-46e3-8a5a-287a8626b007",
+          "symbol": null,
+          "reason": "S1提供完整测试函数，可验证注入值，体现良好的可测试性。S2无测试示例，无法评估。"
+        }
+      ],
+      "example_blocks": [
+        {
+          "provenance_kind": "SOURCE_EXACT",
+          "source_id": "cada8b09-8956-46e3-8a5a-287a8626b007",
+          "language": "python",
+          "code": "from fastapi import Depends, FastAPI\nfrom fastapi.requests import HTTPConnection\nfrom fastapi.testclient import TestClient\nfrom starlette.websockets import WebSocket\n\napp = FastAPI()\napp.state.value = 42\n\n\nasync def extract_value_from_http_connection(conn: HTTPConnection):\n    return conn.app.state.value\n\n\n@app.get(\"/http\")\nasync def get_value_by_http(value: int = Depends(extract_value_from_http_connection)):\n    return value\n\n\n@app.websocket(\"/ws\")\nasync def get_value_by_ws(\n    websocket: WebSocket, value: int = Depends(extract_value_from_http_connection)\n):\n    await websocket.accept()\n    await websocket.send_json(value)\n    await websocket.close()\n\n\nclient = TestClient(app)\n\n\ndef test_value_extracting_by_http():\n    response = client.get(\"/http\")\n    assert response.status_code == 200\n    assert response.json() == 42\n\n\ndef test_value_extracting_by_ws():\n    with client.websocket_connect(\"/ws\") as websocket:\n        assert websocket.receive_json() == 42",
+          "explanation": "已核验的原始片段；未运行。",
+          "execution_status": "NOT_RUN"
+        },
+        {
+          "provenance_kind": "SOURCE_EXACT",
+          "source_id": "a3ae867d-b77e-43eb-8c35-8f10ea2fdac0",
+          "language": "python",
+          "code": "@inject\nasync def async_injection_with_closing_context_local_resources(\n        context_local_resource1: object = Closing[Provide[Container.context_local_resource_with_factory_object]],\n):\n    return context_local_resource1",
+          "explanation": "已核验的原始片段；未运行。",
+          "execution_status": "NOT_RUN"
+        }
+      ],
+      "comparison": {
+        "source_ids": [
+          "cada8b09-8956-46e3-8a5a-287a8626b007",
+          "a3ae867d-b77e-43eb-8c35-8f10ea2fdac0"
+        ],
+        "summary": "S1基于FastAPI标准机制，依赖明确、可测试、边界清晰；S2语法抽象，依赖框架内部，缺乏可验证的输入输出和测试路径，证据不足。",
+        "tradeoffs": [
+          "S1更易理解与测试，S2更抽象但可能更灵活，但缺乏可验证性。"
+        ]
+      },
+      "limitations": [
+        "S2代码语法不完整，无法确认其实际运行逻辑和依赖注入流程。",
+        "未提供S2所用框架的具体文档或上下文，无法验证其声明位置和性能影响。",
+        "缺少S2的输入输出边界和错误处理机制说明。",
+        "具体框架的声明语法",
+        "不同框架的依赖声明位置",
+        "注入方式对性能的影响"
+      ],
+      "unsupported_claims": [],
+      "provider_info": {
+        "provider_id": "local-openai-compatible",
+        "model_id": "Qwen3-4B-Instruct-2507-4bit (local path redacted)",
+        "mode": "LIVE",
+        "endpoint_kind": "loopback",
+        "status": "AVAILABLE"
+      },
+      "metrics": {
+        "latency_ms": 18741.0,
+        "input_tokens": 1229,
+        "output_tokens": 811,
+        "token_source": "PROVIDER_USAGE",
+        "input_truncated": false,
+        "truncation_reason": null
+      },
+      "status": "GROUNDED"
+    },
+    "sources": [
+      {
+        "contract_version": "full-delivery-v1",
+        "revision": 1,
+        "mode": "LIVE",
+        "source_id": "cada8b09-8956-46e3-8a5a-287a8626b007",
+        "source_mode": "specified_public",
+        "repository_owner": "fastapi",
+        "repository_name": "fastapi",
+        "repository_url": "https://github.com/fastapi/fastapi",
+        "visibility": "public",
+        "local_handle": null,
+        "dirty": false,
+        "commit_sha": "50113da16fec53b66b80d75e80a89296de4fa5a5",
+        "requested_ref": "50113da16fec53b66b80d75e80a89296de4fa5a5",
+        "file_path": "tests/test_http_connection_injection.py",
+        "language": "python",
+        "symbol": null,
+        "symbol_kind": "NOT_APPLICABLE",
+        "line_start": 1,
+        "line_end": 39,
+        "code_excerpt": "from fastapi import Depends, FastAPI\nfrom fastapi.requests import HTTPConnection\nfrom fastapi.testclient import TestClient\nfrom starlette.websockets import WebSocket\n\napp = FastAPI()\napp.state.value = 42\n\n\nasync def extract_value_from_http_connection(conn: HTTPConnection):\n    return conn.app.state.value\n\n\n@app.get(\"/http\")\nasync def get_value_by_http(value: int = Depends(extract_value_from_http_connection)):\n    return value\n\n\n@app.websocket(\"/ws\")\nasync def get_value_by_ws(\n    websocket: WebSocket, value: int = Depends(extract_value_from_http_connection)\n):\n    await websocket.accept()\n    await websocket.send_json(value)\n    await websocket.close()\n\n\nclient = TestClient(app)\n\n\ndef test_value_extracting_by_http():\n    response = client.get(\"/http\")\n    assert response.status_code == 200\n    assert response.json() == 42\n\n\ndef test_value_extracting_by_ws():\n    with client.websocket_connect(\"/ws\") as websocket:\n        assert websocket.receive_json() == 42",
+        "excerpt_sha256": "43a8f36f09d55250605675e11f2b6f2da31cbe33130e4ddd611ecb1fbf637ffa",
+        "file_blob_sha": "6e321b53be4a1337b93cf12dcbb89864a9f428b0",
+        "file_sha256": "f7037ecf1911c5eecd3b222ec055eaaf9fa6123a57a9528e9ded33a76258f3f4",
+        "permalink": "https://github.com/fastapi/fastapi/blob/50113da16fec53b66b80d75e80a89296de4fa5a5/tests/test_http_connection_injection.py#L1-L39",
+        "license_observation": {
+          "status": "DETECTED",
+          "files": [
+            {
+              "path": "LICENSE",
+              "commit_sha": "50113da16fec53b66b80d75e80a89296de4fa5a5",
+              "content_sha256": "4ec89ffc81485b97fec584b2d4a961032eeffe834453894fd9c1274906cc744e",
+              "permalink": "https://github.com/fastapi/fastapi/blob/50113da16fec53b66b80d75e80a89296de4fa5a5/LICENSE",
+              "identifier": "MIT"
+            }
+          ],
+          "limitations": [
+            "记录已读取的许可文件；保留作者和许可声明。未对所有依赖或例外进行法律审查。"
+          ],
+          "code_display_allowed": true
+        },
+        "retrieved_at": "2026-09-11T03:59:16.402140Z",
+        "verification_checks": {
+          "public_repository": "PASSED",
+          "commit": "PASSED",
+          "file": "PASSED",
+          "line_range": "PASSED",
+          "excerpt_hash": "PASSED",
+          "scope": "PASSED",
+          "license": "PASSED",
+          "python_symbol": "NOT_APPLICABLE"
+        },
+        "provenance_kind": "SOURCE_EXACT",
+        "verification_status": "VERIFIED",
+        "execution_status": "NOT_RUN",
+        "relevance": {
+          "status": "UNCERTAIN",
+          "reason": "固定文件与符号已核验；概念词匹配只提供相关性线索，不证明教学结论。",
+          "basis": []
+        }
+      },
+      {
+        "contract_version": "full-delivery-v1",
+        "revision": 1,
+        "mode": "LIVE",
+        "source_id": "a3ae867d-b77e-43eb-8c35-8f10ea2fdac0",
+        "source_mode": "specified_public",
+        "repository_owner": "ets-labs",
+        "repository_name": "python-dependency-injector",
+        "repository_url": "https://github.com/ets-labs/python-dependency-injector",
+        "visibility": "public",
+        "local_handle": null,
+        "dirty": false,
+        "commit_sha": "b2c7e3e3c80b9cc6e9748795b07f4aee1bf3fb55",
+        "requested_ref": "b2c7e3e3c80b9cc6e9748795b07f4aee1bf3fb55",
+        "file_path": "tests/unit/samples/wiring/asyncinjections.py",
+        "language": "python",
+        "symbol": "async_injection_with_closing_context_local_resources",
+        "symbol_kind": "function",
+        "line_start": 68,
+        "line_end": 72,
+        "code_excerpt": "@inject\nasync def async_injection_with_closing_context_local_resources(\n        context_local_resource1: object = Closing[Provide[Container.context_local_resource_with_factory_object]],\n):\n    return context_local_resource1",
+        "excerpt_sha256": "cdf7c0246f66e98e32a799d732def117bff9de9f71e8881656f408c2ddb0adf6",
+        "file_blob_sha": "befd59b0a12fd0da386098e2db3811cc32fb6b80",
+        "file_sha256": "0091bdcade9e36cb85af451a9b44412105c7a7d4c13aa14d4ffa0d900ca2f6ef",
+        "permalink": "https://github.com/ets-labs/python-dependency-injector/blob/b2c7e3e3c80b9cc6e9748795b07f4aee1bf3fb55/tests/unit/samples/wiring/asyncinjections.py#L68-L72",
+        "license_observation": {
+          "status": "DETECTED",
+          "files": [
+            {
+              "path": "LICENSE.rst",
+              "commit_sha": "b2c7e3e3c80b9cc6e9748795b07f4aee1bf3fb55",
+              "content_sha256": "a2ed9e0a9dc0a034388b0b9ce852e149c9f094564eb6cddc010fe663f9452c6a",
+              "permalink": "https://github.com/ets-labs/python-dependency-injector/blob/b2c7e3e3c80b9cc6e9748795b07f4aee1bf3fb55/LICENSE.rst",
+              "identifier": "BSD-3-Clause"
+            }
+          ],
+          "limitations": [
+            "记录已读取的许可文件；保留作者和许可声明。未对所有依赖或例外进行法律审查。"
+          ],
+          "code_display_allowed": true
+        },
+        "retrieved_at": "2026-09-11T03:59:17.298849Z",
+        "verification_checks": {
+          "public_repository": "PASSED",
+          "commit": "PASSED",
+          "file": "PASSED",
+          "line_range": "PASSED",
+          "excerpt_hash": "PASSED",
+          "scope": "PASSED",
+          "license": "PASSED",
+          "python_symbol": "PASSED"
+        },
+        "provenance_kind": "SOURCE_EXACT",
+        "verification_status": "VERIFIED",
+        "execution_status": "NOT_RUN",
+        "relevance": {
+          "status": "CANDIDATE",
+          "reason": "固定文件与符号已核验；概念词匹配只提供相关性线索，不证明教学结论。",
+          "basis": [
+            "dependency injection",
+            "framework injection mechanism"
+          ]
+        }
+      }
+    ],
+    "source_observations": [],
+    "candidates": [],
+    "query_id": null,
+    "warnings": []
+  }
+}

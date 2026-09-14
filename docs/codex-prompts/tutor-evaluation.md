@@ -6,7 +6,7 @@
 
 2026-09-08 基线：PR #56 已获 @fqf060420 正式 APPROVED 并由其合并；pre-rules-v0.2.0 固定在 e83a64d63a78f11534fbe51631775ceeb3885ccb。本文及 Sprint 1 合同通过独立 [Lead 准备 PR #58](https://github.com/suiyisuixing/concept-to-code-learning/pull/58) 交付；模块开发前确认该 PR 已由 Lead 完成自检、Codex 审计、required CI 并合并。Lead PR 无需外部批准。
 
-你是 @fqf060420 的 Codex，负责 AI Tutor / Local Model / Evaluation。请实际完成以下聚焦工作与验证，不要只给计划。仓库：https://github.com/suiyisuixing/concept-to-code-learning。本地先检查 /Users/freewill/Documents/GitHub/concept-to-code-learning；若路径不存在，通过当前 Git remote 确认，不能猜测或覆盖其他项目。使用本人 GitHub 账号，不共享凭据。若当前账号不是 @fqf060420，停止 GitHub 写操作，不复制或共享 Token。
+你是 @fqf060420 的 Codex，负责 AI Tutor / Local Model / Evaluation。请实际完成以下聚焦工作与验证，不要只给计划。仓库：https://github.com/suiyisuixing/concept-to-code-learning。本地先确认当前仓库根目录及 Git remote；若尚未克隆，通过私有仓库地址取得本人授权的 checkout，不能猜测或覆盖其他项目。使用本人 GitHub 账号，不共享凭据。若当前账号不是 @fqf060420，停止 GitHub 写操作，不复制或共享 Token。
 
 指定分支：`feat/grounded-explanation`。前置门禁全部满足后，从已更新 main 创建；已有同名分支先检查归属和状态，不能重置。主 Issue：[49](https://github.com/suiyisuixing/concept-to-code-learning/issues/49)。此外，先确认 Lead 合同准备 PR 已经审核并合并到 main；若尚未合并，只可阅读合同与用本地 Fixture 准备，不私自冻结或改写公共合同。
 

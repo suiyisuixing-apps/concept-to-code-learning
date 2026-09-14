@@ -9,7 +9,7 @@ import sqlite3
 from contextlib import closing, contextmanager
 from pathlib import Path
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from concept_to_code_learning.full_contracts.models import (
     CodeEvidence,
@@ -26,6 +26,7 @@ from concept_to_code_learning.full_contracts.models import (
     uid,
     utcnow,
 )
+from concept_to_code_learning.full_learning.diagnostics import report_error
 from concept_to_code_learning.full_learning.errors import LearningError, require
 
 
@@ -33,6 +34,10 @@ def canonical(value) -> str:
     if isinstance(value, BaseModel):
         value = value.model_dump(mode="json")
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+
+class HistoryPage(list):
+    skipped_count = 0
 
 
 class LearningStore:
@@ -77,12 +82,14 @@ class LearningStore:
         return db
 
     @contextmanager
-    def transaction(self, *, write: bool = True):
+    def transaction(self, *, write: bool = True, commit_gate=None):
         try:
             with closing(self.connect()) as db, db:
                 if write:
                     db.execute("BEGIN IMMEDIATE")
                 yield db
+                if commit_gate is not None:
+                    commit_gate.start()
         except sqlite3.Error as exc:
             raise LearningError("STORAGE_FAILURE", "storage",
                                 "本地数据操作失败；本次事务已回滚。", 503,
@@ -162,8 +169,8 @@ class LearningStore:
             db.execute("UPDATE fd_requests SET state=? WHERE id=? AND state='RUNNING'",
                        (state, request_id))
 
-    def complete(self, result: ExplanationResult) -> None:
-        with self.transaction() as db:
+    def complete(self, result: ExplanationResult, *, commit_gate=None) -> None:
+        with self.transaction(commit_gate=commit_gate) as db:
             session = self._current(db, result.session_id, result.context_revision)
             row = db.execute("SELECT state FROM fd_requests WHERE id=?", (result.request_id,)).fetchone()
             require(row is not None and row["state"] == "RUNNING", "CANCELLED", "request",
@@ -189,15 +196,29 @@ class LearningStore:
     def recent_session(self) -> SessionRecord | None:
         with self.transaction(write=False) as db:
             rows = db.execute("SELECT body FROM fd_sessions ORDER BY rowid DESC LIMIT 50").fetchall()
-            return next((item for row in rows if (item := SessionRecord.model_validate_json(row["body"]))
-                         .context is not None), None)
+            for row in rows:
+                try:
+                    item = SessionRecord.model_validate_json(row["body"])
+                except ValidationError as exc:
+                    report_error("history.session", exc)
+                    continue
+                if item.context is not None:
+                    return item
+            return None
 
     def history(self, session_id: str) -> list[ExplanationResult]:
         with self.transaction(write=False) as db:
             self._session(db, session_id)
             rows = db.execute("SELECT body FROM fd_explanations WHERE session_id=? "
                               "ORDER BY rowid DESC LIMIT 20", (session_id,)).fetchall()
-            return [ExplanationResult.model_validate_json(row["body"]) for row in reversed(rows)]
+            values = HistoryPage()
+            for row in reversed(rows):
+                try:
+                    values.append(ExplanationResult.model_validate_json(row["body"]))
+                except ValidationError as exc:
+                    report_error("history.explanation", exc)
+                    values.skipped_count += 1
+            return values
 
     def put_query(self, session_id: str, epoch: int, query: SourceQuery,
                   scope_hash: str, result: SearchResult) -> None:

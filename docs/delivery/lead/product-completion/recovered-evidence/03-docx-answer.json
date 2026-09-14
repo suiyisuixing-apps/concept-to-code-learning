@@ -1,0 +1,141 @@
+{
+  "status": 200,
+  "seconds": 9.569,
+  "response": {
+    "contract_version": "full-delivery-v1",
+    "revision": 1,
+    "mode": "LIVE",
+    "request_id": "10ec405e-7418-40d6-a98d-7e7e2cbeb1e5",
+    "session_id": "12392430-9934-4670-9477-1d6aec92fa0a",
+    "context_revision": 1,
+    "status": "COMPLETE",
+    "explanation": {
+      "contract_version": "full-delivery-v1",
+      "revision": 1,
+      "mode": "LIVE",
+      "explanation_id": "35fb7763-c99a-4f84-9cc3-ae4ca00a8f9f",
+      "question": "解释数据过滤时为什么应保留零值。",
+      "context_snapshot": {
+        "contract_version": "full-delivery-v1",
+        "revision": 1,
+        "mode": "LIVE",
+        "document_id": "doc-93ea84f93d1361c119c8a840",
+        "document_revision": 1,
+        "original_sha256": "0eab2456ae1adbedff46ae0e742eb8e882fba77bb544c21e27d233064487188d",
+        "source_type": "DOCX",
+        "file_name": "数据处理.docx",
+        "unit_id": "section-1",
+        "unit_locator": {
+          "unit_type": "section",
+          "index": 1,
+          "heading_path": [
+            "数据处理与过滤"
+          ],
+          "block_id": null
+        },
+        "visible_text": "数据处理与过滤\n数据处理先过滤缺失值，再把有效输入转换为统一格式。应保留零值，空输入可以返回空列表。",
+        "selected_text": "",
+        "selected_text_hash": null,
+        "selection_locator": null,
+        "relevant_context_blocks": [
+          {
+            "block_id": "section-1-block-1",
+            "kind": "paragraph",
+            "text": "数据处理与过滤",
+            "source_locator": {
+              "unit_type": "section",
+              "index": 1,
+              "heading_path": [
+                "数据处理与过滤"
+              ],
+              "block_id": "section-1-block-1"
+            },
+            "table_rows": [],
+            "bbox": null,
+            "image_asset_id": null
+          },
+          {
+            "block_id": "section-1-block-2",
+            "kind": "paragraph",
+            "text": "数据处理先过滤缺失值，再把有效输入转换为统一格式。应保留零值，空输入可以返回空列表。",
+            "source_locator": {
+              "unit_type": "section",
+              "index": 1,
+              "heading_path": [
+                "数据处理与过滤"
+              ],
+              "block_id": "section-1-block-2"
+            },
+            "table_rows": [],
+            "bbox": null,
+            "image_asset_id": null
+          }
+        ],
+        "coverage": "TEXT",
+        "warnings": [
+          "OFFICE_LEARNING_VIEW_DIFFERS_FROM_ORIGINAL"
+        ],
+        "status": "READY"
+      },
+      "level": "Beginner",
+      "answer_sections": [
+        {
+          "title": "什么是数据过滤？",
+          "text": "数据过滤就像筛豆子，只留下符合要求的豆子，去掉不合适的。在数据分析中，我们只保留有用的信息，去掉错误或不完整的数据。"
+        },
+        {
+          "title": "为什么零值很重要？",
+          "text": "零值就像一个空盒子，表示没有数据，但它不是错误。保留它能避免误判，比如收入为零的人和收入为负的人区别很大。"
+        },
+        {
+          "title": "零值和缺失值不同？",
+          "text": "缺失值是完全没信息，像盒子被拿走；零值是明确‘没有’，像盒子是空的但还在。保留零值能保持数据完整，避免信息丢失。"
+        },
+        {
+          "title": "生活类比：零值像空碗",
+          "text": "吃饭时，如果碗是空的，说明没吃，但不能说‘没碗’。空碗代表零值，是真实状态，不能丢弃，否则会误以为没人吃饭。"
+        }
+      ],
+      "document_citations": [
+        {
+          "block_id": "section-1-block-1",
+          "quote": "数据处理与过滤",
+          "quote_sha256": "49eeab3237bd866fc3878b4378e2552d48d5e224e011094e5ddda15c146ae7a9"
+        }
+      ],
+      "code_source_ids": [],
+      "concept_code_links": [],
+      "example_blocks": [],
+      "comparison": null,
+      "limitations": [
+        "未核验源码，仅基于文档描述推导",
+        "OFFICE_LEARNING_VIEW_DIFFERS_FROM_ORIGINAL",
+        "NO_VERIFIED_CODE"
+      ],
+      "unsupported_claims": [],
+      "provider_info": {
+        "provider_id": "local-openai-compatible",
+        "model_id": "Qwen3-4B-Instruct-2507-4bit (local path redacted)",
+        "mode": "LIVE",
+        "endpoint_kind": "loopback",
+        "status": "AVAILABLE"
+      },
+      "metrics": {
+        "latency_ms": 9563.0,
+        "input_tokens": 879,
+        "output_tokens": 418,
+        "token_source": "PROVIDER_USAGE",
+        "input_truncated": false,
+        "truncation_reason": null
+      },
+      "status": "NO_VERIFIED_CODE"
+    },
+    "sources": [],
+    "source_observations": [],
+    "candidates": [],
+    "query_id": null,
+    "warnings": [
+      "NO_VERIFIED_CODE"
+    ]
+  }
+}

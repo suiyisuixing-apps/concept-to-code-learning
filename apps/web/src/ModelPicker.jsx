@@ -11,27 +11,31 @@ export default function ModelPicker({ change, disabled }) {
   const [endpoint, setEndpoint] = useState(initial.current?.base_url || "");
   const [editing, setEditing] = useState(false), [loading, setLoading] = useState(true), [error, setError] = useState("");
   const epoch = useRef(0);
-  function select(id, base_url = catalog.base_url, interactive = true) {
+  function select(id, base_url = catalog.base_url, interactive = true, ready = catalog.models.some((item) => item.id === id)) {
     setChoice(id); const value = { id, base_url };
-    change(value, interactive);
+    change({ ...value, ready }, interactive);
+    if (ready) setError("");
     try { window.localStorage.setItem(KEY, JSON.stringify(value)); } catch { /* Storage can be disabled. */ }
   }
   async function discover(address, startup = false) {
     const current = ++epoch.current; setLoading(true); setError("");
+    change({ id: choice, base_url: address || null, ready: false }, !startup);
     try {
       const value = await api(address ? "/models/discover" : "/models", address ? json("POST", { base_url: address }) : {});
       if (epoch.current !== current) return;
-      const models = value.models || []; setCatalog({ ...value, models });
+      const models = Array.isArray(value.models) ? value.models.filter((item) => typeof item?.id === "string" && item.id) : [];
+      setCatalog({ ...value, models });
       setEndpoint(value.base_url || address || "");
-      const selected = startup && initial.current?.id || value.default_model || models[0]?.id || "";
-      select(selected, value.base_url || address || null, !startup);
+      const retained = startup ? initial.current?.id : choice;
+      const selected = retained || value.default_model || models[0]?.id || "";
+      select(selected, value.base_url || address || null, !startup, models.some((item) => item.id === selected));
       if (!models.some((item) => item.id === selected) && selected) setError("所选模型当前不可用，请重新选择。");
+      if (!models.length) setError(value.needed_action || "没有可用模型，请检查模型服务。");
       if (!startup && models.length) setEditing(false);
     } catch (e) { if (epoch.current === current) setError(e.message); }
     finally { if (epoch.current === current) setLoading(false); }
   }
   useEffect(() => {
-    if (initial.current?.id) change(initial.current, false);
     discover(initial.current?.base_url, true);
     return () => { epoch.current++; };
   }, []);

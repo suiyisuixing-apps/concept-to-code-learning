@@ -8,11 +8,13 @@ function Prose({ text }) {
 
 export function SourceCard({ source, expanded = true, openSource }) {
   const repository = source.repository_owner ? `${source.repository_owner}/${source.repository_name}` : "本地仓库";
+  const verified = source.mode === "LIVE" && source.verification_status === "VERIFIED" && source.provenance_kind === "SOURCE_EXACT";
   return <article className="source-card">
     <header><strong>{repository}</strong>{source.permalink && <a href={source.permalink} target="_blank" rel="noreferrer">查看源码 ↗</a>}</header>
     {openSource && source.visibility === "public" && <button className="open-in-workspace" onClick={() => openSource(source)}><Icon name="folder" size={14}/>在工作台打开</button>}
     <p className="code-location">{source.file_path} · L{source.line_start}–{source.line_end}</p>
-    {source.code_excerpt ? <details className="code-disclosure" open={expanded}><summary>{source.symbol || "代码片段"}</summary><pre aria-label="已核验原始代码"><code>{source.code_excerpt}</code></pre></details>
+    {source.mode === "FIXTURE" && <p className="answer-status">演示来源 · Fixture</p>}
+    {source.code_excerpt ? <details className="code-disclosure" open={expanded}><summary>{source.symbol || "代码片段"}</summary><pre aria-label={verified ? "已核验原始代码" : "代码片段，尚非已核验的真实来源"}><code>{source.code_excerpt}</code></pre></details>
       : <p>未取得明确的代码许可，暂不展示片段。</p>}
     <details className="source-details"><summary>版本与许可 · {source.execution_status === "NOT_RUN" ? "未运行" : source.execution_status}</summary>
       <dl><dt>{source.dirty ? "当前文件" : "Commit"}</dt><dd><code>{source.dirty ? source.file_sha256 : source.commit_sha || source.file_sha256}</code></dd><dt>核验</dt><dd>{source.verification_status}</dd><dt>许可</dt><dd>{source.license_observation.files?.map((file) => <div key={file.path}>{file.permalink ? <a href={file.permalink} target="_blank" rel="noreferrer">{file.identifier || "未识别"} · {file.path}</a> : file.identifier || "未识别"}</div>)}</dd></dl>
