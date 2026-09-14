@@ -1,6 +1,8 @@
 """Cancellable production transport sharing the member adapter's strict parser."""
 
 import asyncio
+import codecs
+import io
 import json
 import time
 
@@ -15,6 +17,22 @@ from .local_model import (
     _parse_completion,
     _parse_model_ids,
 )
+
+
+async def bounded_stream_lines(response):
+    decoder = io.IncrementalNewlineDecoder(codecs.getincrementaldecoder("utf-8")(), translate=True)
+    buffer, size = "", 0
+    async for chunk in response.aiter_bytes():
+        size += len(chunk)
+        if size > 1024 * 1024:
+            raise ValueError("Stream exceeded byte limit")
+        buffer += decoder.decode(chunk)
+        while "\n" in buffer:
+            line, buffer = buffer.split("\n", 1)
+            yield line.rstrip("\r")
+    buffer += decoder.decode(b"", final=True)
+    if buffer:
+        yield buffer.rstrip("\r")
 
 
 class AsyncLocalModelAdapter(LocalModelAdapter):
@@ -70,17 +88,16 @@ class AsyncLocalModelAdapter(LocalModelAdapter):
             return b"", _failure("MODEL_MALFORMED_RESPONSE", "The model stream was incomplete or invalid.")
 
     async def _read_stream(self, response, on_text):
-        text, identity, finish, usage, size = "", None, None, None, 0
-        async for line in response.aiter_lines():
-            size += len(line.encode("utf-8"))
-            if size > 1024 * 1024:
-                raise ValueError("Stream exceeded byte limit")
+        text, identity, finish, usage = "", None, None, None
+        async for line in bounded_stream_lines(response):
             if not line.startswith("data:"):
                 continue
             data = line[5:].strip()
             if data == "[DONE]":
                 break
             value = json.loads(data)
+            if not isinstance(value, dict):
+                raise ValueError("Invalid stream event")
             if value.get("model") is not None:
                 identity = value["model"]
                 if identity != self._config.model:
@@ -88,11 +105,15 @@ class AsyncLocalModelAdapter(LocalModelAdapter):
             if value.get("usage"):
                 usage = value["usage"]
             choices = value.get("choices", [])
+            if not isinstance(choices, list):
+                raise ValueError("Invalid stream choices")
             if choices:
                 choice = choices[0]
-                if choice.get("index", 0) != 0 or len(choices) != 1:
+                if not isinstance(choice, dict) or choice.get("index", 0) != 0 or len(choices) != 1:
                     raise ValueError("Unexpected stream choice")
                 delta = choice.get("delta", {})
+                if not isinstance(delta, dict):
+                    raise ValueError("Invalid stream delta")
                 if delta.get("refusal") or delta.get("tool_calls"):
                     raise ValueError("Unexpected model action")
                 chunk = delta.get("content") or ""

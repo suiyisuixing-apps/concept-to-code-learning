@@ -1,3 +1,5 @@
+> 历史记录（成员依赖提案）。保留原有结果与限制，不用于声明当前候选已验收；当前范围见 [../lead/DEPENDENCIES.md](../lead/DEPENDENCIES.md)。
+
 # inogi-sama 依赖申请
 
 由 Lead 汇总到正式后端依赖与锁文件；本角色未修改根 `pyproject.toml`。

@@ -39,67 +39,106 @@
     "pytest -q tests/documents tests/github_intelligence tests/full_delivery/test_boundaries.py": {
       "exit_code": 0,
       "seconds": 11.72,
-      "log_sha256": "1ae6abef19597ed07fbc99e4875f4d3f068288bd48372e0ec1c35437e69ecfec"
+      "log_sha256": "1ae6abef19597ed07fbc99e4875f4d3f068288bd48372e0ec1c35437e69ecfec",
+      "log_path": "recovered-evidence/check-01.log",
+      "repository_log_sha256": "1a7cc93a0d616eeac7398b8b332b997eb0989d056d5458dc185a11e7a6082c6a",
+      "redacted": true
     },
     "npm --prefix apps/web test": {
       "exit_code": 0,
       "seconds": 1.27,
-      "log_sha256": "58a50c37e85ace407303a95ddb13305f5ac61fccd82130255c4eee2c699701b2"
+      "log_sha256": "58a50c37e85ace407303a95ddb13305f5ac61fccd82130255c4eee2c699701b2",
+      "log_path": "recovered-evidence/check-02.log",
+      "repository_log_sha256": "67b05ae28b537a97f67e4a659f0fc50fcf7758aba1dff751ad025fb50bfbda11",
+      "redacted": true
     },
     "pytest -q tests/github_intelligence/test_product_completion.py": {
       "exit_code": 0,
       "seconds": 1.01,
-      "log_sha256": "7a4eefa216d376a35ba42c7afc3e4fbc3fb06373de7bceef4cb80f27fbbc441b"
+      "log_sha256": "7a4eefa216d376a35ba42c7afc3e4fbc3fb06373de7bceef4cb80f27fbbc441b",
+      "log_path": "recovered-evidence/check-03.log",
+      "repository_log_sha256": "7a4eefa216d376a35ba42c7afc3e4fbc3fb06373de7bceef4cb80f27fbbc441b",
+      "redacted": false
     },
     "npm --prefix apps/web run build": {
       "exit_code": 0,
       "seconds": 0.84,
-      "log_sha256": "f55f040328478de653e40cb1ab92cd29fcbadbe4baac087d253a00a126189917"
+      "log_sha256": "f55f040328478de653e40cb1ab92cd29fcbadbe4baac087d253a00a126189917",
+      "log_path": "recovered-evidence/check-04.log",
+      "repository_log_sha256": "f55f040328478de653e40cb1ab92cd29fcbadbe4baac087d253a00a126189917",
+      "redacted": false
     },
     "pytest -q": {
       "exit_code": 0,
       "seconds": 38.3,
-      "log_sha256": "d77b95fd718081394684794906e04051aa42674526d79cf73692d89f755cdfb1"
+      "log_sha256": "d77b95fd718081394684794906e04051aa42674526d79cf73692d89f755cdfb1",
+      "log_path": "recovered-evidence/check-05.log",
+      "repository_log_sha256": "6dc2c1008098b1071e5a489f655dd5ad4ce9c3cfd2e4c5761d0b6f7b2cb027a8",
+      "redacted": true
     },
     "pytest -q tests/github_intelligence/test_product_completion.py tests/full_delivery": {
       "exit_code": 0,
       "seconds": 10.67,
-      "log_sha256": "d1e63716e1f66d2fea899a32036c09ecfe3859aee10ee612949196fdbdcab706"
+      "log_sha256": "d1e63716e1f66d2fea899a32036c09ecfe3859aee10ee612949196fdbdcab706",
+      "log_path": "recovered-evidence/check-06.log",
+      "repository_log_sha256": "f91554f048ac7637e2ec4be2ff791869bafdb162b43dcff821054f879d7e6d16",
+      "redacted": true
     },
     "npm --prefix apps/web install --package-lock-only --ignore-scripts": {
       "exit_code": 0,
       "seconds": 0.21,
-      "log_sha256": "65f53f76daa16d27ce4d42b2695bd93429fb0e3524731419c3b29c774ac9b9a6"
+      "log_sha256": "65f53f76daa16d27ce4d42b2695bd93429fb0e3524731419c3b29c774ac9b9a6",
+      "log_path": "recovered-evidence/check-07.log",
+      "repository_log_sha256": "65f53f76daa16d27ce4d42b2695bd93429fb0e3524731419c3b29c774ac9b9a6",
+      "redacted": false
     },
     "ruff check .": {
       "exit_code": 0,
       "seconds": 0.08,
-      "log_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+      "log_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "log_path": "recovered-evidence/check-08.log",
+      "repository_log_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "redacted": false
     },
     "pytest -q tests/github_intelligence tests/full_delivery tests/test_local_model_adapter.py": {
       "exit_code": 0,
       "seconds": 22.61,
-      "log_sha256": "ca8b8d1c76276fbe225c5ad51f9e81b901a5ade952d0bcecf311a4a42d206743"
+      "log_sha256": "ca8b8d1c76276fbe225c5ad51f9e81b901a5ade952d0bcecf311a4a42d206743",
+      "log_path": "recovered-evidence/check-09.log",
+      "repository_log_sha256": "3536e93663f8638a08e7b8b382e33b83a9a1a1def1ff663cf50d7868f7f1ef83",
+      "redacted": true
     },
     "python scripts/tutor.py demo": {
       "exit_code": 0,
       "seconds": 0.3,
-      "log_sha256": "23c62d3ec14ad110f34e5d3ed62b4d9452a5855bdf9a23ead5320618156b3421"
+      "log_sha256": "23c62d3ec14ad110f34e5d3ed62b4d9452a5855bdf9a23ead5320618156b3421",
+      "log_path": "recovered-evidence/check-10.log",
+      "repository_log_sha256": "23c62d3ec14ad110f34e5d3ed62b4d9452a5855bdf9a23ead5320618156b3421",
+      "redacted": false
     },
     "python scripts/tutor.py doctor": {
       "exit_code": 0,
       "seconds": 0.15,
-      "log_sha256": "8964289675b72c63863c4a2af74f01b17046e189de876e809e2fc35bd1676b94"
+      "log_sha256": "8964289675b72c63863c4a2af74f01b17046e189de876e809e2fc35bd1676b94",
+      "log_path": "recovered-evidence/check-11.log",
+      "repository_log_sha256": "8964289675b72c63863c4a2af74f01b17046e189de876e809e2fc35bd1676b94",
+      "redacted": false
     },
     "pytest -q tests/test_repository_structure.py tests/github_intelligence/test_product_completion.py tests/full_delivery": {
       "exit_code": 0,
       "seconds": 10.76,
-      "log_sha256": "241c986ddecfa456444521ad778a8c00e297a98088dbea066bf741c28f0391ea"
+      "log_sha256": "241c986ddecfa456444521ad778a8c00e297a98088dbea066bf741c28f0391ea",
+      "log_path": "recovered-evidence/check-12.log",
+      "repository_log_sha256": "6fbb4fb09597948cbbce66c623b44042ef68f5ef007fa4062b86bf048586977f",
+      "redacted": true
     },
     "python scripts/export_full_contracts.py --check": {
       "exit_code": 0,
       "seconds": 0.51,
-      "log_sha256": "491a8622837db27f33381885ed161c2733a0c7e3066967782ded723dad6538d2"
+      "log_sha256": "491a8622837db27f33381885ed161c2733a0c7e3066967782ded723dad6538d2",
+      "log_path": "recovered-evidence/check-13.log",
+      "repository_log_sha256": "491a8622837db27f33381885ed161c2733a0c7e3066967782ded723dad6538d2",
+      "redacted": false
     }
   },
   "live_matrix": {
@@ -128,16 +167,44 @@
   },
   "corrected_live_matrix": {
     "DOCX_permission_gap_document_explanation": {
-      "status": "PASS"
+      "status": "PASS",
+      "response_path": "recovered-evidence/03-docx-answer.json",
+      "original_response_sha256": "61cb2d1a1b553cdd1a4f2ceb5bc29b9cbcf03b599ab961d89054546a42a96b91",
+      "response_sha256": "0599604bca840589250bb9ce2b583d8f0116bb5296c47797c5ccf33c23d26cdf",
+      "redacted_fields": [
+        "response.explanation.provider_info.model_id"
+      ],
+      "acceptance_scope": "Historical recorded API completion and source integrity, not semantic accuracy or current-head acceptance."
     },
     "Markdown_local_dirty_note": {
-      "status": "PASS"
+      "status": "PASS",
+      "response_path": "recovered-evidence/04-local-answer.json",
+      "original_response_sha256": "e77bf813c0d58472779ab6352df4e7faa0d827dc6ec18c0f6687b6eb39a4e63a",
+      "response_sha256": "2cd50b1c47f076ffe21da700aaef1170b74876dfe7918f8700bf188cc6a35146",
+      "redacted_fields": [
+        "response.explanation.provider_info.model_id"
+      ],
+      "acceptance_scope": "Historical recorded API completion and source integrity, not semantic accuracy or current-head acceptance."
     },
     "two_independent_repositories": {
-      "status": "PASS"
+      "status": "PASS",
+      "response_path": "recovered-evidence/05-comparison-answer.json",
+      "original_response_sha256": "1c5535ca642412a4d0ba900290baaf284578f7a9ea2f0e3fea6c05f3d616d790",
+      "response_sha256": "537ba42dd9868051db4e27c33669c6f0108557b0d99a2c479b5dec79ffd028df",
+      "redacted_fields": [
+        "response.explanation.provider_info.model_id"
+      ],
+      "acceptance_scope": "Historical recorded API completion and source integrity, not semantic accuracy or current-head acceptance."
     },
     "approved_public_search": {
-      "status": "PASS"
+      "status": "PASS",
+      "response_path": "recovered-evidence/06-search-answer.json",
+      "original_response_sha256": "9a59a760199f5fc3621918697be9ef4826affd6435669a87885c9459c6bf9c19",
+      "response_sha256": "9c5888ebad624f4b9103c2dce36150b32ab8941e228e42e715820105a34c6462",
+      "redacted_fields": [
+        "response.explanation.provider_info.model_id"
+      ],
+      "acceptance_scope": "Historical recorded API completion and source integrity, not semantic accuracy or current-head acceptance."
     }
   },
   "boundaries": {
@@ -177,5 +244,6 @@
     "backend": "mlx-lm 0.31.3"
   },
   "human_lead_review": "PENDING",
-  "DGX": "NOT_TESTED"
+  "DGX": "NOT_TESTED",
+  "record_scope": "Historical 2026-09-11 observations. Restored log bytes match the original hashes; redacted repository copies have separate hashes. Not a test of the current candidate."
 }

@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main, feat/repository-learning-workspace, codex/windows-first-install]
+    branches: [main, feat/repository-learning-workspace, codex/windows-first-install, codex/windows-model-quality]
 
 permissions:
   contents: read
@@ -52,6 +52,7 @@ jobs:
         with:
           node-version: '22'
       - run: python -m pip install -c requirements/full-delivery-py312.lock -e ".[dev]"
+      - run: ruff check .
       - run: pytest -q
       - run: python scripts/tutor.py doctor
       - run: python scripts/tutor.py demo

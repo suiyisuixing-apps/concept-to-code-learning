@@ -14,15 +14,12 @@ from concept_to_code_learning.github_intelligence.registry import LocalRegistry
 from .conftest import FROZEN_LICENSE_TEXT
 
 
-@pytest.mark.parametrize("fallback", [False, True])
-def test_replaced_root_revokes_handle_and_read(tmp_path, monkeypatch, fallback):
+def test_replaced_root_revokes_handle_and_read(tmp_path):
     root = tmp_path / "authorized"
     root.mkdir()
     (root / "main.py").write_bytes(b"original")
     registry = LocalRegistry((root,))
     handle = registry.handles()[0]
-    if fallback:
-        monkeypatch.setattr(os, "supports_dir_fd", set())
     assert registry.read(handle, "main.py") == b"original"
     root.rename(tmp_path / "retired")
     root.mkdir()
@@ -32,6 +29,15 @@ def test_replaced_root_revokes_handle_and_read(tmp_path, monkeypatch, fallback):
         registry.read(handle, "main.py")
     assert not registry.is_authorized(handle)
     assert registry.root_for(handle) is None
+
+
+@pytest.mark.skipif(os.name == "nt", reason="Windows uses native handle-relative opens")
+def test_unsupported_platform_does_not_fall_back_to_unsafe_path_open(tmp_path, monkeypatch):
+    (tmp_path / "main.py").write_bytes(b"original")
+    registry = LocalRegistry((tmp_path,))
+    monkeypatch.setattr(os, "supports_dir_fd", set())
+    with pytest.raises(SourceError, match="AUTH_REQUIRED"):
+        registry.read(registry.handles()[0], "main.py")
 
 
 @pytest.mark.parametrize("advance_head", [False, True])

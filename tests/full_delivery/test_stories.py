@@ -1,9 +1,10 @@
 """Nine requested stories at the explicit provider-double integration level."""
 
-from conftest import activate, explain_body
 from fastapi.testclient import TestClient
 
 from concept_to_code_learning.api import create_app
+
+from .conftest import activate, explain_body
 
 PREFIX = "/api/learning/v1"
 
@@ -108,7 +109,7 @@ def test_story_provider_error_no_fallback_no_success_and_no_note(client, provide
     session = activate(client)
     providers.tutor.error = RuntimeError("private-key-and-/sensitive/absolute/path")
     response = client.post(PREFIX + "/explanations", json=explain_body(session))
-    assert response.status_code == 503 and response.json()["code"] == "MODEL_UNAVAILABLE"
+    assert response.status_code == 500 and response.json()["code"] == "INTERNAL_ERROR"
     assert "private-key" not in response.text and "sensitive" not in response.text
     assert client.get(PREFIX + "/notes").json()["total"] == 0
     assert client.get(f'{PREFIX}/sessions/{session["session_id"]}').json()["explanation_ids"] == []

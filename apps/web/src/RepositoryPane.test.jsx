@@ -81,6 +81,7 @@ test("the workspace sends code questions only for its repository, restores code 
   window.sessionStorage.setItem("c2c-workspace", JSON.stringify({ question: "之前选区的自动问题", autoQuestion: "之前选区的自动问题" }));
   vi.stubGlobal("fetch", vi.fn(async (url, options = {}) => {
     if (url.endsWith("/capabilities")) return response({ tutor: { available: true } });
+    if (url.endsWith("/models")) return response({ models: [{ id: "fixture-model", name: "Fixture model" }] });
     if (url.endsWith("/repositories")) return response([repo]);
     if (url.includes("/tree?")) return response({ entries: [entry], total: 1 });
     if (url.includes("/files?")) return response({ document: record, units: [unit] });

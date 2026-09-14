@@ -13,7 +13,7 @@ def repository_router(library):
     router = APIRouter(prefix="/repositories", tags=["Repository workspace"])
 
     @router.get("", response_model=list[Repository])
-    async def repositories():
+    def repositories():
         return library.list()
 
     @router.get("/search")
@@ -31,7 +31,7 @@ def repository_router(library):
         return await library.add(body)
 
     @router.get("/{repository_id}", response_model=Repository)
-    async def repository(repository_id: m.ID):
+    def repository(repository_id: m.ID):
         return library.get(repository_id)
 
     @router.get("/{repository_id}/tree", response_model=TreePage)

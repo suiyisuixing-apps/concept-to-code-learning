@@ -13,14 +13,16 @@ from pydantic import ValidationError
 from concept_to_code_learning.full_contracts import annotations as a
 from concept_to_code_learning.full_contracts import models as m
 from concept_to_code_learning.full_learning.annotations import AnnotationStore
+from concept_to_code_learning.full_learning.diagnostics import report_error
 from concept_to_code_learning.full_learning.errors import LearningError, require
 from concept_to_code_learning.full_learning.export import export_note
+from concept_to_code_learning.full_learning.io import run_io
 from concept_to_code_learning.full_learning.ports import DocumentUpload
 from concept_to_code_learning.repositories.api import repository_router
 from concept_to_code_learning.tutor.catalog import ModelEndpoint, ModelList
 
 PREFIX = "/api/learning/v1"
-ERROR_RESPONSES = {status: {"model": m.LearningErrorResponse} for status in (400, 403, 404, 409, 413, 422, 502, 503, 504)}
+ERROR_RESPONSES = {status: {"model": m.LearningErrorResponse} for status in (400, 403, 404, 409, 413, 422, 500, 502, 503, 504)}
 
 
 def create_router(service, legacy_store, sprint_store) -> APIRouter:
@@ -42,19 +44,22 @@ def create_router(service, legacy_store, sprint_store) -> APIRouter:
         return await service.models.discover(body.base_url)
 
     @router.post("/sessions", response_model=m.SessionRecord, status_code=201)
-    async def session_create():
+    def session_create():
         return service.store.create_session()
 
     @router.get("/sessions/recent", response_model=m.SessionRecord | None)
-    async def session_recent():
+    def session_recent():
         return service.store.recent_session()
 
     @router.get("/sessions/{session_id}/history", response_model=list[m.ExplanationResult])
-    async def session_history(session_id: m.ID):
-        return service.store.history(session_id)
+    def session_history(session_id: m.ID, response: Response):
+        history = service.store.history(session_id)
+        if history.skipped_count:
+            response.headers["X-C2C-Skipped-History"] = str(history.skipped_count)
+        return history
 
     @router.get("/sessions/{session_id}", response_model=m.SessionRecord)
-    async def session_get(session_id: m.ID):
+    def session_get(session_id: m.ID):
         return service.store.session(session_id)
 
     @router.post("/sessions/{session_id}/context", response_model=m.SessionRecord)
@@ -121,21 +126,21 @@ def create_router(service, legacy_store, sprint_store) -> APIRouter:
     async def annotation_create(document_id: m.ID, body: a.CreateAnnotationRequest):
         request = m.ContextRequest.model_validate(body.model_dump(exclude={"annotation_id", "comment"}))
         context = await service.context(document_id, request)
-        return annotations.create(body.annotation_id, context, body.comment)
+        return await run_io(annotations.create, body.annotation_id, context, body.comment)
 
     @router.get("/documents/{document_id}/annotations", response_model=a.AnnotationList)
-    async def annotation_list(document_id: m.ID, unit_id: m.ID | None = None,
+    def annotation_list(document_id: m.ID, unit_id: m.ID | None = None,
                               offset: int = Query(default=0, ge=0), limit: int = Query(default=50, ge=1, le=100)):
         items, total = annotations.list(document_id, unit_id, offset, limit)
         mode = "FIXTURE" if any(item.mode == "FIXTURE" for item in items) else ("LIVE" if items else "UNAVAILABLE")
         return a.AnnotationList(mode=mode, document_id=document_id, annotations=items, total=total, offset=offset)
 
     @router.patch("/annotations/{annotation_id}", response_model=a.Annotation)
-    async def annotation_edit(annotation_id: m.ID, body: a.EditAnnotationRequest):
+    def annotation_edit(annotation_id: m.ID, body: a.EditAnnotationRequest):
         return annotations.edit(annotation_id, body.expected_revision, body.comment)
 
     @router.delete("/annotations/{annotation_id}", status_code=204)
-    async def annotation_delete(annotation_id: m.ID, body: m.DeleteNoteRequest):
+    def annotation_delete(annotation_id: m.ID, body: m.DeleteNoteRequest):
         annotations.delete(annotation_id, body.expected_revision, body.confirmed_by_user)
         return Response(status_code=204)
 
@@ -148,7 +153,7 @@ def create_router(service, legacy_store, sprint_store) -> APIRouter:
         return await service.verify(body)
 
     @router.get("/sources/{source_id}", response_model=m.CodeEvidence)
-    async def source(source_id: m.ID, session_id: m.ID):
+    def source(source_id: m.ID, session_id: m.ID):
         return service.store.source(session_id, source_id)[0]
 
     @router.post("/explanations", response_model=m.ExplanationResult)
@@ -160,23 +165,28 @@ def create_router(service, legacy_store, sprint_store) -> APIRouter:
     async def stream_explanation(body: m.ExplanationRequest):
         async def events():
             queue = asyncio.Queue(maxsize=16)
+            closed = False
 
             def progress(stage):
-                if not queue.full():
+                if not closed and not queue.full():
                     queue.put_nowait(stage if isinstance(stage, dict) else {"type": "progress", "stage": stage})
 
             async def run():
                 try:
                     result = await service.explain(body, progress=progress)
-                    await queue.put({"type": "result", "value": result.model_dump(mode="json")})
+                    if not closed:
+                        await queue.put({"type": "result", "value": result.model_dump(mode="json")})
                 except LearningError as exc:
-                    await queue.put({"type": "error", "value": exc.payload(body.request_id)})
+                    if not closed:
+                        await queue.put({"type": "error", "value": exc.payload(body.request_id)})
                 except asyncio.CancelledError:
                     raise
-                except Exception:
-                    await queue.put({"type": "error", "value": LearningError(
-                        "REQUEST_FAILED", "request", "这次回答未能完成，请重试。", 500,
-                        retryable=True).payload(body.request_id)})
+                except Exception as exc:
+                    report_error("explanation.stream", exc)
+                    if not closed:
+                        await queue.put({"type": "error", "value": LearningError(
+                            "INTERNAL_ERROR", "request", "应用处理失败，错误位置已记录在本机日志中。", 500,
+                            retryable=False).payload(body.request_id)})
 
             task = asyncio.create_task(run())
             try:
@@ -186,6 +196,7 @@ def create_router(service, legacy_store, sprint_store) -> APIRouter:
                     if event["type"] in {"result", "error"}:
                         break
             finally:
+                closed = True
                 if not task.done():
                     task.cancel()
                 await asyncio.gather(task, return_exceptions=True)
@@ -198,17 +209,17 @@ def create_router(service, legacy_store, sprint_store) -> APIRouter:
         return Response(status_code=204)
 
     @router.get("/notes/legacy")
-    async def legacy():
+    def legacy():
         # Return original snapshots with their original version, never a new trust label.
         return {"contract_version": "full-delivery-v1", "read_only": True,
                 "phase_0_5": legacy_store.list(), "sprint_1": sprint_store.list()}
 
     @router.post("/notes", response_model=m.SavedNote, status_code=201)
-    async def save(body: m.SaveNoteRequest):
+    def save(body: m.SaveNoteRequest):
         return service.store.save_note(body)
 
     @router.get("/notes", response_model=m.NoteList)
-    async def notes(q: str = Query(default="", max_length=200), offset: int = Query(default=0, ge=0),
+    def notes(q: str = Query(default="", max_length=200), offset: int = Query(default=0, ge=0),
                     limit: int = Query(default=50, ge=1, le=100)):
         items, total = service.store.list_notes(q, offset, limit)
         mode = "FIXTURE" if any(item.mode == "FIXTURE" for item in items) else (
@@ -216,20 +227,20 @@ def create_router(service, legacy_store, sprint_store) -> APIRouter:
         return m.NoteList(mode=mode, notes=items, total=total, offset=offset)
 
     @router.get("/notes/{note_id}", response_model=m.SavedNote)
-    async def note(note_id: m.ID, revision: int | None = Query(default=None, ge=1)):
+    def note(note_id: m.ID, revision: int | None = Query(default=None, ge=1)):
         return service.store.note(note_id, revision)
 
     @router.patch("/notes/{note_id}", response_model=m.SavedNote)
-    async def edit(note_id: m.ID, body: m.EditNoteRequest):
+    def edit(note_id: m.ID, body: m.EditNoteRequest):
         return service.store.edit_note(note_id, body)
 
     @router.delete("/notes/{note_id}", status_code=204)
-    async def delete(note_id: m.ID, body: m.DeleteNoteRequest):
+    def delete(note_id: m.ID, body: m.DeleteNoteRequest):
         service.store.delete_note(note_id, body.expected_revision, body.confirmed_by_user)
         return Response(status_code=204)
 
     @router.get("/notes/{note_id}/export")
-    async def export(note_id: m.ID, format: str = Query(default="markdown", pattern="^(markdown|json)$"),
+    def export(note_id: m.ID, format: str = Query(default="markdown", pattern="^(markdown|json)$"),
                      revision: int | None = Query(default=None, ge=1)):
         text, media_type = export_note(service.store.note(note_id, revision), format)
         suffix = "md" if format == "markdown" else "json"
@@ -263,6 +274,7 @@ def install_error_handlers(app: FastAPI, *, dev_origin: str | None = None):
     @app.exception_handler(ValidationError)
     @app.exception_handler(ResponseValidationError)
     async def output_error(request: Request, exc: ValidationError | ResponseValidationError):
+        report_error("response.validation", exc)
         return JSONResponse(LearningError("INVALID_PROVIDER_RESPONSE", "provider",
                             "模块返回的内容不符合协议，未将其当作成功结果。", 502).payload(), status_code=502)
 
@@ -280,7 +292,15 @@ def install_error_handlers(app: FastAPI, *, dev_origin: str | None = None):
             if length and (not length.isdigit() or int(length) > 21 * 1024 * 1024):
                 return JSONResponse(LearningError("FILE_TOO_LARGE", "request",
                                     "请求超过大小上限。", 413).payload(), status_code=413)
-        response = await call_next(request)
+        try:
+            response = await call_next(request)
+        except Exception as exc:
+            if not request.url.path.startswith(PREFIX):
+                raise
+            report_error("request", exc)
+            response = JSONResponse(LearningError("INTERNAL_ERROR", "request",
+                "应用处理失败，错误位置已记录在本机日志中。", 500).payload(
+                    getattr(request.state, "learning_request_id", None)), status_code=500)
         if request.url.path.startswith(PREFIX):
             response.headers["Cache-Control"] = "no-store"
             response.headers["X-Content-Type-Options"] = "nosniff"

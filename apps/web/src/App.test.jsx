@@ -126,6 +126,7 @@ function readyWorkspace(hook = () => undefined) {
     requests.push([url, options]); let value = await hook(url, options, requests);
     if (value === undefined) {
       if (url.endsWith("/capabilities")) value = { tutor: { available: true } };
+      else if (url.endsWith("/models")) value = { models: [{ id: "fixture-model", name: "Fixture model" }], default_model: "fixture-model" };
       else if (url.endsWith("/sessions")) value = { session_id: "s1", context_revision: 0 };
       else if (url.endsWith("/documents")) value = { documents: [record] };
       else if (url.endsWith("/units")) value = { units };
@@ -240,12 +241,12 @@ test("refresh restores the draft and conversation without replacing the active c
 
 test("streamed prose arrives before completion and split UTF-8 chunks preserve Chinese", async () => {
   const events = [{ type: "progress", stage: "answering" }, { type: "preview", sections: [{ title: "理解", text: "中文😀" }] },
-    { type: "result", value: { status: "COMPLETE" } }];
+    { type: "result", value: answer() }];
   const bytes = new TextEncoder().encode(events.map((item) => JSON.stringify(item) + "\n").join(""));
   const chunks = new ReadableStream({ start(controller) { for (let i = 0; i < bytes.length; i += 5) controller.enqueue(bytes.slice(i, i + 5)); controller.close(); } });
   vi.stubGlobal("fetch", vi.fn(async () => new Response(chunks, { headers: { "Content-Type": "application/x-ndjson" } })));
   const progress = vi.fn();
-  await expect(explainStream({}, new AbortController().signal, progress)).resolves.toEqual({ status: "COMPLETE" });
+  await expect(explainStream({}, new AbortController().signal, progress)).resolves.toEqual(answer());
   expect(progress.mock.calls).toEqual([["answering"], [events[1]]]);
 });
 

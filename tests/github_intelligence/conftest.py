@@ -70,11 +70,8 @@ class FakeGitHubRawClient(GitHubRawClient):
                  file_missing: bool = False,
                  license_missing: bool = False,
                  ref_missing: bool = False):
-        # Intentionally skip the parent __init__ so no httpx client is built.
-        self._token = None
-        self._timeout = 10.0
-        self._retries = 0
-        self._client = None
+        # Construction is local; overrides below never open a socket.
+        super().__init__(retries=0)
         self._license_text = license_text
         self._file_text = file_text
         self._blob_sha = blob_sha

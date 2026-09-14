@@ -162,7 +162,7 @@ class GroundedTutorProvider:
         self._plans = OrderedDict()
 
     async def capabilities(self):
-        if time.monotonic() - self._health_time > 10:
+        if self._health is None or time.monotonic() - self._health_time > 10:
             self._health = await self.adapter.health()
             self._health_time = time.monotonic()
         available = self._health.ok

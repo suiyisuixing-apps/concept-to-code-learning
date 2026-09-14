@@ -1,3 +1,5 @@
+> 历史记录（成员原始交付）。保留原有结果与限制，不用于声明当前候选已验收；当前范围见 [../lead/REVIEW_CORRECTIONS.md](../lead/REVIEW_CORRECTIONS.md)。
+
 # 浏览器验收记录
 
 日期：2026-09-09；本机原生 Windows；API `http://127.0.0.1:8766`。

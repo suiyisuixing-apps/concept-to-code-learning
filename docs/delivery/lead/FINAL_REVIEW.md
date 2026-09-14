@@ -1,3 +1,7 @@
+> 历史记录：下文是 2026-09-11 的候选验收，不是当前 Head 的完整验收。2026-09-14 已通过 GitHub 重新核对：[PR #69](https://github.com/suiyisuixing/concept-to-code-learning/pull/69) 于 2026-09-11T15:33:43Z 由 @suiyisuixing 合并为 `f02f65f4e9c6627d4ebd9b6099e8d6d265b74600`；该 PR 的两项 [CI](https://github.com/suiyisuixing/concept-to-code-learning/actions/runs/34615583279) 成功，Review 列表为空。合并事实不证明逐文件人工检查，未补造 Approve 或人工审核记录。
+>
+> 原摘要中 13 份检查日志和 4 份补测回答已找回；[VERIFICATION.json](product-completion/VERIFICATION.json) 现在附仓库路径、原始哈希和脱敏副本哈希。双仓库记录确有 fastapi/fastapi 与 ets-labs/python-dependency-injector 的独立固定来源。历史 PASS 只覆盖所记录的 API/来源与交互检查，不证明每句语义正确，也不适用于新 Head。当前修补与限制见 [REVIEW_CORRECTIONS.md](REVIEW_CORRECTIONS.md)。
+
 # Lead 统一审核材料 · 完整产品候选
 
 1. **现在能做什么：** 四格式导入与阅读，选区提问，自动寻找指定/公开搜索/授权本地源码，固定证据核验，四档真实 AI、追问和双仓库比较，来源笔记的保存、修订、导出与恢复。

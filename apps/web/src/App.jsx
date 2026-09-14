@@ -3,6 +3,7 @@ import { api, explainStream, hashText, id, json } from "./api.js";
 import RepositoryPane, { Icon } from "./RepositoryPane.jsx";
 import Reader from "./Reader.jsx";
 import ModelPicker from "./ModelPicker.jsx";
+import ErrorBoundary from "./ErrorBoundary.jsx";
 import Conversation, { CodeCitations, SourceCard } from "./Conversation.jsx";
 import Annotations, { useAnnotations } from "./Annotations.jsx";
 import { questionForSelection, selectionKey } from "./selection.js";
@@ -47,7 +48,7 @@ function Notes({ notes, query, setQuery, report, changed, removed, openSource })
     } catch (e) { report(e); } finally { mutating.current = false; setPending(false); }
   }
   return <div className="notes"><input aria-label="搜索笔记" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="搜索笔记"/>{notes.map((note) => <button className="note-row" key={note.note_id} onClick={() => open(note)}><strong>{note.title}</strong><span>修订 {note.revision}</span></button>)}{!notes.length && <p className="empty">没有匹配笔记。</p>}
-    {active && <section className="note-editor"><p>冻结来源 · 修订 {active.revision}</p><input maxLength={160} aria-label="笔记标题" disabled={pending} value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })}/><textarea maxLength={20000} aria-label="个人笔记" disabled={pending} value={draft.user_text} onChange={(e) => setDraft({ ...draft, user_text: e.target.value })}/><div className="row"><button disabled={pending || !draft.title.trim()} onClick={edit}>{pending ? "保存中…" : "保存修改"}</button><a href={`/api/learning/v1/notes/${active.note_id}/export?format=markdown`}>Markdown</a><a href={`/api/learning/v1/notes/${active.note_id}/export?format=json`}>JSON</a><button className="danger" disabled={pending} onClick={remove}>删除</button></div><details><summary>冻结的讲解与来源</summary>{active.explanation_snapshot.answer_sections.map((x) => <p key={x.title}><strong>{x.title}</strong><br/>{x.text}</p>)}<CodeCitations answer={active.explanation_snapshot} openSource={openSource}/>{active.code_evidence_snapshot.map((x) => <SourceCard key={x.source_id} source={x}/>)}</details></section>}
+    {active && <section className="note-editor"><p>冻结来源 · 修订 {active.revision}{active.mode === "FIXTURE" && " · 演示笔记 Fixture"}</p><input maxLength={160} aria-label="笔记标题" disabled={pending} value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })}/><textarea maxLength={20000} aria-label="个人笔记" disabled={pending} value={draft.user_text} onChange={(e) => setDraft({ ...draft, user_text: e.target.value })}/><div className="row"><button disabled={pending || !draft.title.trim()} onClick={edit}>{pending ? "保存中…" : "保存修改"}</button><a href={`/api/learning/v1/notes/${active.note_id}/export?format=markdown`}>Markdown</a><a href={`/api/learning/v1/notes/${active.note_id}/export?format=json`}>JSON</a><button className="danger" disabled={pending} onClick={remove}>删除</button></div><details><summary>冻结的讲解与来源</summary>{active.explanation_snapshot.answer_sections.map((x) => <p key={x.title}><strong>{x.title}</strong><br/>{x.text}</p>)}<CodeCitations answer={active.explanation_snapshot} openSource={openSource}/>{active.code_evidence_snapshot.map((x) => <SourceCard key={x.source_id} source={x}/>)}</details></section>}
   </div>;
 }
 
@@ -56,7 +57,7 @@ export default function App() {
   const [turns, setTurns] = useState([]), [stage, setStage] = useState("");
   const [model, setModel] = useState(null);
   const [preview, setPreview] = useState([]), [pendingQuestion, setPendingQuestion] = useState("");
-  const [, setCaps] = useState(null);
+  const [caps, setCaps] = useState(null);
   const [session, setSession] = useState(null);
   const [documents, setDocuments] = useState([]);
   const [record, setRecord] = useState(null);
@@ -157,6 +158,7 @@ export default function App() {
               if (questionRef.current === generated) autoQuestion.current = generated;
             }
             setTurns(Array.isArray(history) ? history : []);
+            if (history?.skippedCount) setNotice("部分历史无法读取，原记录已保留。");
             const latest = Array.isArray(history) ? history.at(-1) : null;
             if (latest?.context_revision === previous.context_revision) setResult(latest);
           } catch (e) { if (live) report(e); }
@@ -363,7 +365,7 @@ export default function App() {
       query_terms_approved: values.length > 0, approved_query_terms: values, max_sources: compare ? 2 : 1 };
   }
   async function ask({ followup = true, useCandidates = false } = {}) {
-    if (!record || (record.source_type === "CODE") !== (view === "code") || !question.trim() || !session?.context_revision || !sessionRef.current?.context_revision || contextBusy || active.current) return;
+    if (!model?.ready || !record || (record.source_type === "CODE") !== (view === "code") || !question.trim() || !session?.context_revision || !sessionRef.current?.context_revision || contextBusy || active.current) return;
     const requestId = id(), current = sessionRef.current, controller = new AbortController();
     const epoch = contextEpoch.current, sentQuestion = question.trim();
     active.current = { requestId, sessionId: current.session_id, controller };
@@ -401,9 +403,10 @@ export default function App() {
     try {
       const value = await api("/notes", json("POST", { session_id: sessionRef.current.session_id,
         explanation_id: explanation.explanation_id, idempotency_key: saveKey.current,
-        save_requested_by_user: true, title: explanation.question.slice(0, 160), user_text: noteText }));
+        save_requested_by_user: true, title: Array.from(explanation.question).slice(0, 160).join(""), user_text: noteText }));
       noteEpoch.current++;
       setNotes((items) => [value, ...items.filter((n) => n.note_id !== value.note_id)]);
+      if (!notes.some((item) => item.note_id === value.note_id)) setNoteTotal((count) => count + 1);
       setNotice("笔记已保存");
     } catch (e) { report(e, saveNote); } finally { savingRef.current = false; setSaving(false); }
   }
@@ -418,12 +421,13 @@ export default function App() {
     } catch (e) { if (epoch === noteEpoch.current) report(e, moreNotes); }
     finally { loadingMore.current = false; }
   }
-  const disabled = busy || contextBusy || !record || (record.source_type === "CODE") !== (view === "code") || !question.trim() || !session?.context_revision
+  const disabled = busy || contextBusy || !model?.ready || !record || (record.source_type === "CODE") !== (view === "code") || !question.trim() || !session?.context_revision
     || view === "document" && (scopeMode === "specified_public" && !repository.trim() || scopeMode === "local_authorized" && !localHandle);
   const stageLabel = { planning: "正在理解问题…", searching: "正在找相关代码…", verifying: "正在核对代码出处…", answering: "正在回答…" }[stage] || "正在回答…";
   return <>
     <header className="topbar">
       <h1>Concept-to-Code</h1>
+      {(record?.mode === "FIXTURE" || [caps?.document, caps?.sources, caps?.tutor].some((item) => item?.mode === "FIXTURE")) && <span className="local-label">演示数据 · Fixture</span>}
       <nav className="workspace-modes" aria-label="学习材料"><button aria-pressed={view === "document"} onClick={() => switchView("document")}><Icon name="file"/>文档</button><button aria-pressed={view === "code"} onClick={() => switchView("code")}><Icon name="code"/>代码库</button></nav>
       {view === "document" ? <select aria-label="切换文档" value={record?.document_id || ""} onChange={(e) => { const doc = documents.find((x) => x.document_id === e.target.value); if (doc) openDocument(doc); }}>
         <option value="">选择文档</option>{documents.map((x) => <option value={x.document_id} key={x.document_id}>{x.file_name}</option>)}
@@ -436,12 +440,12 @@ export default function App() {
         navigate={(i) => navigate(record, units, i)} openFile={openCode} loading={view === "code" && contextBusy} annotations={annotations.highlighted}
         annotate={writeAnnotation} repositories={repositories} setRepositories={setRepositories} error={codeError} resetError={() => setCodeError(null)}/></div>
       <section className="assistant pane" aria-busy={busy || contextBusy}>
-        <nav className="chat-tabs" aria-label="学习记录"><button aria-pressed={tab === "chat"} onClick={() => setTab("chat")}>对话</button><button aria-pressed={tab === "annotations"} onClick={() => setTab("annotations")}>批注 {annotations.total}</button><button aria-pressed={tab === "notes"} onClick={() => setTab("notes")}>笔记 {notes.length}</button></nav>
+        <nav className="chat-tabs" aria-label="学习记录"><button aria-pressed={tab === "chat"} onClick={() => setTab("chat")}>对话</button><button aria-pressed={tab === "annotations"} onClick={() => setTab("annotations")}>批注 {annotations.total}</button><button aria-pressed={tab === "notes"} onClick={() => setTab("notes")}>笔记 {noteTotal}</button></nav>
         <ErrorBox error={error} retry={retry.current}/>
         {notice && <p className="notice" role="status">{notice}</p>}
         <div hidden={tab !== "chat"}><ModelPicker change={(value, interactive) => { if (interactive) stopActive(); setModel(value); }} disabled={busy}/></div>
         {tab === "chat" ? <>
-          <Conversation mode={view} record={record} suggest={(text) => { questionRef.current = text; setQuestion(text); questionInput.current?.focus(); }} openSource={openSource} turns={turns.filter((item) => item.explanation?.context_snapshot?.document_id === record?.document_id)} current={explanation} noteText={noteText} setNoteText={setNoteText} saving={saving} saveNote={saveNote} preview={preview} pendingQuestion={pendingQuestion}/>
+          <ErrorBoundary resetKey={`${record?.document_id}:${turns.length}`}><Conversation mode={view} record={record} suggest={(text) => { questionRef.current = text; setQuestion(text); questionInput.current?.focus(); }} openSource={openSource} turns={turns.filter((item) => item.explanation?.context_snapshot?.document_id === record?.document_id)} current={explanation} noteText={noteText} setNoteText={setNoteText} saving={saving} saveNote={saveNote} preview={preview} pendingQuestion={pendingQuestion}/></ErrorBoundary>
           {result?.status === "NEEDS_SOURCE_SELECTION" && <section className="candidates"><h3>选择代码来源</h3>{result.candidates.map((x) => <label key={x.candidate_id}><input type="checkbox" checked={chosen.includes(x.candidate_id)} onChange={(e) => setChosen((v) => e.target.checked ? [...v, x.candidate_id] : v.filter((i) => i !== x.candidate_id))}/><strong>{x.repository || x.local_handle}</strong><span>{x.file_hint}</span></label>)}<button disabled={!chosen.length || busy} onClick={() => ask({ useCandidates: true })}>使用所选来源</button></section>}
           <div className="composer">
             {selection && <div className="selection-summary"><blockquote>{selection.text}</blockquote><div className="quote-actions"><button onClick={() => editQuestion(true)}>带入问题</button><button disabled={contextBusy} onClick={writeAnnotation}>写批注</button><button disabled={contextBusy} onClick={() => chooseSelection(null)} aria-label="清除引用">取消引用</button></div></div>}
@@ -457,7 +461,7 @@ export default function App() {
             {view === "document" && advanced && <div className="search-settings">{scopeMode === "public_search" && <input aria-label="搜索关键词" maxLength={500} value={terms} onChange={(e) => changeScope(() => setTerms(e.target.value))} placeholder="限定关键词（可选）"/>}<label className="check"><input type="checkbox" checked={compare} onChange={(e) => changeScope(() => setCompare(e.target.checked))}/>比较两个仓库</label></div>}
             {busy && <p className="working" role="status">{stageLabel}</p>}
           </div>
-        </> : tab === "annotations" ? <Annotations state={annotations} unit={unit} locate={locateAnnotation}/> : <div className="records-panel"><Notes openSource={openSource} notes={notes} query={noteQuery} setQuery={setNoteQuery} report={report} changed={(value) => setNotes((items) => items.map((x) => x.note_id === value.note_id ? value : x))} removed={(noteId) => setNotes((items) => items.filter((x) => x.note_id !== noteId))}/>{notes.length < noteTotal && <button onClick={moreNotes}>更多笔记</button>}</div>}
+        </> : tab === "annotations" ? <Annotations state={annotations} unit={unit} locate={locateAnnotation}/> : <div className="records-panel"><ErrorBoundary resetKey={noteQuery}><Notes openSource={openSource} notes={notes} query={noteQuery} setQuery={setNoteQuery} report={report} changed={(value) => setNotes((items) => items.map((x) => x.note_id === value.note_id ? value : x))} removed={(noteId) => { setNotes((items) => items.filter((x) => x.note_id !== noteId)); setNoteTotal((count) => Math.max(0, count - 1)); }}/></ErrorBoundary>{notes.length < noteTotal && <button onClick={moreNotes}>更多笔记</button>}</div>}
       </section>
     </main>
   </>;

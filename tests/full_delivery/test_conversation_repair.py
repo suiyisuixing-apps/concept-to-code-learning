@@ -5,7 +5,6 @@ import json
 
 import httpx
 import pytest
-from conftest import activate, explain_body
 
 from concept_to_code_learning.full_contracts import models as m
 from concept_to_code_learning.full_learning.errors import LearningError
@@ -17,6 +16,8 @@ from concept_to_code_learning.runtime.local_model import LocalModelConfig
 from concept_to_code_learning.tutor.catalog import TutorCatalog
 from concept_to_code_learning.tutor.full import GroundedTutorProvider, PlanOutput
 from concept_to_code_learning.tutor.preview import preview_sections
+
+from .conftest import activate, explain_body
 
 PREFIX = "/api/learning/v1"
 

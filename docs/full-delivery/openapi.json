@@ -4059,6 +4059,16 @@
             },
             "description": "Unprocessable Entity"
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
           "502": {
             "content": {
               "application/json": {
@@ -4192,6 +4202,16 @@
             },
             "description": "Unprocessable Entity"
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
           "502": {
             "content": {
               "application/json": {
@@ -4303,6 +4323,16 @@
             },
             "description": "Unprocessable Entity"
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
           "502": {
             "content": {
               "application/json": {
@@ -4413,6 +4443,16 @@
               }
             },
             "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
           },
           "502": {
             "content": {
@@ -4547,6 +4587,16 @@
             },
             "description": "Unprocessable Entity"
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
           "502": {
             "content": {
               "application/json": {
@@ -4671,6 +4721,16 @@
               }
             },
             "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
           },
           "502": {
             "content": {
@@ -4839,6 +4899,16 @@
             },
             "description": "Unprocessable Entity"
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
           "502": {
             "content": {
               "application/json": {
@@ -4971,6 +5041,16 @@
               }
             },
             "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
           },
           "502": {
             "content": {
@@ -5107,6 +5187,16 @@
             },
             "description": "Unprocessable Entity"
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
           "502": {
             "content": {
               "application/json": {
@@ -5242,6 +5332,16 @@
             },
             "description": "Unprocessable Entity"
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
           "502": {
             "content": {
               "application/json": {
@@ -5366,6 +5466,16 @@
               }
             },
             "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
           },
           "502": {
             "content": {
@@ -5504,6 +5614,16 @@
             },
             "description": "Unprocessable Entity"
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
           "502": {
             "content": {
               "application/json": {
@@ -5625,6 +5745,16 @@
             },
             "description": "Unprocessable Entity"
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
           "502": {
             "content": {
               "application/json": {
@@ -5739,6 +5869,16 @@
             },
             "description": "Unprocessable Entity"
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
           "502": {
             "content": {
               "application/json": {
@@ -5849,6 +5989,16 @@
               }
             },
             "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
           },
           "502": {
             "content": {
@@ -5970,6 +6120,16 @@
               }
             },
             "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
           },
           "502": {
             "content": {
@@ -6118,6 +6278,16 @@
             },
             "description": "Unprocessable Entity"
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
           "502": {
             "content": {
               "application/json": {
@@ -6237,6 +6407,16 @@
             },
             "description": "Unprocessable Entity"
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
           "502": {
             "content": {
               "application/json": {
@@ -6345,6 +6525,16 @@
               }
             },
             "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
           },
           "502": {
             "content": {
@@ -6473,6 +6663,16 @@
               }
             },
             "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
           },
           "502": {
             "content": {
@@ -6614,6 +6814,16 @@
             },
             "description": "Unprocessable Entity"
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
           "502": {
             "content": {
               "application/json": {
@@ -6746,6 +6956,16 @@
               }
             },
             "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
           },
           "502": {
             "content": {
@@ -6898,6 +7118,16 @@
             },
             "description": "Unprocessable Entity"
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
           "502": {
             "content": {
               "application/json": {
@@ -7012,6 +7242,16 @@
               }
             },
             "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
           },
           "502": {
             "content": {
@@ -7132,6 +7372,16 @@
               }
             },
             "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
           },
           "502": {
             "content": {
@@ -7255,6 +7505,16 @@
               }
             },
             "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
           },
           "502": {
             "content": {
@@ -7381,6 +7641,16 @@
               }
             },
             "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
           },
           "502": {
             "content": {
@@ -7518,6 +7788,16 @@
               }
             },
             "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
           },
           "502": {
             "content": {
@@ -7690,6 +7970,16 @@
             },
             "description": "Unprocessable Entity"
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
           "502": {
             "content": {
               "application/json": {
@@ -7821,6 +8111,16 @@
             },
             "description": "Unprocessable Entity"
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
           "502": {
             "content": {
               "application/json": {
@@ -7931,6 +8231,16 @@
               }
             },
             "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
           },
           "502": {
             "content": {
@@ -8050,6 +8360,16 @@
               }
             },
             "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
           },
           "502": {
             "content": {
@@ -8175,6 +8495,16 @@
               }
             },
             "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
           },
           "502": {
             "content": {
@@ -8311,6 +8641,16 @@
             },
             "description": "Unprocessable Entity"
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
           "502": {
             "content": {
               "application/json": {
@@ -8440,6 +8780,16 @@
             },
             "description": "Unprocessable Entity"
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
           "502": {
             "content": {
               "application/json": {
@@ -8557,6 +8907,16 @@
               }
             },
             "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
           },
           "502": {
             "content": {
@@ -8679,6 +9039,16 @@
             },
             "description": "Unprocessable Entity"
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
           "502": {
             "content": {
               "application/json": {
@@ -8799,6 +9169,16 @@
               }
             },
             "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
           },
           "502": {
             "content": {
@@ -8936,6 +9316,16 @@
               }
             },
             "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
           },
           "502": {
             "content": {

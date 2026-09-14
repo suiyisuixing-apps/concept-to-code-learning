@@ -16,6 +16,7 @@ import zipfile
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from tempfile import mkdtemp
+from xml.parsers import expat
 
 from concept_to_code_learning.full_contracts.models import (
     Block,
@@ -26,12 +27,14 @@ from concept_to_code_learning.full_contracts.models import (
     SourceLocator,
 )
 from concept_to_code_learning.full_learning.errors import LearningError
+from concept_to_code_learning.full_learning.io import run_io, settle
 from concept_to_code_learning.full_learning.ports import DocumentAsset, DocumentUpload
 
 MAX_UNPACKED = 100 * 1024 * 1024
 MAX_ENTRIES = 2_000
 MAX_ASSETS = 300
 MAX_UNITS = 300
+MAX_METADATA_BYTES = 40 * 1024 * 1024
 SAFE_IMAGES = {"image/png", "image/jpeg", "image/webp"}
 
 
@@ -74,13 +77,52 @@ def validate_office(content, source_type):
     if required not in names or "[Content_Types].xml" not in names:
         archive.close()
         raise fail("INVALID_FILE", f"扩展名与 {source_type} 结构不匹配。")
-    for name in names:
-        if name.endswith((".xml", ".rels")):
-            value = archive.read(name).decode("utf-8", errors="replace")
-            if "<!DOCTYPE" in value.upper() or "<!ENTITY" in value.upper():
-                archive.close()
-                raise fail("INVALID_FILE", "Office 文件包含不允许的 XML 实体。")
-    archive.close()
+    defaults, overrides = {}, {}
+    types_namespace = "http://schemas.openxmlformats.org/package/2006/content-types}"
+    depth = 0
+
+    def content_type(name, attrs):
+        nonlocal depth
+        depth += 1
+        if depth == 1 and name != types_namespace + "Types":
+            raise fail("INVALID_FILE", "Office 内容类型索引无效。")
+        if depth != 2:
+            return
+        if name == types_namespace + "Default":
+            defaults[attrs.get("Extension", "").lower()] = attrs.get("ContentType", "")
+        elif name == types_namespace + "Override":
+            # OPC libraries compare overrides case-insensitively and preserve
+            # percent escapes in ZIP member names; match their dispatch exactly.
+            overrides[attrs.get("PartName", "").lower()] = attrs.get("ContentType", "")
+
+    def end_content_type(name):
+        nonlocal depth
+        depth -= 1
+
+    def reject_entity(*args):
+        raise fail("INVALID_FILE", "Office 文件包含不允许的 XML 实体。")
+
+    def check_xml(raw, handler=None, end_handler=None):
+        # Parse original bytes: XML declares its own encoding. A UTF-8 text scan
+        # misses UTF-16, while extension-only checks miss OPC XML parts in .bin.
+        parser = expat.ParserCreate(namespace_separator="}")
+        parser.StartDoctypeDeclHandler = reject_entity
+        parser.EntityDeclHandler = reject_entity
+        parser.ExternalEntityRefHandler = reject_entity
+        parser.StartElementHandler = handler
+        parser.EndElementHandler = end_handler
+        parser.Parse(raw, True)
+
+    try:
+        check_xml(archive.read("[Content_Types].xml"), content_type, end_content_type)
+        for name in names - {"[Content_Types].xml"}:
+            mime = overrides.get("/" + name.lower(), defaults.get(PurePosixPath(name).suffix[1:].lower(), ""))
+            if name.casefold().endswith((".xml", ".rels")) or mime.casefold().endswith(("+xml", "/xml")):
+                check_xml(archive.read(name))
+    except (expat.ExpatError, zipfile.BadZipFile, RuntimeError) as exc:
+        raise fail("INVALID_FILE", "Office 文件的 XML 无法安全读取。") from exc
+    finally:
+        archive.close()
 
 
 class FullDocumentProvider:
@@ -113,16 +155,12 @@ class FullDocumentProvider:
         document_id = "doc-" + hashlib.sha256(content + b"\0" + upload.file_name.encode("utf-8")).hexdigest()[:24]
         final = self.root / document_id
         if final.exists():
-            return self.record(final)
+            return await run_io(self.record, final)
         staging = Path(mkdtemp(prefix=".import-", dir=self.root))
         try:
-            (staging / "assets").mkdir()
             suffix = Path(upload.file_name).suffix.lower()
             original = f"original{suffix}"
-            (staging / original).write_bytes(content)
             units, assets, warnings, capabilities = await self.parse_async(source_type, content, document_id)
-            for asset_id, asset in assets.items():
-                (staging / "assets" / asset_id).write_bytes(asset.content)
             no_text = units and all(u.extraction_status == "NO_EXTRACTABLE_TEXT" for u in units)
             partial = any(u.extraction_status != "READY" for u in units)
             record = DocumentRecord(
@@ -134,24 +172,49 @@ class FullDocumentProvider:
                         "units": [u.model_dump(mode="json") for u in units],
                         "assets": {key: {"media_type": val.media_type, "file_name": val.file_name}
                                    for key, val in assets.items()}}
-            (staging / "metadata.json").write_text(
-                json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8")
+            record = await run_io(self._stage, staging, original, content, metadata, assets)
+            # The expensive work is cancellable before publication. This short
+            # atomic rename has no await between the decision and its result.
             try:
                 os.replace(staging, final)
             except OSError:
                 if not final.is_dir():
                     raise
-                shutil.rmtree(staging)
-            (final / original).chmod(0o444)
-            return self.record(final)
+                record = await run_io(self.record, final)
+                await run_io(self._remove_staging, staging)
+            return record
         except (LearningError, asyncio.CancelledError):
-            shutil.rmtree(staging, ignore_errors=True)
+            await run_io(self._remove_staging, staging)
             raise
         except Exception as exc:
-            shutil.rmtree(staging, ignore_errors=True)
+            await run_io(self._remove_staging, staging)
             raise fail("INVALID_FILE", "文档损坏、加密或无法安全读取。") from exc
 
+    @staticmethod
+    def _remove_staging(staging):
+        if staging.is_dir():
+            for path in staging.glob("original*"):
+                if not path.is_symlink():
+                    path.chmod(0o600)
+            shutil.rmtree(staging)
+
+    def _stage(self, staging, original, content, metadata, assets):
+        encoded = json.dumps(metadata, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+        if len(encoded) > MAX_METADATA_BYTES:
+            raise fail("FILE_TOO_LARGE", "提取结果超过安全上限，请拆分文件后重试。", 413)
+        (staging / "assets").mkdir()
+        (staging / original).write_bytes(content)
+        for asset_id, asset in assets.items():
+            (staging / "assets" / asset_id).write_bytes(asset.content)
+        (staging / "metadata.json").write_bytes(encoded)
+        record = self.record(staging)
+        (staging / original).chmod(0o444)
+        return record
+
     async def list_documents(self):
+        return await run_io(self._list_documents)
+
+    def _list_documents(self):
         values = []
         for path in self.root.glob("doc-*/metadata.json"):
             try:
@@ -162,11 +225,14 @@ class FullDocumentProvider:
 
     async def get_document(self, document_id):
         try:
-            return self.record(self.folder(document_id))
+            return await run_io(lambda: self.record(self.folder(document_id)))
         except (OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
             raise fail("FILE_NOT_FOUND", "文档不存在或索引无法读取。", 404) from exc
 
     async def list_units(self, document_id):
+        return await run_io(self._list_units, document_id)
+
+    def _list_units(self, document_id):
         data = self.metadata(self.folder(document_id))
         return [DocumentUnit.model_validate(item) for item in data["units"]]
 
@@ -177,6 +243,9 @@ class FullDocumentProvider:
         raise fail("FILE_NOT_FOUND", "文档单元不存在。", 404)
 
     async def get_asset(self, document_id, asset_id):
+        return await run_io(self._get_asset, document_id, asset_id)
+
+    def _get_asset(self, document_id, asset_id):
         folder = self.folder(document_id)
         data = self.metadata(folder)
         if asset_id == "original-pdf" and data["record"]["source_type"] == "PDF":
@@ -204,7 +273,7 @@ class FullDocumentProvider:
     def metadata(folder):
         try:
             path = folder / "metadata.json"
-            if path.is_symlink() or path.stat().st_size > 40 * 1024 * 1024:
+            if path.is_symlink() or path.stat().st_size > MAX_METADATA_BYTES:
                 raise fail("DOCUMENT_VERSION_MISMATCH", "文档索引无效。", 409)
             data = json.loads(path.read_text(encoding="utf-8"))
             original = folder / data["original"]
@@ -262,9 +331,10 @@ class FullDocumentProvider:
                     raise fail("FILE_TOO_LARGE", "提取结果超过安全上限。", 413)
                 chunks.append(chunk)
             return b"".join(chunks)
+        pumps = [asyncio.create_task(send()), asyncio.create_task(read())]
         try:
             async with asyncio.timeout(35):
-                _, payload = await asyncio.gather(send(), read())
+                _, payload = await asyncio.gather(*pumps)
                 await process.wait()
             if process.returncode:
                 raise fail("INVALID_FILE", "解析进程未完成；文件可能过于复杂或已损坏。")
@@ -277,9 +347,18 @@ class FullDocumentProvider:
         except TimeoutError:
             raise fail("PROVIDER_TIMEOUT", "文档解析超时，请拆分文件后重试。", 504) from None
         finally:
-            if process.returncode is None:
-                process.kill()
+            async def cleanup():
+                for pump in pumps:
+                    if not pump.done():
+                        pump.cancel()
+                if process.returncode is None:
+                    try:
+                        process.kill()
+                    except ProcessLookupError:
+                        pass
+                await asyncio.gather(*pumps, return_exceptions=True)
                 await process.wait()
+            await settle(asyncio.create_task(cleanup()))
 
     def parse_pdf(self, content, document_id):
         try:
@@ -430,7 +509,7 @@ class FullDocumentProvider:
             "heading-paths", "paragraph-ids", "tables", "images"]
 
     def parse_markdown(self, content, document_id):
-        text = content.decode("utf-8")
+        text = content.decode("utf-8-sig")
         units, headings, current, code_lines, in_code = [], [], [], [], False
         def flush():
             if not current:

@@ -12,6 +12,6 @@ main 必须通过 PR 更新，phase0-checks 必须成功且分支基于最新 ma
 
 每个 PR 填写具体行为、边界、来源/运行证据、Issue、角色及真实命令和退出码。新成员 PR 创建时标记 lead-review:pending；Lead 接收时补齐标签，确认后更新决定标签。标签不代替 CI，也不自动授予合并权。不增加标签专用 CI 或后台付费任务。
 
-使用 Python 3.12 和 Node 20.19+，执行 README 的安装、ruff、pytest、doctor、demo、npm ci/test/build。测试使用临时数据目录。所有新能力区分已实现、Fixture 和未实现；真实解析不改原文件，检索遵循用户授权，来源固定 Commit，保存不能覆盖用户笔记；公共 Schema 变更先获 Lead 批准。
+使用 Python 3.12 和 Node 22.13+，执行 README 的安装、ruff、pytest、doctor、demo、npm ci/test/build。测试使用临时数据目录。所有新能力区分已实现、Fixture 和未实现；真实解析不改原文件，检索遵循用户授权，来源固定 Commit，保存不能覆盖用户笔记；公共 Schema 变更先获 Lead 批准。
 
-CI 保留一个 Ubuntu job，最长 10 分钟，push main 与 PR main 触发，同分支取消旧 run。仓库保持私有与零新付费；不购买/试用服务，不增加付费 runner、Codespaces、LFS、schedule、大模型或私有数据。本次不创建 Release 或新 Tag，不移动历史标签。
+CI 保留 Ubuntu 的 phase0-checks 和一个标准 Windows job，各最长 10 分钟，同分支取消旧 run。两者均执行 Ruff、Python 测试、doctor/demo、前端测试与构建；触发分支以 .github/workflows/ci.yml 为准。仓库保持私有与零新付费；不购买/试用服务，不增加付费 runner、Codespaces、LFS、schedule、大模型或私有数据。本次不创建 Release 或新 Tag，不移动历史标签。

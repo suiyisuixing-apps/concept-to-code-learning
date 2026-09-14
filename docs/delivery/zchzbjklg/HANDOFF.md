@@ -113,7 +113,7 @@
    ```
    [safe-delete][SAFE_DELETE_BULK_REJECTED]
    {"count":5457,"threshold":50,"scope":"turn",
-    "targets":["\\\\?\\C:\\Users\\30649\\AppData\\Local\\Temp\\pytest-of-30649\\garbage-44f027b5-..."]}
+    "targets":["\\\\?\\C:\\Users\\<user>\\AppData\\Local\\Temp\\pytest-of-<user>\\garbage-44f027b5-..."]}
    ```
 3. 该 5457 文件的目标目录**已被删除**（用户授权后清理完成，`ls` 确认 `removed`）。守卫仍在追这条**过期的待删记录**，导致此后**任何**删除动作都被自动拒绝 —— 包括删除一个 0 文件的空目录（已实测复现）。
 
@@ -144,7 +144,7 @@
 | 无 GitHub token（`C2C_GITHUB_TOKEN` 未配置） | 可选认证路径实测；当前产品拒绝私有远程仓库 | 公开读取路径的实现与离线验证；本地流程完全不受影响 |
 | 本机未授权外网实测 | 真实端点连通性、真实限流响应 | 全部错误映射逻辑（合成响应已覆盖 401/403/404/429/超时/超限/重定向） |
 
-> 注：沙箱内 `gh` CLI 可用（`D:\Git\gh\bin\gh.exe`，代理 `127.0.0.1:7897`，`GH_CONFIG_DIR=D:\Git\gh-config`），曾用于读取 Issue/PR。**本切片的测试与代码不依赖它**，也未在测试中发起任何真实网络请求。
+> 注：当时使用已授权的本地 GitHub CLI 读取 Issue/PR；机器专属安装路径、代理端点和凭据目录已移除。此切片的测试不依赖它，也未发起真实网络请求。
 
 ---
 

@@ -1,0 +1,223 @@
+{
+  "status": 200,
+  "seconds": 12.426,
+  "response": {
+    "contract_version": "full-delivery-v1",
+    "revision": 1,
+    "mode": "LIVE",
+    "request_id": "7391fb20-658b-484f-a437-9ba1c5ac2c69",
+    "session_id": "aa3a24fb-2920-4668-92fb-9a9fe2bb1f4d",
+    "context_revision": 1,
+    "status": "COMPLETE",
+    "explanation": {
+      "contract_version": "full-delivery-v1",
+      "revision": 1,
+      "mode": "LIVE",
+      "explanation_id": "c63ec64a-6a3d-471a-a812-07a2b61576f4",
+      "question": "请用 normalize 的真实代码说明过滤 None 时怎样保留 0。",
+      "context_snapshot": {
+        "contract_version": "full-delivery-v1",
+        "revision": 1,
+        "mode": "LIVE",
+        "document_id": "doc-8dae1579818ef6cf2662f820",
+        "document_revision": 1,
+        "original_sha256": "a31901b1967ddd1b76931764600696fcb7adf647f1b4c213e5080fa98e1be64a",
+        "source_type": "MARKDOWN",
+        "file_name": "本地过滤.md",
+        "unit_id": "section-1",
+        "unit_locator": {
+          "unit_type": "section",
+          "index": 1,
+          "heading_path": [
+            "数据过滤"
+          ],
+          "block_id": null
+        },
+        "visible_text": "数据过滤\n数据处理先过滤缺失值 None，再转换有效数字。零值是有效输入，不应被过滤。",
+        "selected_text": "",
+        "selected_text_hash": null,
+        "selection_locator": null,
+        "relevant_context_blocks": [
+          {
+            "block_id": "section-1-block-1",
+            "kind": "paragraph",
+            "text": "数据过滤",
+            "source_locator": {
+              "unit_type": "section",
+              "index": 1,
+              "heading_path": [
+                "数据过滤"
+              ],
+              "block_id": "section-1-block-1"
+            },
+            "table_rows": [],
+            "bbox": null,
+            "image_asset_id": null
+          },
+          {
+            "block_id": "section-1-block-2",
+            "kind": "paragraph",
+            "text": "数据处理先过滤缺失值 None，再转换有效数字。零值是有效输入，不应被过滤。",
+            "source_locator": {
+              "unit_type": "section",
+              "index": 1,
+              "heading_path": [
+                "数据过滤"
+              ],
+              "block_id": "section-1-block-2"
+            },
+            "table_rows": [],
+            "bbox": null,
+            "image_asset_id": null
+          }
+        ],
+        "coverage": "TEXT",
+        "warnings": [],
+        "status": "READY"
+      },
+      "level": "Source-code",
+      "answer_sections": [
+        {
+          "title": "核心意思",
+          "text": "normalize 函数通过判断值是否为 None 来过滤数据，仅保留非 None 的值。在过滤过程中，零值（0）不会被排除，因为其值不等于 None，因此会被正常保留。"
+        },
+        {
+          "title": "调用关系与逻辑",
+          "text": "函数接收一个值列表，遍历每个值并判断是否为 None。若值不是 None，则转换为浮点数并保留。此过程未对零值进行特殊处理，而是依赖于 Python 的值判断逻辑。"
+        },
+        {
+          "title": "零值保留机制",
+          "text": "零值在逻辑上不等于 None，因此在 'value is not None' 判断中被识别为有效值。函数通过列表推导式保留所有非缺失值，包括零值，符合数据清洗中对有效输入的保留原则。"
+        }
+      ],
+      "document_citations": [
+        {
+          "block_id": "section-1-block-2",
+          "quote": "数据处理先过滤缺失值 None，再转换有效数字。零值是有效输入，不应被过滤。",
+          "quote_sha256": "cac9569bd22466dd28df9b618b1228cde486ccbd6af4c7c0ccc48de3c46d1d33"
+        }
+      ],
+      "code_source_ids": [
+        "2d07a892-2654-441e-a1b9-571dcf58aade"
+      ],
+      "concept_code_links": [
+        {
+          "concept": "数据过滤",
+          "source_id": "2d07a892-2654-441e-a1b9-571dcf58aade",
+          "symbol": "normalize",
+          "reason": "函数通过 is not None 判断过滤缺失值，符合数据过滤中排除缺失值的逻辑，且保留零值体现其对有效输入的识别。"
+        },
+        {
+          "concept": "零值保留",
+          "source_id": "2d07a892-2654-441e-a1b9-571dcf58aade",
+          "symbol": "normalize",
+          "reason": "零值未被过滤，因 0 ≠ None，符合零值作为有效输入的处理原则。"
+        }
+      ],
+      "example_blocks": [
+        {
+          "provenance_kind": "SOURCE_EXACT",
+          "source_id": "2d07a892-2654-441e-a1b9-571dcf58aade",
+          "language": "python",
+          "code": "def normalize(values):\n    \"\"\"Filter missing values, preserving zero.\"\"\"\n    return [float(value) for value in values if value is not None]",
+          "explanation": "已核验的原始片段；未运行。",
+          "execution_status": "NOT_RUN"
+        }
+      ],
+      "comparison": null,
+      "limitations": [
+        "未提供函数对零值的显式判断或额外逻辑，无法确认是否在其他场景下有特殊处理。",
+        "函数实现未包含对零值的显式保留代码，仅通过值判断间接实现。",
+        "normalize 函数的具体实现未提供",
+        "无法确认是否包含对零值的显式保留逻辑"
+      ],
+      "unsupported_claims": [],
+      "provider_info": {
+        "provider_id": "local-openai-compatible",
+        "model_id": "Qwen3-4B-Instruct-2507-4bit (local path redacted)",
+        "mode": "LIVE",
+        "endpoint_kind": "loopback",
+        "status": "AVAILABLE"
+      },
+      "metrics": {
+        "latency_ms": 12381.0,
+        "input_tokens": 940,
+        "output_tokens": 549,
+        "token_source": "PROVIDER_USAGE",
+        "input_truncated": false,
+        "truncation_reason": null
+      },
+      "status": "GROUNDED"
+    },
+    "sources": [
+      {
+        "contract_version": "full-delivery-v1",
+        "revision": 1,
+        "mode": "LIVE",
+        "source_id": "2d07a892-2654-441e-a1b9-571dcf58aade",
+        "source_mode": "local_authorized",
+        "repository_owner": null,
+        "repository_name": null,
+        "repository_url": null,
+        "visibility": "local",
+        "local_handle": "local-7c1cfac7524c930554c2df45",
+        "dirty": true,
+        "commit_sha": "e19f0fbdee76366b30852e913e5cb91733f02918",
+        "requested_ref": "sha256:4a7ef785e8d321e59d952fe76606a1ea65d0f43a3183be070bc25131da46adad",
+        "file_path": "normalize.py",
+        "language": "python",
+        "symbol": "normalize",
+        "symbol_kind": "function",
+        "line_start": 1,
+        "line_end": 3,
+        "code_excerpt": "def normalize(values):\n    \"\"\"Filter missing values, preserving zero.\"\"\"\n    return [float(value) for value in values if value is not None]",
+        "excerpt_sha256": "27a9ba79d02c1252a66c99b494046cce9317b7e822d793c1e1fce3b3cda26b3f",
+        "file_blob_sha": null,
+        "file_sha256": "4a7ef785e8d321e59d952fe76606a1ea65d0f43a3183be070bc25131da46adad",
+        "permalink": null,
+        "license_observation": {
+          "status": "DETECTED",
+          "files": [
+            {
+              "path": "LICENSE",
+              "commit_sha": null,
+              "content_sha256": "d7872bcd5a15e27fe14d0667c19f8a9d06211824ae881b9faf7bc6e268571a83",
+              "permalink": null,
+              "identifier": "MIT"
+            }
+          ],
+          "limitations": [
+            "记录已读取的许可文件；保留作者和许可声明。未对所有依赖或例外进行法律审查。"
+          ],
+          "code_display_allowed": true
+        },
+        "retrieved_at": "2026-09-11T03:58:57.800939Z",
+        "verification_checks": {
+          "scope": "PASSED",
+          "file": "PASSED",
+          "line_range": "PASSED",
+          "excerpt_hash": "PASSED",
+          "license": "PASSED",
+          "commit": "PASSED",
+          "python_symbol": "PASSED",
+          "public_remote": "NOT_CHECKED"
+        },
+        "provenance_kind": "SOURCE_EXACT",
+        "verification_status": "VERIFIED",
+        "execution_status": "NOT_RUN",
+        "relevance": {
+          "status": "CANDIDATE",
+          "reason": "本地原始文件已核验；未执行该代码。",
+          "basis": [
+            "filter null",
+            "keep zero"
+          ]
+        }
+      }
+    ],
+    "source_observations": [],
+    "candidates": [],
+    "query_id": null,
+    "warnings": []
+  }
+}

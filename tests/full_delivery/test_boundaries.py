@@ -5,7 +5,6 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
-from conftest import activate, explain_body
 from fastapi.testclient import TestClient
 
 from concept_to_code_learning.api import create_app
@@ -13,6 +12,8 @@ from concept_to_code_learning.full_contracts import models as m
 from concept_to_code_learning.full_learning.errors import LearningError
 from concept_to_code_learning.full_learning.service import LearningService
 from concept_to_code_learning.full_learning.store import LearningStore
+
+from .conftest import activate, explain_body
 
 PREFIX = "/api/learning/v1"
 
@@ -170,7 +171,8 @@ def test_uninstalled_modules_report_partial_without_fixture_fallback(tmp_path):
     with TestClient(create_app(tmp_path)) as client:
         caps = client.get(PREFIX + "/capabilities").json()
         assert caps["integrated_product"] == "UNAVAILABLE" and caps["status"] == "PARTIAL"
-        assert caps["document"]["available"] and caps["sources"]["available"]
+        assert caps["document"]["available"] and not caps["sources"]["available"]
+        assert caps["sources"]["reason_code"] == "GITHUB_NOT_CHECKED"
         assert not caps["tutor"]["available"]
         assert caps["tutor"]["implemented"]
         assert caps["persistent_notes"] and caps["target_hardware"] == "NOT_TESTED"
