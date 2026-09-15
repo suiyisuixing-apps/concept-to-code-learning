@@ -2,6 +2,7 @@
 
 import io
 import json
+import sys
 
 import pytest
 
@@ -26,9 +27,13 @@ def gbk_default(monkeypatch, tmp_path):
     text = "中文来源 🚀"
     control.write_bytes(text.encode("utf-8"))
     assert control.read_text(encoding="utf-8") == text
-    for encoding in (None, "locale"):
-        with pytest.raises(UnicodeDecodeError):
-            control.read_text(encoding=encoding)
+    # Under PEP 686 UTF-8 mode, pathlib resolves an implicit/"locale" default to
+    # UTF-8 before io.open is reached, so a GBK default cannot be simulated this
+    # way. The explicit-encoding assertions below still run in both modes.
+    if not sys.flags.utf8_mode:
+        for encoding in (None, "locale"):
+            with pytest.raises(UnicodeDecodeError):
+                control.read_text(encoding=encoding)
 
 
 def test_fixture_and_schema_loading_ignore_gbk_default(project, gbk_default):
