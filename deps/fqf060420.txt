@@ -1,0 +1,28 @@
+# fqf060420 — tutor / runtime / teaching / evaluation module dependencies
+
+No additional runtime dependencies beyond the project's existing product deps
+(jsonschema, fastapi, uvicorn, pydantic, starlette, httpx).
+
+The local model adapters (runtime/local_model.py, runtime/async_model.py) use
+httpx (already in product deps) plus the standard library (urllib, socket,
+ipaddress) to talk to an OpenAI-compatible loopback endpoint. No paid service,
+no cloud fallback, no model download: the endpoint is configured only through
+C2C_MODEL_BASE_URL / C2C_MODEL_ID / C2C_MODEL_API_KEY /
+C2C_MODEL_NETWORK_AUTHORIZED via ProviderSettings (full_learning/providers.py).
+The API key is read by the backend only and is never logged, serialized into
+exceptions, persisted, or sent to the browser. tutor/full.py and teaching/
+add pydantic (product dep) and standard-library modules only.
+
+## Test dependencies
+
+Tests use only the existing dev deps (pytest, httpx). Async adapter behaviour
+is covered with synthetic httpx transports / local HTTP doubles; no real model
+endpoint, no network, and no pytest-asyncio are required, keeping
+pyproject.toml untouched. Real-model runs are reported separately as
+REAL_RUN evidence (see issues #78/#79/#80) and are never required by tests.
+
+## Hardware boundary
+
+deploy/dgx is documentation-only (runtime support notes and capacity
+estimates). No DGX hardware acceptance has been run; status NOT_RUN per the
+module task (#13, #68 C8).
