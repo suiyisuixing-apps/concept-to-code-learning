@@ -107,7 +107,9 @@ class LocalSources:
         commit = (
             await git(root, "rev-parse", "--verify", "HEAD", optional=True)
         ).decode().strip() or None
-        committed = await git(root, "show", "HEAD:" + path, optional=True)
+        # HEAD can move between commands. Compare against the exact recorded
+        # revision so a concurrent checkout cannot mislabel working bytes as clean.
+        committed = await git(root, "show", commit + ":" + path, optional=True) if commit else b""
         dirty = not commit or committed != raw
         folders = (
             [PurePosixPath(".")]

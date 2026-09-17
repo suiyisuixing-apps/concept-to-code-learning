@@ -22,11 +22,17 @@ class LocalRegistry:
             self._identities[handle] = (info.st_dev, info.st_ino)
 
     def handles(self):
-        return [
-            handle
-            for handle, root in self._roots.items()
-            if root.is_dir() and not root.is_symlink()
-        ]
+        handles = []
+        for handle, root in self._roots.items():
+            try:
+                info = root.stat(follow_symlinks=False)
+            except OSError:
+                continue
+            if stat.S_ISDIR(info.st_mode) and (
+                info.st_dev, info.st_ino
+            ) == self._identities[handle]:
+                handles.append(handle)
+        return handles
 
     def is_authorized(self, handle):
         return handle in self.handles()
@@ -54,15 +60,16 @@ class LocalRegistry:
         return not current.resolve().is_relative_to(root)
 
     def read(self, handle, path):
-        if self.rejects_escape(handle, path):
+        root = self.root_for(handle)
+        if root is None or self.rejects_escape(handle, path):
             raise SourceError("AUTH_REQUIRED", "local", "源码路径超出授权范围或包含符号链接。", 403)
-        target = self.root_for(handle) / path
+        target = root / path
         # O_NOFOLLOW defends the final component, repeated canonical check defends parents.
         parent_fds = []
         try:
             if os.open in os.supports_dir_fd:
                 flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
-                current = os.open(self.root_for(handle), flags)
+                current = os.open(root, flags)
                 parent_fds.append(current)
                 info = os.fstat(current)
                 if (info.st_dev, info.st_ino) != self._identities[handle]:
