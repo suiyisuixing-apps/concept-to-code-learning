@@ -1,27 +1,23 @@
 # Concept-to-Code Learning — team agent rules
 
-Governance decision: 2026-09-09 by @suiyisuixing. This policy replaces mandatory peer approval and author self-merge prohibitions for Lead-authored PRs. PR #56 and pre-rules-v0.2.0 at e83a64d63a78f11534fbe51631775ceeb3885ccb are preserved historical evidence, not recurring peer-review gates.
+Governance decision: 2026-09-21 by @suiyisuixing. The project is public at https://github.com/suiyisuixing-apps/concept-to-code-learning. @suiyisuixing, @inogi-sama, @zchzbjklg and @fqf060420 are equal repository Admin maintainers. This replaces the private-repository and Lead-only review/merge restrictions in older task packets and policies. Historical contributions, decisions and tags remain unchanged. Repository Admin does not grant organization ownership or access to other repositories.
 
 - Never push directly to main.
 - All changes use focused pull requests, one main issue per PR.
-- Only @suiyisuixing may merge into main.
-- Teammates must not merge their own or others' pull requests, enable auto-merge or merge queue, or change protection/rulesets.
-- Lead-authored PRs do not require external approval.
-- Lead-authored PRs require successful CI, Lead self-review and Codex audit; no known P0/P1 blocker and accurate real/Fixture/unimplemented claims.
-- Lead self-review includes human inspection of key files. Codex must not assert that a human reviewed or decided when they have not.
-- Teammates may provide non-blocking comments and suggestions; Lead reads them before deciding.
-- Teammate-authored PRs require Lead review before merge.
-- No pull request may merge with failed required checks. Keep phase0-checks mandatory, including for administrators.
-- Do not modify shared schemas without Lead approval. Document compatibility and regression evidence.
+- All four maintainers may review and merge pull requests, including their own, and manage this repository's settings and collaborators.
+- No mandatory external approval or Lead-only approval applies. Read existing review feedback, verify the current head, resolve known P0/P1 blockers and state real/Fixture/unimplemented capabilities accurately before merging.
+- Human inspection and Codex audit are separate evidence. Codex must not assert that a human reviewed or decided when they have not.
+- No pull request may merge with failed required checks. Keep phase0-checks mandatory, including for administrators. Do not enable automatic merging or weaken protection as part of ordinary development.
+- Coordinate shared schema changes with affected maintainers and document compatibility and regression evidence.
 - Fixtures must remain visibly labelled.
 - Never invent repositories, commits, paths, symbols, lines or licenses. Search results are not verified sources.
 - Source documents and source repositories are read-only.
 - No automatic cloud fallback.
 - No force push or history rewriting; do not delete main or move existing tags.
-- Do not commit secrets, models, private documents or external repositories. Preserve licenses and minimize excerpts.
-- Keep the repository private and zero new paid services; no purchases, trials or paid runners. New model downloads require explicit user authorization.
+- Do not commit secrets, models, private documents or external repositories. Preserve licenses and minimize excerpts. Public project access does not authorize publishing personal data.
+- Keep zero new paid services; no purchases, trials or paid runners. New model downloads require explicit user authorization.
 
-Codex can assist review; the final decision belongs to @suiyisuixing. Review labels and CI results do not constitute that decision. Member PRs start with lead-review:pending; Lead maintains the decision labels. See docs/governance/lead-controlled-merge-policy.md for live verification and rollback.
+Codex can assist review; a maintainer makes the final merge decision. Review labels and CI results do not constitute human review or authorize an agent to merge unrelated work. Older lead-review and owner-merge-only labels are historical records, not permission gates. See docs/governance/team-maintained-policy.md for current policy and verification.
 
 ## Scope and validation
 
@@ -31,7 +27,7 @@ Read the complete role task in docs/codex-prompts/full-delivery/ before implemen
 
 2026-09-11 takeover authorization: the user directed Lead to review, patch and complete all member modules in the integration branch, then integrate the product. The user also authorized Lead to arrange the missing model; the initial installation used one pinned free local Qwen model. The subsequent context-search repair adds one pinned free local Coder model under that authorization and retains the original model as a selectable alternative. Keep final human review and merge claims separate.
 
-Ownership for member development: inogi owns apps/web and documents; zch owns github_intelligence; fqf owns tutor/runtime/teaching/evaluation/DGX. Lead owns full_contracts, full_learning, root API, NoteStore, global configuration/dependencies/CI and Skill. Implement your complete module continuously; do not rewrite another member's entire module. Missing upstream modules permit labelled test doubles, never false live acceptance. Backend dependency requests belong in deps/<role>.txt until Lead integration.
+Coordination contacts (not exclusive file permissions): inogi owns apps/web and documents; zch owns github_intelligence; fqf owns tutor/runtime/teaching/evaluation/DGX. Lead owns full_contracts, full_learning, root API, NoteStore, global configuration/dependencies/CI and Skill. Implement your complete module continuously; do not rewrite another member's entire module. Missing upstream modules permit labelled test doubles, never false live acceptance. Record backend dependency requests in deps/<role>.txt and coordinate integration with the affected maintainers.
 
 Python 3.12: python -m pip install -e ".[dev]"; ruff check .; pytest -q; python scripts/tutor.py doctor; python scripts/tutor.py demo.
 Node 22: npm --prefix apps/web ci; npm --prefix apps/web test; npm --prefix apps/web run build.
