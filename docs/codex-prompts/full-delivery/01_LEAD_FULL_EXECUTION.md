@@ -1,3 +1,5 @@
+> 2026-09-21 权限更新：[当前共同维护政策](../../governance/team-maintained-policy.md)优先。项目已公开于 `suiyisuixing-apps/concept-to-code-learning`；四人均为仓库 Admin，均可审核和合并通过检查的 PR，无需 Lead 专门批准。模块分工不是文件权限限制；不得绕过 CI，Codex 不代填人工检查。下文保留原任务书，其中私有、仅 Lead 合并和成员 Write 条款已失效，其他功能及证据要求保留。
+
 # @suiyisuixing · 完整交付总集成提示词
 
 版本：FULL-DELIVERY-PLAN-1 · 2026-09-09

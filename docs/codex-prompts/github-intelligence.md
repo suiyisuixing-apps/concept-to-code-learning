@@ -1,3 +1,5 @@
+> 2026-09-21 权限更新：[当前共同维护政策](../governance/team-maintained-policy.md)优先。项目已公开于 `suiyisuixing-apps/concept-to-code-learning`；四人均为仓库 Admin，均可审核和合并通过检查的 PR，无需 Lead 专门批准。模块分工不是文件权限限制；不得绕过 CI，Codex 不代填人工检查。以下旧任务中的私有、仅 Lead 合并和成员 Write 条款已失效，其他功能及证据要求保留。
+
 > 当前范围已由 [完整模块任务书](full-delivery/README.md) 取代；以下保留旧阶段的任务与证据，不作为本轮功能上限。
 
 # GitHub Code Intelligence Codex 工作提示词

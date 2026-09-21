@@ -1,17 +1,21 @@
 # 团队协作
 
-先接受私有仓库 Write 邀请，启用个人 GitHub 2FA，再克隆仓库。不要共享密码、Token 或 SSH 私钥。账号职责见 docs/roles-and-ownership.md。
+项目现为公开仓库：[suiyisuixing-apps/concept-to-code-learning](https://github.com/suiyisuixing-apps/concept-to-code-learning)。任何人可以阅读和克隆；@suiyisuixing、@inogi-sama、@zchzbjklg、@fqf060420 四人均拥有本仓库 Admin 权限，三名成员的权限已经生效，无待接受邀请。使用各自 GitHub 账号并启用 2FA，不共享密码、Token 或 SSH 私钥。
 
-所有工作使用 Issue → 最新 main 上的功能分支 → 聚焦 PR → 本地验证与 required CI → Lead 决定。一个 Issue 对应一个聚焦 PR。首次入队提交不改变产品逻辑的文档 PR，由 Lead 审核；合并后可删除自己的功能分支。
+四人共同维护代码、Issues、PR、设置和协作者，均可审核和合并满足条件的 PR，包括自己的 PR，无需队长专门批准。原模块分工用于协作衔接，不是文件访问限制。仓库 Admin 不等于组织 Owner，也不授予其他仓库的访问权。详见[共同维护政策](docs/governance/team-maintained-policy.md)与[模块联系人](docs/roles-and-ownership.md)。
 
-@suiyisuixing 是唯一最终审核人和唯一 main 合并人。成员 PR 等待 Lead 审核、退回或合并；成员不得合并自己或他人的 PR，不得启用 auto-merge、merge queue 或管理员例外。Lead 自己的 PR 无需外部批准，在 Lead 人工自检、Codex 独立差异审计、required CI 成功、没有 P0/P1 阻塞且能力声明准确后可以自行合并。Codex 辅助检查，最终决定属于 Lead，不能代填人工检查。
+所有改动使用 Issue → 最新 main 上的功能分支 → 聚焦 PR → 本地验证与 required CI → 维护者审核决定。一个 PR 关联一个主要 Issue。阅读已有建议，解决已知 P0/P1 问题，区分真实能力、Fixture 和未实现；不要把普通评论、自动审计、标签或绿色 CI 冒充正式 Review 或人工检查。Codex 不能代填人工检查。
 
-组员可通过 Comment 或普通 Comment Review 提出非阻塞建议；Lead 合并前阅读已有建议并决定是否采纳。不得把普通评论、自动审计、标签或绿色 CI 冒充正式 Review。
+main 必须通过 PR 更新，phase0-checks 必须成功且分支基于最新 main；外部 required approval count 为 0。2026-09-21 已通过 API 回读 main-team-maintained Ruleset：无人员专属更新限制，无绕过名单；保留 PR、required CI、禁止强推及删除。Classic Protection 的 enforce_admins=true。管理员也遵循这些保护，不直接 Push main、不绕过失败 CI、不改写历史，不在普通开发中开启自动合并或降低保护。配置快照不是实时权限证明，操作前按需回读。
 
-main 必须通过 PR 更新，phase0-checks 必须成功且分支基于最新 main；外部 required approval count 为 0。禁止直接 Push main、Force Push、历史改写、删除 main、绕过 CI 或未经授权修改保护。2026-09-09 已核验 Active main-lead-controlled Ruleset：Restrict updates，仅 Repository administrators 可通过 PR 使用例外；Classic Protection 保留 PR、required CI 与 enforce_admins=true。三名成员为 Write，唯一 Admin 为 @suiyisuixing。后续操作仍需核验实时设置，详见 docs/governance/lead-controlled-merge-policy.md。
+每个 PR 写明行为变化、关联 Issue、当前 Head、来源/运行证据、实际命令及退出码。公共 Schema 变更与受影响模块维护者协调，附兼容性与回归证据。旧 lead-review 与 owner-merge-only 标签保留作历史记录，不再要求新 PR 使用，也不构成合并权限门禁。
 
-每个 PR 填写具体行为、边界、来源/运行证据、Issue、角色及真实命令和退出码。新成员 PR 创建时标记 lead-review:pending；Lead 接收时补齐标签，确认后更新决定标签。标签不代替 CI，也不自动授予合并权。不增加标签专用 CI 或后台付费任务。
+使用 Python 3.12 和 Node 22.13+，按 README 执行适用的安装、ruff、pytest、doctor、demo、npm ci/test/build。测试使用临时数据目录；纯文档修改运行相关检查即可。真实解析不改原文件，检索遵循授权，来源固定 Commit，保存不能覆盖用户笔记。
 
-使用 Python 3.12 和 Node 20.19+，执行 README 的安装、ruff、pytest、doctor、demo、npm ci/test/build。测试使用临时数据目录。所有新能力区分已实现、Fixture 和未实现；真实解析不改原文件，检索遵循用户授权，来源固定 Commit，保存不能覆盖用户笔记；公共 Schema 变更先获 Lead 批准。
+CI 保留现有 Ubuntu 和 Windows job，各最长 10 分钟，push main 与 PR main 触发，同分支取消旧 run。维持零新付费，不购买/试用服务，不新增付费 runner 或后台 schedule。公开的是项目代码和已有仓库历史；个人笔记、密钥、模型权重、私有资料及外部仓库副本不得提交。历史标签和成员贡献记录保留。
 
-CI 保留一个 Ubuntu job，最长 10 分钟，push main 与 PR main 触发，同分支取消旧 run。仓库保持私有与零新付费；不购买/试用服务，不增加付费 runner、Codespaces、LFS、schedule、大模型或私有数据。本次不创建 Release 或新 Tag，不移动历史标签。
+旧地址仍可用于 GitHub 重定向；已有克隆建议更新 remote：
+
+```sh
+git remote set-url origin https://github.com/suiyisuixing-apps/concept-to-code-learning.git
+```

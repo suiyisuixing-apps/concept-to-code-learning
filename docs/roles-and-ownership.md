@@ -1,3 +1,20 @@
+# 当前维护者与模块联系人
+
+2026-09-21 起项目公开，以下四人均拥有完整的本仓库 Admin 权限，可审核和合并满足检查的 PR。分工用于协作衔接，不是文件权限限制。详见[共同维护政策](governance/team-maintained-policy.md)。
+
+| 账号 | 模块联系人 | 本仓库权限 |
+| --- | --- | --- |
+| @suiyisuixing | 产品、公共接口与集成 | Admin |
+| @inogi-sama | 文档工作区与前端 | Admin |
+| @zchzbjklg | GitHub 代码检索与来源 | Admin |
+| @fqf060420 | AI Tutor、本地模型与评估 | Admin |
+
+CODEOWNERS 将四人列为共同维护者，不启用强制 Code Owner Review。公共接口变更与相关维护者协调；无需 Lead 独占批准。
+
+## 历史分工与验收记录（2026-09-08 / 09）
+
+以下保留旧记录，其中私有、仅 Lead 合并、成员 Write 等权限描述已被上面的当前政策取代；任务完成状态须另行核对对应 PR。
+
 > 2026-09-09 当前执行范围： [完整学习版](full-delivery/PLAN.md)；[新接口与职责](full-delivery/INTERFACES.md)。以下旧阶段说明保留作兼容和历史参考。
 
 # 四人职责与入队状态

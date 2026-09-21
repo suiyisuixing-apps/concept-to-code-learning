@@ -1,3 +1,5 @@
+> 历史政策（2026-09-09），已被 2026-09-21 [公开项目与四人共同维护](team-maintained-policy.md)取代。下文的私有、唯一 Admin、仅 Lead 可合并条款不再适用；保留原文作为决策记录。
+
 # Lead 单一负责制与 main 合并政策
 
 决策日期：2026-09-09（Asia/Shanghai）。决策人及唯一最终负责人：@suiyisuixing。成员：@inogi-sama、@zchzbjklg、@fqf060420。

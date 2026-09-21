@@ -1,16 +1,3 @@
-# Responsibility and optional notifications; Code Owner approval is not required.
-* @suiyisuixing
-/AGENTS.md @suiyisuixing
-/src/concept_to_code_learning/integration/ @suiyisuixing
-/SKILL.md @suiyisuixing
-/schemas/ @suiyisuixing
-/docs/ @suiyisuixing
-/apps/web/ @suiyisuixing @inogi-sama
-/src/concept_to_code_learning/documents/ @suiyisuixing @inogi-sama
-/src/concept_to_code_learning/document_workspace/ @suiyisuixing @inogi-sama
-/src/concept_to_code_learning/github_intelligence/ @suiyisuixing @zchzbjklg
-/src/concept_to_code_learning/code_intel/ @suiyisuixing @zchzbjklg
-/src/concept_to_code_learning/execution/ @suiyisuixing @zchzbjklg
-/src/concept_to_code_learning/tutor/ @suiyisuixing @fqf060420
-/src/concept_to_code_learning/runtime/ @suiyisuixing @fqf060420
-/evals/ @suiyisuixing @fqf060420
+# Shared maintainers and optional review notifications; approval is not mandatory.
+# Module contacts are recorded in docs/roles-and-ownership.md, not access limits.
+* @suiyisuixing @inogi-sama @zchzbjklg @fqf060420

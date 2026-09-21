@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
+MAINTAINERS = {"suiyisuixing", "inogi-sama", "zchzbjklg", "fqf060420"}
 
 
 def read(path):
@@ -30,19 +31,21 @@ def test_declared_main_protection_preserves_independent_quality_gate():
         assert not classic[key]["enabled"]
 
 
-def test_declared_owner_restriction_cannot_be_confused_with_ci_enforcement():
+def test_declared_shared_admin_access_preserves_ci_enforcement():
     policy = json.loads(read("docs/governance/main-protection.json"))
     ruleset = policy["ruleset"]
     assert policy["scope"] == "declared configuration, not live API validation"
-    assert policy["lead"] == "suiyisuixing"
+    assert policy["repository"] == "suiyisuixing-apps/concept-to-code-learning"
+    assert policy["visibility"] == "public"
+    assert policy["maintainers"] == {name: "admin" for name in MAINTAINERS}
+    assert ruleset["name"] == "main-team-maintained"
     assert ruleset["enforcement"] == "active"
     assert "refs/heads/main" in ruleset["conditions"]["ref_name"]["include"]
     assert not ruleset["conditions"]["ref_name"]["exclude"]
-    assert ruleset["bypass_actors"] == [
-        {"actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "pull_request"}
-    ]
+    assert not ruleset["bypass_actors"]
     rules = {rule["type"]: rule for rule in ruleset["rules"]}
-    assert {"update", "deletion", "non_fast_forward", "pull_request",
+    assert "update" not in rules
+    assert {"deletion", "non_fast_forward", "pull_request",
             "required_status_checks"} <= rules.keys()
     reviews = rules["pull_request"]["parameters"]
     assert reviews["required_approving_review_count"] == 0
@@ -55,30 +58,31 @@ def test_declared_owner_restriction_cannot_be_confused_with_ci_enforcement():
     assert status["required_status_checks"] == [
         {"context": "phase0-checks", "integration_id": 15368}
     ]
-    # A bypassed ruleset alone does not preserve the administrator's CI gate.
+    # Equal administrator access must not remove the independent CI gate.
     assert policy["classic"]["enforce_admins"]["enabled"]
 
 
-def test_codeowners_only_contains_existing_paths_and_lead_on_every_rule():
+def test_codeowners_contains_existing_paths_and_all_maintainers():
     for line in read("CODEOWNERS").splitlines():
         if not line.strip() or line.startswith("#"):
             continue
         path, *owners = line.split()
-        assert "@suiyisuixing" in owners
+        assert {owner.removeprefix("@") for owner in owners} == MAINTAINERS
         assert path == "*" or (ROOT / path.lstrip("/")).exists()
 
 
 @pytest.mark.parametrize("role", ["document-workspace", "github-intelligence", "tutor-evaluation"])
-def test_member_prompts_leave_merge_decision_with_lead(role):
+def test_member_prompts_supersede_historical_lead_only_restrictions(role):
     text = read(f"docs/codex-prompts/{role}.md")
-    assert "成员不得合并任何 PR" in text
-    assert "@suiyisuixing 最终审核" in text
-    assert "lead-review:pending" in text
+    notice = text.split("\n\n", 1)[0]
+    assert "team-maintained-policy.md" in notice
+    assert "四人均为仓库 Admin" in notice
+    assert "无需 Lead 专门批准" in notice
     assert "不得绕过 CI" in text
     assert "Fixture" in text and "无自动云回退" in text and "零新付费" in text
 
 
-def test_lead_prompt_requires_human_decision_and_exact_head_checks():
+def test_historical_lead_prompt_keeps_evidence_requirements():
     text = read("docs/codex-prompts/lead-integration.md")
     for term in ("自行合并", "无需外部批准", "人工检查关键文件", "Codex 只读差异审计",
                  "phase0-checks", "P0/P1", "Codex 不代填人工检查", "Fixture", "零新付费"):
@@ -103,12 +107,12 @@ def test_active_docs_do_not_restore_mandatory_peer_approval():
 
 def test_pr_template_and_agent_rules_keep_evidence_and_safety_boundaries():
     template = read(".github/pull_request_template.md")
-    for field in ("Lead PR", "Team member PR", "LEAD_REVIEW_PENDING", "LEAD_APPROVED",
-                  "LEAD_CHANGES_REQUESTED", "LEAD_DEFERRED", "已人工检查关键文件",
+    for field in ("维护者审核", "四位维护者均可审核和合并", "Codex 不代填人工检查",
+                  "已人工检查关键文件",
                   "Required CI", "Fixture", "公共 Schema"):
         assert field in template
     agents = read("AGENTS.md")
-    for rule in ("Only @suiyisuixing may merge into main", "Never push directly to main",
+    for rule in ("All four maintainers may review and merge", "Never push directly to main",
                  "No pull request may merge with failed required checks",
                  "Fixtures must remain visibly labelled", "No automatic cloud fallback",
                  "Never invent repositories, commits, paths, symbols, lines or licenses",

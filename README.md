@@ -2,7 +2,9 @@
 
 导入学习材料，在旁边提问，用可核对的真实代码理解概念，再保存自己的来源笔记。
 
-当前为 **0.2.0 完整产品候选，等待 Lead 人工验收**。四格式阅读器、三种来源模式、两阶段真实模型教学和笔记已整合；2026-09-11 在 Apple Silicon Mac 上完成真实本地模型与公开 GitHub 案例。实际验收范围见 [最终审核](docs/delivery/lead/FINAL_REVIEW.md)。本分支尚未进入 main。
+公开项目：[suiyisuixing-apps/concept-to-code-learning](https://github.com/suiyisuixing-apps/concept-to-code-learning)。四位成员共同维护，均拥有仓库 Admin 权限；[协作与权限](docs/governance/team-maintained-policy.md)。
+
+当前为 **0.2.0 完整产品候选，等待维护者人工验收**。四格式阅读器、三种来源模式、两阶段真实模型教学和笔记已整合；2026-09-11 在 Apple Silicon Mac 上完成真实本地模型与公开 GitHub 案例。实际验收范围见 [最终审核](docs/delivery/lead/FINAL_REVIEW.md)。本分支尚未进入 main。
 
 ## 开始使用
 
@@ -51,4 +53,4 @@ python scripts/package_skill.py
 
 [最终审核与成员贡献](docs/delivery/lead/FINAL_REVIEW.md) · [启动说明](docs/full-delivery/RUNNING.md) · [Skill](SKILL.md) · [完整接口](docs/full-delivery/INTERFACES.md) · [DGX 部署包](deploy/dgx/README.md) · [产品范围](docs/product-scope.md)
 
-只有 @suiyisuixing 最终人工审核和合并。成员原始提交记录保留；CI 和 Codex 审核不能代替人工决定。私有仓库、历史标签和旧个人数据保持原有归属。
+@suiyisuixing、@inogi-sama、@zchzbjklg、@fqf060420 均可审核和合并通过检查的 PR。成员原始提交记录和历史标签保留；CI 和 Codex 审核不能冒充人工决定。个人笔记、密钥和私有资料不进入公开仓库。
